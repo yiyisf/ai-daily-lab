@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-20-slop-detector",
+  "ran_at": "2026-10-19T22:01:32+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "sample           words  score/1k  hits\nsloppy              75     306.7  {'em_dash': 3, 'not_x_but_y': 2, 'rule_of_three': 4, 'buzzwords': 8, 'hype_opener': 1}\nsloppy_no_dash      75     240.0  {'em_dash': 0, 'not_x_but_y': 1, 'rule_of_three': 4, 'buzzwords': 8, 'hype_opener': 1}\nplain               93       0.0  {'em_dash': 0, 'not_x_but_y': 0, 'rule_of_three': 0, 'buzzwords': 0, 'hype_opener': 0}\n[PASS] sloppy 得分 > 3 × plain\n[PASS] plain 得分 < 15（参考原文所说人类文本通常 <15/千词）\n[PASS] 去掉破折号后 em_dash 计数为 0\n[PASS] 去掉破折号后得分下降，但仍高于 plain\n\n说明：只删破折号这类表面后处理，句式和用词层面的特征仍会被规则捕获。\nRESULT: sloppy=306.7 no_dash=240.0 plain=0.0 per 1k words; all checks passed\n",
+  "stderr": ""
+}

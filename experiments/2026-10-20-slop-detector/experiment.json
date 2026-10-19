@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-20-slop-detector",
+  "title": "用正则做一个最小的「AI 腔」检测器",
+  "goal": "参考 deslop 项目的评估思路，用纯标准库的正则规则统计每千词的破折号、「not X, but Y」句式和三连列举等写作习惯，对比几段风格不同的样例文本，并检验规则在明显的人类写法上不误报。",
+  "related_item": "2026-10-20-qwen3-4b-deslop",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "「AI 腔」样例的每千词得分明显高于朴素样例；朴素样例得分低于 15；去掉破折号的改写版得分下降",
+  "tags": ["evaluation", "prompting", "fine-tuning"]
+}
