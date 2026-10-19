@@ -13,7 +13,8 @@
          ├─ validate.yml     校验 Schema / 规则 / 链接，结果评论到 PR
          └─ experiments.yml  在隔离环境执行实验，result.json 提交回 PR，结果评论到 PR
          │
-       人工审核 → 合并到 main
+       auto-merge.yml  两者都通过、改动仅限日报与实验 → GitHub App 批准并合并
+                       （未通过则在 PR 留言，转人工处理）
          │
          └─ deploy.yml       构建站点 + 同步数据包 → GitHub Pages
 08:30  watchdog.yml          当天没有日报 PR 时自动开 issue 提醒
