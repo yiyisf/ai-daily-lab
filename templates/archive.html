@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}往期 · AI Daily Lab{% endblock %}
+{% block main %}
+<section class="issue-head">
+  <div class="issue-meta"><span class="kicker">往期日报</span><span>共 {{ issues|length }} 期</span></div>
+</section>
+<ol class="archive">
+  {% for i in issues %}
+  <li>
+    <a href="{{ root }}daily/{{ i.date }}.html" class="archive-date">{{ i.date }}</a>
+    <div>
+      <p>{{ i.editor_note }}</p>
+      <span class="muted">{{ i.count }} 条{% if i.exp_count %} · {{ i.exp_count }} 个实验{% endif %}</span>
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

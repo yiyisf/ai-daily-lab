@@ -1,0 +1,37 @@
+name: 缺报检查
+
+# 北京时间 08:30 检查当天日报是否已生成（PR 或已合并），没有则开 issue 提醒。
+on:
+  schedule:
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 检查
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          D=$(TZ=Asia/Shanghai date +%F)
+          Y=${D:0:4}
+          if [ -f "content/daily/$Y/$D.json" ]; then
+            echo "已合并：$D"; exit 0
+          fi
+          n=$(gh pr list --repo "${{ github.repository }}" --state all --head "daily/$D" --json number --jq length)
+          if [ "$n" != "0" ]; then
+            echo "已有 PR：daily/$D"; exit 0
+          fi
+          title="⚠️ $D 日报未生成"
+          exists=$(gh issue list --repo "${{ github.repository }}" --state open --search "$title in:title" --json number --jq length)
+          if [ "$exists" = "0" ]; then
+            gh issue create --repo "${{ github.repository }}" --title "$title" \
+              --body "截至北京时间 08:30 没有找到分支 \`daily/$D\` 的 PR，也没有 \`content/daily/$Y/$D.json\`。请检查 Claude 定时任务的运行记录，必要时手动触发一次。"
+          fi

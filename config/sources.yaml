@@ -1,0 +1,53 @@
+# 建议关注的方向 —— 只是起点，不限定范围。
+# Claude 可以自主搜索任何有价值的来源。
+
+focus:
+  - 前沿模型与产品：Anthropic、OpenAI、Google DeepMind、Meta、Mistral、xAI，以及 DeepSeek、Qwen、Kimi、智谱、MiniMax 等国内团队
+  - Agent 与编排：Agent 框架、MCP 生态、多 Agent 协作、工作流编排、Agent 评测
+  - AI 编程：Claude Code、Cursor、Copilot 等编程助手及其使用实践；面向非专业开发者的 AI 开发方式
+  - 开源模型与推理：Hugging Face 热门模型、vLLM / SGLang / llama.cpp / Ollama 等推理生态
+  - 工程实践：RAG、上下文工程、提示工程、评测、可观测性、成本优化、安全
+  - 业界讨论：知名从业者的博客与观点、热门讨论帖
+
+# 常用一手来源（示例，不是白名单）
+starting_points:
+  official:
+    - https://www.anthropic.com/news
+    - https://openai.com/news/
+    - https://deepmind.google/discover/blog/
+    - https://ai.meta.com/blog/
+    - https://huggingface.co/blog
+  papers:
+    - https://huggingface.co/papers
+    - https://arxiv.org/list/cs.AI/recent
+    - https://arxiv.org/list/cs.CL/recent
+  opensource:
+    - https://github.com/trending
+    - https://huggingface.co/models?sort=trending
+  community:   # 只作线索，必须追溯到一手来源
+    - https://news.ycombinator.com/
+    - https://simonwillison.net/
+    - https://www.latent.space/
+
+# 标签词表（可按需新增，小写英文短横线）
+tags:
+  - llm
+  - multimodal
+  - agent
+  - mcp
+  - coding
+  - rag
+  - context-engineering
+  - prompting
+  - evaluation
+  - inference
+  - fine-tuning
+  - open-weights
+  - reasoning
+  - safety
+  - policy
+  - infra
+  - devtools
+  - low-code
+  - workflow
+  - research

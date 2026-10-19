@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}AI 日报 {{ issue.date }} · AI Daily Lab{% endblock %}
+{% block description %}{{ issue.editor_note }}{% endblock %}
+{% block main %}
+<section class="issue-head">
+  <div class="issue-meta">
+    <span class="kicker">AI 日报</span>
+    <time datetime="{{ issue.date }}">{{ issue.date_cn }}</time>
+    <span class="dot">·</span><span>{{ issue['items']|length }} 条</span>
+    {% if exps %}<span class="dot">·</span><span>{{ exps|length }} 个实验</span>{% endif %}
+  </div>
+  <p class="lede">{{ issue.editor_note }}</p>
+  <div class="issue-nav">
+    {% if prev %}<a href="{{ root }}daily/{{ prev }}.html">← {{ prev }}</a>{% else %}<span></span>{% endif %}
+    {% if next %}<a href="{{ root }}daily/{{ next }}.html">{{ next }} →</a>{% endif %}
+  </div>
+</section>
+
+{% if highlights %}
+<section class="highlights" aria-label="今日重点">
+  {% for it in highlights %}
+  <a class="highlight" href="#{{ it.id }}">
+    <span class="chip chip-{{ it.category }}">{{ categories[it.category] }}</span>
+    <strong>{{ it.title }}</strong>
+  </a>
+  {% endfor %}
+</section>
+{% endif %}
+
+<nav class="toc" aria-label="栏目">
+  {% for cat, items in groups %}<a href="#cat-{{ cat }}">{{ categories[cat] }} <span>{{ items|length }}</span></a>{% endfor %}
+  {% if exps %}<a href="#cat-experiments">实验 <span>{{ exps|length }}</span></a>{% endif %}
+</nav>
+
+{% for cat, items in groups %}
+<section class="category" id="cat-{{ cat }}">
+  <h2>{{ categories[cat] }}</h2>
+  {% for it in items %}
+  <article class="item" id="{{ it.id }}">
+    <div class="item-top">
+      <span class="importance" title="重要度 {{ it.importance }}/5" aria-label="重要度 {{ it.importance }}/5">
+        {% for i in range(5) %}<i class="{{ 'on' if i < it.importance else '' }}"></i>{% endfor %}
+      </span>
+      {% for t in it.tags %}<span class="tag">#{{ t }}</span>{% endfor %}
+      {% if it.follow_up_of %}<span class="tag tag-follow">跟进</span>{% endif %}
+    </div>
+    <h3><a href="#{{ it.id }}">{{ it.title }}</a></h3>
+    <p>{{ it.summary }}</p>
+    <ul class="points">{% for p in it.key_points %}<li>{{ p }}</li>{% endfor %}</ul>
+    <p class="why"><b>为什么值得关注</b>{{ it.why_it_matters }}</p>
+    {% if it.experiment_id %}
+    <p class="exp-link"><a href="{{ root }}experiments/{{ it.experiment_id }}.html">🧪 查看配套实验 →</a></p>
+    {% endif %}
+    <div class="sources">
+      {% for s in it.sources %}
+      <a href="{{ s.url }}" target="_blank" rel="noopener" class="src src-{{ s.kind }}">
+        <span class="src-kind">{{ source_kinds[s.kind] }}</span>{{ s.title }}{% if s.publisher %} · {{ s.publisher }}{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endfor %}
+
+{% if exps %}
+<section class="category" id="cat-experiments">
+  <h2>可验证实验</h2>
+  <div class="exp-grid">
+  {% for e in exps %}
+    <a class="exp-card" href="{{ root }}experiments/{{ e.id }}.html">
+      <span class="status status-{{ e.status }}">{{ status_label[e.status] }}</span>
+      <strong>{{ e.title }}</strong>
+      <span class="muted">{{ e.goal }}</span>
+    </a>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

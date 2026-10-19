@@ -1,0 +1,62 @@
+name: 校验日报
+
+on:
+  pull_request:
+    paths:
+      - "content/**"
+      - "experiments/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: 校验 Schema、规则与链接
+        id: check
+        run: |
+          set +e
+          python scripts/validate.py \
+            --changed-since "origin/${{ github.base_ref }}" \
+            --check-links --report report.md
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: 试构建站点
+        run: python scripts/build_site.py --out _site
+
+      - name: 在 PR 中发布校验结果
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          echo "<!-- ai-daily-validate -->" | cat - report.md > comment.md
+          id=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" \
+                 --jq '.[] | select(.body | startswith("<!-- ai-daily-validate -->")) | .id' | head -n1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@comment.md >/dev/null
+          else
+            gh pr comment "$PR" --repo "${{ github.repository }}" --body-file comment.md
+          fi
+
+      - name: 有错误时失败
+        if: steps.check.outputs.code != '0'
+        run: exit 1

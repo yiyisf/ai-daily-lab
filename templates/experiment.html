@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ e.title }} · 实验 · AI Daily Lab{% endblock %}
+{% block description %}{{ e.goal }}{% endblock %}
+{% block main %}
+<section class="issue-head">
+  <div class="issue-meta">
+    <span class="kicker">实验</span>
+    <a href="{{ root }}daily/{{ e.id[:10] }}.html#{{ e.related_item }}">{{ e.id[:10] }} 日报</a>
+  </div>
+  <h1>{{ e.title }}</h1>
+  <p class="lede">{{ e.goal }}</p>
+  <div class="result-bar">
+    <span class="status status-{{ e.status }}">{{ status_label[e.status] }}</span>
+    {% if e.result %}
+      <span>耗时 {{ e.result.duration_seconds }}s</span>
+      {% if e.result.runtime_version %}<span>{{ e.result.runtime_version }}</span>{% endif %}
+      <span>运行于 {{ e.result.ran_at[:16]|replace('T', ' ') }} UTC</span>
+      {% if e.result.failure %}<span class="fail">{{ e.result.failure }}</span>{% endif %}
+    {% else %}
+      <span class="muted">尚未执行</span>
+    {% endif %}
+  </div>
+</section>
+
+<article class="prose">{{ readme_html|safe }}</article>
+
+{% if e.result %}
+<section class="category">
+  <h2>实际运行输出</h2>
+  <pre class="output">{{ e.result.stdout or '（无输出）' }}</pre>
+  {% if e.result.stderr %}
+  <details><summary>stderr</summary><pre class="output">{{ e.result.stderr }}</pre></details>
+  {% endif %}
+  {% if e.result.packages %}
+  <details><summary>依赖版本（{{ e.result.packages|length }}）</summary><pre class="output">{{ e.result.packages|join('\n') }}</pre></details>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="category">
+  <h2>代码</h2>
+  {% for f in code_files %}
+  <details {% if loop.first %}open{% endif %} class="code-file">
+    <summary>{{ f.name }}</summary>
+    {{ f.html|safe }}
+  </details>
+  {% endfor %}
+</section>
+{% endblock %}

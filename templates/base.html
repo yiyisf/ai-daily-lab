@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AI Daily Lab{% endblock %}</title>
+<meta name="description" content="{% block description %}每日 AI 资讯、开源项目、业界讨论与可验证实验{% endblock %}">
+<link rel="stylesheet" href="{{ root }}assets/style.css">
+<link rel="alternate" type="application/atom+xml" title="AI Daily Lab" href="{{ root }}feed.xml">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="{{ root }}index.html"><span class="brand-mark">◆</span> AI Daily Lab</a>
+    <nav class="nav">
+      <a href="{{ root }}index.html" {% if nav == 'today' %}aria-current="page"{% endif %}>今日</a>
+      <a href="{{ root }}archive.html" {% if nav == 'archive' %}aria-current="page"{% endif %}>往期</a>
+      <a href="{{ root }}experiments/index.html" {% if nav == 'experiments' %}aria-current="page"{% endif %}>实验</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+{% block main %}{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    内容由 Claude 自动搜集整理，经人工审核后发布。每条均附原始链接，请以原文为准。
+    · 生成于 {{ build_time }}
+  </div>
+</footer>
+</body>
+</html>
