@@ -139,7 +139,7 @@ jobs:
       - name: 生成 App token
         id: app
         if: steps.check.outputs.verdict == 'merge' || steps.check.outputs.verdict == 'block'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
