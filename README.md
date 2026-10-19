@@ -20,6 +20,17 @@
 08:30  watchdog.yml          当天没有日报 PR 时自动开 issue 提醒
 ```
 
+## 两类 PR
+
+| | 日报 PR | 站点 PR |
+|---|---|---|
+| 分支 | `daily/YYYY-MM-DD` | 其他任意分支（如 `site/xxx`、`ci/xxx`） |
+| 改动范围 | 只改 `content/daily/` 和 `experiments/` | 模板、样式、脚本、Schema、配置、工作流 |
+| 触发的检查 | `validate.yml`、`experiments.yml` | `site-check.yml`：全量校验历史日报、构建、截图 |
+| 合并方式 | 检查全部通过后由 GitHub App 自动合并 | 人工查看预览后合并 |
+
+日报分支里一旦混入站点文件，`auto-merge.yml` 会拒绝自动合并并留言，转人工处理。
+
 ## 目录
 
 | 路径 | 说明 |
