@@ -40,23 +40,45 @@ jobs:
             --check-links --report report.md
           echo "code=$?" >> "$GITHUB_OUTPUT"
 
-      - name: 试构建站点
+      - name: 构建预览站点
         run: python scripts/build_site.py --out _site
 
-      - name: 在 PR 中发布校验结果
+      - name: 上传预览站点
+        id: artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-preview
+          path: _site
+          retention-days: 7
+
+      - name: 生成内容预览
+        run: |
+          python scripts/preview.py \
+            --changed-since "origin/${{ github.base_ref }}" \
+            --artifact-url "${{ steps.artifact.outputs.artifact-url }}" \
+            --out preview.md
+
+      - name: 在 PR 中发布校验结果与预览
         if: github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
+          # 按标记更新已有评论，没有则新建
+          upsert() {
+            marker="$1"; file="$2"
+            id=$(gh api "repos/$REPO/issues/$PR/comments?per_page=100" \
+                   --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -n1)
+            if [ -n "$id" ]; then
+              gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@"$file" >/dev/null
+            else
+              gh api "repos/$REPO/issues/$PR/comments" -F body=@"$file" >/dev/null
+            fi
+          }
           echo "<!-- ai-daily-validate -->" | cat - report.md > comment.md
-          id=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" \
-                 --jq '.[] | select(.body | startswith("<!-- ai-daily-validate -->")) | .id' | head -n1)
-          if [ -n "$id" ]; then
-            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@comment.md >/dev/null
-          else
-            gh pr comment "$PR" --repo "${{ github.repository }}" --body-file comment.md
-          fi
+          upsert "<!-- ai-daily-validate -->" comment.md
+          upsert "<!-- ai-daily-preview -->" preview.md
 
       - name: 有错误时失败
         if: steps.check.outputs.code != '0'
