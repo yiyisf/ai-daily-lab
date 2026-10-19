@@ -8,7 +8,6 @@ on:
   pull_request:
     paths:
       - "experiments/**"
-      - "!experiments/**/result.json"
   workflow_dispatch:
     inputs:
       experiment:
@@ -121,7 +120,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "结果无变化"
           else
-            git commit -m "chore: 记录实验执行结果"
+            git commit -m "chore: 记录实验执行结果 [skip ci]"
             git push
           fi
 
