@@ -23,6 +23,11 @@
 6. **实验**：从当天条目中挑 0–2 个适合做最小验证的，按第四节编写实验目录。
 7. **自检**：运行 `python3 scripts/validate.py content/daily/YYYY/DATE.json`，修到没有错误为止（不要加 `--check-links`，运行环境的终端无法访问外部网站；链接检查由 Actions 完成）。如果实验能在本地离线运行，可以先自己跑一次确认没有语法错误，但不要把输出写进文件。
 8. **提交**：新建分支 `daily/DATE`，提交并推送，开 PR，标题为 `AI 日报 DATE`，PR 描述写今日导读和条目清单。**不要直接推送到 main。**
+   开 PR 请用 REST API（运行环境不支持 GitHub GraphQL，`gh pr create` 会失败）：
+   ```bash
+   gh api repos/yiyisf/ai-daily-lab/pulls -f title="AI 日报 DATE" -f head="daily/DATE" -f base=main -F body=@pr.md
+   ```
+   如果分支 `daily/DATE` 已存在（例如当天重跑），先检查是否已有对应 PR；已有则在原分支上追加提交，不要重复开 PR。
 
 如果当天确实没有足够有价值的内容，少收几条也可以，但仍要开 PR，并在 `editor_note` 里说明情况。
 
