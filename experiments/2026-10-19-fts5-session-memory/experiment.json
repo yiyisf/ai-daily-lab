@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-19-fts5-session-memory",
+  "title": "用 SQLite FTS5 + BM25 复现 Agent 会话记忆检索",
+  "goal": "验证 context-mode 采用的思路：把编码 Agent 的会话事件写入 SQLite FTS5，用 BM25 排序并以 RRF 融合 porter 与 trigram 两路检索，上下文压缩后按需取回少量相关记录。",
+  "related_item": "2026-10-19-context-mode",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "8 个问题中 RRF Top-3 至少命中 6 个；检索结果的体积远小于全量回放历史",
+  "tags": ["context-engineering", "rag", "agent"]
+}
