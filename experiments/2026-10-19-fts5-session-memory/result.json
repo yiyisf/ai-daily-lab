@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-19-fts5-session-memory",
+  "ran_at": "2026-10-19T15:24:46+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "SQLite 3.45.1，事件数 25\n\nQ: which database did the user choose\n   期望 #0: User decided to use PostgreSQL instead of MySQL for the orders service\n   RRF Top-1 #12  porter=✗  trigram=✗  rrf=✗\nQ: how should email addresses appear in logs\n   期望 #6: User said: never log customer email addresses, mask them as ***@domain\n   RRF Top-1 #6  porter=✓  trigram=✓  rrf=✓\nQ: payment gateway rate limit\n   期望 #10: Payment gateway sandbox returns HTTP 429 when more than 10 requests pe\n   RRF Top-1 #11  porter=✓  trigram=✓  rrf=✓\nQ: feature flag for upsert\n   期望 #18: User wants the feature behind flag ORDERS_UPSERT_V2, default off in pr\n   RRF Top-1 #18  porter=✓  trigram=✓  rrf=✓\nQ: refund retry backoff\n   期望 #24: Edited src/payments/refund.py: retry up to 4 times with exponential ba\n   RRF Top-1 #23  porter=✓  trigram=✓  rrf=✓\nQ: how to deploy to staging\n   期望 #21: Staging deploy is triggered by pushing a tag that matches staging-*\n   RRF Top-1 #21  porter=✓  trigram=✓  rrf=✓\nQ: upsert test failed duplicate\n   期望 #3: pytest tests/test_orders.py failed: test_upsert_idempotent AssertionEr\n   RRF Top-1 #3  porter=✓  trigram=✓  rrf=✓\nQ: timeout for payment\n   期望 #9: Edited config/settings.toml: raised http client timeout from 5s to 15s\n   RRF Top-1 #9  porter=✓  trigram=✓  rrf=✓\n\nTop-3 命中率：\n  porter   7/8\n  trigram  7/8\n  rrf      7/8\n\n上下文体积（粗略估算）：全量回放 ≈ 448 tokens，单次检索 Top-3 平均 ≈ 46 tokens（约 10%）\n说明：事件越多，全量回放线性增长，而检索 Top-K 基本不变。\n未命中的问题（词面不重合，属于纯词法检索的固有局限）：\n  - which database did the user choose\n\nRESULT: RRF Top-3 recall = 0.88 (7/8)\n",
+  "stderr": ""
+}
