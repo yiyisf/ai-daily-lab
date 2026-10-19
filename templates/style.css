@@ -130,7 +130,7 @@ details { margin: 8px 0; }
 details > summary { cursor: pointer; color: var(--ink-2); font-size: 14px; }
 .code-file { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 14px; }
 .code-file > summary { font-family: var(--mono); color: var(--ink); }
-.code-file .highlight { background: none; }
+.code-file .highlight { background: none; border: 0; padding: 0; }
 
 .archive { list-style: none; padding: 0; margin: 16px 0; }
 .archive li { display: grid; grid-template-columns: 120px 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
