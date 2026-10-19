@@ -1,0 +1,184 @@
+name: 自动审核合并
+
+# 「校验日报」和「执行实验」跑完后触发，确认日报 PR 满足全部条件后，
+# 用 GitHub App 身份批准并合并（App token 合并会正常触发 deploy.yml）。
+#
+# 不用分支保护的 required status checks：实验结果是 bot 推的 [skip ci] 提交，
+# 它成为 PR 最新提交后上面没有任何检查，会让自动合并一直卡住。
+# 因此在这里自己判断：检查必须在「最后一个内容提交」上通过，之后只允许 bot 的 result.json 提交。
+#
+# 需要的仓库 Secrets：BOT_APP_ID、BOT_PRIVATE_KEY
+
+on:
+  workflow_run:
+    workflows: ["校验日报", "执行实验"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "要检查的 PR 编号"
+        required: true
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: auto-merge-${{ github.event.workflow_run.head_branch || inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       startsWith(github.event.workflow_run.head_branch, 'daily/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 找到对应的 PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          INPUT_PR: ${{ inputs.pr }}
+        run: |
+          if [ -n "$INPUT_PR" ]; then
+            n="$INPUT_PR"
+          else
+            owner="${R%%/*}"
+            n=$(gh api "repos/$R/pulls?state=open&base=main&head=$owner:$BRANCH" | jq -r '.[0].number // empty')
+          fi
+          if [ -z "$n" ]; then echo "没有找到打开的 PR"; fi
+          echo "number=$n" >> "$GITHUB_OUTPUT"
+
+      - name: 检查合并条件
+        id: check
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          # verdict: merge（满足条件）/ wait（还有检查没跑完）/ block（需要人工处理）
+          out() { echo "verdict=$1" >> "$GITHUB_OUTPUT"; echo "reason=$2" >> "$GITHUB_OUTPUT"; echo "[$1] $2"; exit 0; }
+
+          pr=$(gh api "repos/$R/pulls/$PR")
+          [ "$(jq -r .state <<<"$pr")" = open ] || out wait "PR 已关闭"
+          head_sha=$(jq -r .head.sha <<<"$pr")
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          [ "$(jq -r .base.ref <<<"$pr")" = main ] || out block "目标分支不是 main"
+          [ "$(jq -r .head.repo.full_name <<<"$pr")" = "$R" ] || out block "PR 来自 fork"
+          [[ "$(jq -r .head.ref <<<"$pr")" == daily/* ]] || out block "不是 daily/ 分支"
+          [ "$(jq -r .user.login <<<"$pr")" = "${R%%/*}" ] || out block "PR 作者不是仓库所有者"
+          [ "$(jq -r .draft <<<"$pr")" = false ] || out block "PR 是草稿"
+
+          # 1. 只允许改日报 JSON 和实验目录
+          files=$(gh api "repos/$R/pulls/$PR/files?per_page=100" | jq -r '.[].filename')
+          bad=$(grep -vE '^(content/daily/[0-9]{4}/[0-9]{4}-[0-9]{2}-[0-9]{2}\.json|experiments/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+/.+)$' <<<"$files" || true)
+          [ -z "$bad" ] || out block "改动了日报和实验以外的文件：$(echo $bad)"
+
+          # 2. 找到最后一个「内容提交」：从末尾跳过 bot 写入 result.json 的提交
+          commits=$(gh api "repos/$R/pulls/$PR/commits?per_page=100")
+          content_sha=""
+          for sha in $(jq -r 'reverse | .[].sha' <<<"$commits"); do
+            c=$(jq --arg s "$sha" '.[] | select(.sha == $s)' <<<"$commits")
+            login=$(jq -r '.author.login // ""' <<<"$c")
+            msg=$(jq -r '.commit.message' <<<"$c" | head -n1)
+            if [ "$login" = "github-actions[bot]" ] && [[ "$msg" == "chore: 记录实验执行结果"* ]]; then
+              cf=$(gh api "repos/$R/commits/$sha" | jq -r '.files[].filename')
+              other=$(grep -vE '^experiments/[^/]+/result\.json$' <<<"$cf" || true)
+              [ -z "$other" ] || out block "实验结果提交 $sha 改动了 result.json 以外的文件"
+              continue
+            fi
+            content_sha=$sha; break
+          done
+          [ -n "$content_sha" ] || out block "找不到内容提交"
+          echo "内容提交：$content_sha，PR 最新提交：$head_sha"
+
+          # 取某个工作流在内容提交上最近一次运行的结果
+          run_state() {
+            gh api "repos/$R/actions/workflows/$1/runs?head_sha=$content_sha&event=pull_request&per_page=20" \
+              | jq -r '.workflow_runs | sort_by(.created_at) | last | if . == null then "missing" else "\(.status)/\(.conclusion)" end'
+          }
+
+          # 3. 校验必须通过（含链接检查）
+          v=$(run_state validate.yml)
+          case "$v" in
+            completed/success) ;;
+            missing|queued/*|in_progress/*|waiting/*|pending/*|requested/*) out wait "「校验日报」尚未完成（$v）" ;;
+            *) out block "「校验日报」未通过（$v）" ;;
+          esac
+
+          # 4. 有实验时：执行实验必须跑完，且每个实验的 result.json 为 passed 或 partial
+          exp_ids=$(grep -E '^experiments/' <<<"$files" | grep -v '/result\.json$' | cut -d/ -f2 | sort -u || true)
+          if [ -n "$exp_ids" ]; then
+            e=$(run_state experiments.yml)
+            case "$e" in
+              completed/success) ;;
+              missing|queued/*|in_progress/*|waiting/*|pending/*|requested/*) out wait "「执行实验」尚未完成（$e）" ;;
+              *) out block "「执行实验」未通过（$e）" ;;
+            esac
+            for id in $exp_ids; do
+              s=$( (gh api "repos/$R/contents/experiments/$id/result.json?ref=$head_sha" 2>/dev/null \
+                    | jq -r '.content' | base64 -d | jq -r '.status') || echo missing)
+              case "$s" in
+                passed|partial) echo "实验 $id：$s" ;;
+                missing|"") out wait "实验 $id 还没有 result.json" ;;
+                *) out block "实验 $id 执行失败（$s）" ;;
+              esac
+            done
+          fi
+
+          out merge "全部条件满足"
+
+      - name: 生成 App token
+        id: app
+        if: steps.check.outputs.verdict == 'merge' || steps.check.outputs.verdict == 'block'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: 批准并合并
+        if: steps.check.outputs.verdict == 'merge'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          R: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.check.outputs.head_sha }}
+          BOT: ${{ steps.app.outputs.app-slug }}[bot]
+        run: |
+          set -euo pipefail
+          approved=$(gh api "repos/$R/pulls/$PR/reviews?per_page=100" \
+            | jq --arg b "$BOT" '[.[] | select(.user.login == $b and .state == "APPROVED")] | length')
+          if [ "$approved" = 0 ]; then
+            gh api -X POST "repos/$R/pulls/$PR/reviews" -f event=APPROVE -f commit_id="$HEAD_SHA" \
+              -f body="自动审核通过：校验与实验均已通过，改动仅限日报与实验目录。" >/dev/null
+          fi
+          # sha 参数保证合并的就是刚检查过的提交；期间有新推送则合并失败，等下一轮
+          gh api -X PUT "repos/$R/pulls/$PR/merge" -f merge_method=merge -f sha="$HEAD_SHA" | jq -r .message
+          echo "已合并 PR #$PR" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 无法自动合并时在 PR 留言
+        if: steps.check.outputs.verdict == 'block'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          R: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          REASON: ${{ steps.check.outputs.reason }}
+        run: |
+          set -euo pipefail
+          body=$(printf '<!-- ai-daily-automerge -->\n## 🤖 未自动合并\n\n原因：%s\n\n请人工检查后处理；修复并推送后会重新检查。\n' "$REASON")
+          id=$(gh api "repos/$R/issues/$PR/comments?per_page=100" \
+                 --jq '.[] | select(.body | startswith("<!-- ai-daily-automerge -->")) | .id' | head -n1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$R/issues/comments/$id" -f body="$body" >/dev/null
+          else
+            gh api -X POST "repos/$R/issues/$PR/comments" -f body="$body" >/dev/null
+          fi
+          echo "未自动合并：$REASON" >> "$GITHUB_STEP_SUMMARY"
