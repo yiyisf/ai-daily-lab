@@ -5,6 +5,7 @@ on:
     paths:
       - "content/**"
       - "experiments/**"
+      - "!experiments/**/result.json"
 
 permissions:
   contents: read
