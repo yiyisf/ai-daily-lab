@@ -12,9 +12,10 @@
 <link rel="stylesheet" href="{{ root }}assets/style.css?v={{ asset_v['style.css'] }}">
 <link rel="alternate" type="application/atom+xml" title="AI Daily Lab" href="{{ root }}feed.xml">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Crect x='4' y='4' width='14' height='14' rx='3' transform='rotate(45 11 11)' fill='%23C2410C'/%3E%3C/svg%3E">
+{% if share %}<script src="{{ root }}assets/qr.js?v={{ asset_v['qr.js'] }}" defer></script>{% endif %}
 <script src="{{ root }}assets/app.js?v={{ asset_v['app.js'] }}" defer></script>
 </head>
-<body data-root="{{ root }}">
+<body data-root="{{ root }}" data-site-url="{{ site_url }}">
 <header class="site-header">
   <div class="wrap header-inner">
     <a class="brand" href="{{ root }}index.html">
@@ -65,6 +66,19 @@
     <div class="palette-foot"><span><span class="kbd">↑</span> <span class="kbd">↓</span> 选择</span><span><span class="kbd">Enter</span> 打开</span><span class="js-palette-count"></span></div>
   </div>
 </dialog>
+{% if share %}
+<script type="application/json" class="js-share-data">{{ share | tojson }}</script>
+<dialog class="share" aria-labelledby="share-title">
+  <div class="share-head"><h2 id="share-title">分享图</h2><span class="muted js-share-hint">1080 × 1350，适合发到群聊或朋友圈</span></div>
+  <div class="share-preview"><img class="js-share-img" alt="分享图预览"><span class="share-loading js-share-loading">正在生成…</span></div>
+  <div class="share-actions">
+    <button type="button" class="btn btn-primary js-share-download">下载 PNG</button>
+    <button type="button" class="btn js-share-copy" hidden>复制图片</button>
+    <span class="spacer"></span>
+    <form method="dialog"><button class="btn">关闭</button></form>
+  </div>
+</dialog>
+{% endif %}
 <dialog class="help" aria-labelledby="help-title">
   <h2 id="help-title">键盘快捷键</h2>
   <dl>

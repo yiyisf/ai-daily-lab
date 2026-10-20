@@ -38,9 +38,10 @@ from pygments.util import ClassNotFound
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (  # noqa: E402
-    CATEGORIES, CATEGORY_ORDER, EXPERIMENTS_DIR, KIT_KINDS, ROOT, SKILL_AREAS, STATUS_LABEL,
-    experiment_status, issue_files, load_experiment, load_issue,
+    CATEGORIES, CATEGORY_COLORS, CATEGORY_ORDER, EXPERIMENTS_DIR, ICONS, KIT_KINDS, ROOT, SKILL_AREAS,
+    STATUS_LABEL, experiment_status, icon_svg, issue_files, load_experiment, load_issue,
 )
+from figures import delta as fig_delta, figure_html, figure_markdown, fmt as fmt_num  # noqa: E402
 
 SOURCE_KINDS = {"primary": "原文", "secondary": "报道", "discussion": "讨论"}
 ACT_LABELS = {"try": "可动手", "watch": "值得关注", "know": "了解即可"}
@@ -111,6 +112,8 @@ def issue_markdown(issue: dict, exps: list[dict], site_url: str) -> str:
             if it.get("follow_up_of"):
                 meta += "　（跟进报道）"
             out += [meta, "", it["summary"], ""]
+            if it.get("figure"):
+                out += [figure_markdown(it["figure"]), ""]
             if it.get("kit"):
                 k = it["kit"]
                 head = f"**{KIT_KINDS[k['kind']]}** `{k['name']}`" + (f" {k['version']}" if k.get("version") else "")
@@ -310,6 +313,36 @@ def related_items(it: dict, all_items: list[dict], limit: int = 4) -> list[dict]
 
 # ---------------------------------------------------------------- main
 
+# ---------------------------------------------------------------- share-card data (drawn by app.js)
+
+def day_share(issue: dict, issue_no: int, ordered: list[dict], tldr: list[dict], tldr_auto: bool,
+              cat_counts: list[dict], n_exps: int) -> dict:
+    d = issue["date"]
+    return {"kind": "day", "issue_no": issue_no, "label": date_cn(d), "count": len(issue["items"]),
+            "exp_count": n_exps, "heading": "今日重点" if tldr_auto else "今日三件事",
+            "tldr": [t["text"] for t in tldr], "dots": [[it["category"], it["importance"]] for it in ordered],
+            "cats": [[c["key"], c["name"], c["count"]] for c in cat_counts], "colors": CATEGORY_COLORS,
+            "path": f"daily/{d}.html", "file": f"ai-daily-{d}"}
+
+
+def item_share(it: dict, d: str) -> dict:
+    cat = it["category"]
+    data = {"kind": "item", "label": date_cn(d), "cat": cat, "cat_name": CATEGORIES[cat],
+            "color": CATEGORY_COLORS[cat], "icon": ICONS.get(cat, ""), "title": it["title"],
+            "summary": it["summary"], "points": it["key_points"][:3],
+            "act": ACT_LABELS.get(it.get("actionability", ""), ""), "path": f"item/{it['id']}.html",
+            "file": it["id"]}
+    if it.get("figure"):
+        fig = dict(it["figure"])
+        if fig["type"] == "bars":   # keep the source formatting (77.0 stays 77.0) and precomputed deltas
+            fig["rows"] = [dict(r, disp=[fmt_num(v) for v in r["values"]],
+                                delta=fig_delta(*r["values"]) if len(r["values"]) == 2 else "") for r in fig["rows"]]
+        data["figure"] = fig
+    if it.get("skill"):
+        data["skill"] = {"scenario": it["skill"]["scenario"], "bad": it["skill"]["bad"], "good": it["skill"]["good"]}
+    return data
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "_site"))
@@ -330,15 +363,20 @@ def main() -> int:
     env = Environment(loader=FileSystemLoader(ROOT / "templates"), autoescape=select_autoescape(["html"]))
     env.filters["format_tag"] = lambda t: f"#{t}"
     env.globals["date_cn"] = date_cn
+    env.globals["figure_html"] = figure_html
+    env.globals["skill_area_names"] = SKILL_AREAS
+    env.globals["cat_icon"] = lambda name, size=18: Markup(icon_svg(name, size))
     env.filters["dur"] = lambda v: "不到 0.1s" if v is not None and v < 0.1 else f"{v}s"
     common = dict(categories=CATEGORIES, source_kinds=SOURCE_KINDS, status_label=BADGE_LABEL,
-                  act_labels=ACT_LABELS, skill_areas=SKILL_AREAS, kit_kinds=KIT_KINDS, build_time=build_time)
+                  act_labels=ACT_LABELS, skill_areas=SKILL_AREAS, kit_kinds=KIT_KINDS, build_time=build_time,
+                  site_url=site_url)
 
     (out / "assets" / "style.css").write_text(
         (ROOT / "templates" / "style.css").read_text(encoding="utf-8") + pygments_css(), encoding="utf-8")
-    shutil.copyfile(ROOT / "templates" / "app.js", out / "assets" / "app.js")
+    for js in ("app.js", "qr.js"):
+        shutil.copyfile(ROOT / "templates" / js, out / "assets" / js)
     # Content-hash query strings: a page never pairs with a stale cached stylesheet or script.
-    common["asset_v"] = {name: sha256(out / "assets" / name)[:10] for name in ("style.css", "app.js")}
+    common["asset_v"] = {name: sha256(out / "assets" / name)[:10] for name in ("style.css", "app.js", "qr.js")}
 
     paths = issue_files()
     issues = [load_issue(p) for p in paths]
@@ -380,6 +418,7 @@ def main() -> int:
                    try_count=sum(1 for i in issue["items"] if i.get("actionability") == "try"),
                    top_count=sum(1 for i in issue["items"] if i["importance"] >= 4),
                    recent_tags=recent_tags, tags_window=f"近 {len(window)} 期",
+                   share=day_share(issue, idx + 1, ordered, tldr, tldr_auto, cat_counts, len(exps)),
                    prev=dates[idx - 1] if idx > 0 else None,
                    next=dates[idx + 1] if idx + 1 < len(dates) else None)
         (out / "daily" / f"{d}.html").write_text(tpl_day.render(ctx, root="../", nav="archive"), encoding="utf-8")
@@ -397,7 +436,7 @@ def main() -> int:
                         same_cat=[o for o in ordered if o["category"] == it["category"] and o["id"] != it["id"]][:5],
                         prev_item=ordered[pos - 1] if pos > 0 else None,
                         next_item=ordered[pos + 1] if pos + 1 < len(ordered) else None,
-                        md_src=item_markdown(it))
+                        md_src=item_markdown(it), share=item_share(it, d))
             (out / "item" / f"{it['id']}.html").write_text(
                 tpl_item.render(ictx, root="../", nav="archive"), encoding="utf-8")
 

@@ -59,6 +59,38 @@
         "官方说明针对 DeepSeek Harness、腾讯 CodeBuddy 和 WorkBuddy 做了优化"
       ],
       "why_it_matters": "在价格不变的情况下提升智能体任务表现并缩短输出，意味着同样的 Agent 任务成本更低；已在使用 deepseek-flash 的应用无需修改即可获得更新。",
+      "figure": {
+        "type": "bars",
+        "title": "1017 版在三项智能体与编程基准上均有提升",
+        "series": [
+          "V4.1-Flash",
+          "V4.1-Flash-1017"
+        ],
+        "rows": [
+          {
+            "label": "Terminal-Bench 4.0",
+            "values": [
+              31.2,
+              42.3
+            ]
+          },
+          {
+            "label": "ProgramBench",
+            "values": [
+              20.3,
+              29.1
+            ]
+          },
+          {
+            "label": "DeepSWE v1.1",
+            "values": [
+              74.2,
+              77.0
+            ]
+          }
+        ],
+        "caption": "数据来自 Hugging Face 模型卡，为官方自报分数"
+      },
       "sources": [
         {
           "title": "deepseek-ai/DeepSeek-V4.1-Flash-1017 模型卡",
@@ -174,6 +206,30 @@
         "支持 OpenCode、Codex 作为执行器；Apache 2.0 许可证，提供无需模型凭证的本地演示"
       ],
       "why_it_matters": "随着「模型差距缩小、Harness 决定效果」成为共识，自动优化 Harness 的方法值得关注；对搭建内部 Agent 工作流的团队，可以借鉴其「提出修改—试跑—对比」的迭代思路。",
+      "figure": {
+        "type": "steps",
+        "title": "Harness² 的任务级递归：提出、试跑、合成",
+        "steps": [
+          {
+            "label": "Propose",
+            "sub": "针对当前任务提出 Harness 修改"
+          },
+          {
+            "label": "Probe",
+            "sub": "试跑并对比修改前后的效果"
+          },
+          {
+            "label": "Compose",
+            "sub": "合成更好的 Harness"
+          }
+        ],
+        "loop": "递归迭代，不需要标准答案",
+        "base": {
+          "label": "沉淀有效经验",
+          "sub": "供后续任务复用，不改模型权重"
+        },
+        "caption": "据 google-research/harness2 README 整理"
+      },
       "sources": [
         {
           "title": "google-research/harness2",

@@ -11,7 +11,7 @@
   <div class="detail">
     <article data-id="{{ it.id }}" data-cat="{{ it.category }}" data-date="{{ date }}" data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html" class="js-detail">
       <div class="detail-meta">
-        <span class="detail-cat"><span class="dot dot-{{ it.category }}"></span>{{ categories[it.category] }}</span>
+        <span class="detail-cat"><span class="cat-ic c-{{ it.category }}">{{ cat_icon(it.category, 16) }}</span>{{ categories[it.category] }}</span>
         {{ act_badge(it, act_labels) }}
         {% if it.importance >= 4 %}<span class="top-mark">重点</span>{% endif %}
         <span>{{ date_cn }}</span>
@@ -23,9 +23,11 @@
         <button type="button" class="btn js-copy-link">{{ icon('link') }}复制链接</button>
         <button type="button" class="btn js-copy-im">{{ icon('chat') }}复制为 IM 消息</button>
         <button type="button" class="btn js-copy-md">{{ icon('markdown') }}复制为 Markdown</button>
+        <button type="button" class="btn js-share-card">{{ icon('image') }}分享图</button>
       </div>
 
       <p class="lead">{{ it.summary }}</p>
+      {{ figure_html(it.figure) }}
 
       {% if it.kit %}
       <section class="kit-panel">
@@ -50,7 +52,7 @@
       {% endif %}
 
       {% if it.skill %}
-      <h2>对比示例<small class="muted" style="font-size:13px;font-weight:400;margin-left:8px">{{ skill_areas[it.skill.area] }}</small></h2>
+      <h2>对比示例<span class="area-badge">{{ cat_icon(it.skill.area, 14) }}{{ skill_areas[it.skill.area] }}</span></h2>
       <section class="contrast contrast-detail">
         <div class="contrast-scenario">场景：{{ it.skill.scenario }}</div>
         <div class="contrast-pair">

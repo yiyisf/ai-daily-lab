@@ -466,6 +466,78 @@ dialog.palette::backdrop { background: rgba(0, 0, 0, .35); }
 .saved-row .title { font-size: 16px; font-weight: 600; line-height: 1.5; }
 .saved-row .sub { font-size: 13px; color: var(--ink-3); }
 
+/* ---------- category & skill-area icons ---------- */
+.cat-ic { display: inline-flex; flex: none; }
+.cat-ic .ic { display: block; }
+.c-news { color: var(--c-news); } .c-opensource { color: var(--c-opensource); } .c-tools { color: var(--c-tools); }
+.c-kits { color: var(--c-kits); } .c-ideas { color: var(--c-ideas); } .c-practices { color: var(--c-practices); }
+.c-skills { color: var(--c-skills); } .c-research { color: var(--c-research); }
+.cat-btn .cat-ic { margin: -2px 0; }
+.area-badge { display: inline-flex; align-items: center; gap: 5px; margin-right: 8px; padding: 1px 8px 1px 6px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--c-skills); background: var(--surface-2); border: 1px solid var(--line); vertical-align: 2px; letter-spacing: 0; }
+h2 .area-badge { margin: 0 0 0 10px; }
+
+/* ---------- structure figures (item.figure) ---------- */
+.fig { margin: 18px 0 6px; padding: 18px 20px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.fig-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 14px; }
+.fig-note { margin: 12px 0 0; font-size: 12px; color: var(--ink-3); }
+.item-figure .fig { margin: 12px 0 4px; }
+.feed[data-density="title"] .item-figure { display: none; }
+.fig-flow { list-style: none; margin: 0; padding: 0; display: flex; align-items: stretch; gap: 28px; }
+.fig-step { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.fig-step b { font-size: 15px; color: var(--accent-ink); overflow-wrap: anywhere; }
+.fig-step .fig-n { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.fig-sub { font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.fig-step + .fig-step::before { content: ""; position: absolute; left: -22px; top: 50%; width: 16px; height: 2px; background: var(--line-strong); }
+.fig-step + .fig-step::after { content: ""; position: absolute; left: -11px; top: calc(50% - 4px); border: 5px solid transparent; border-left: 6px solid var(--line-strong); border-right: 0; }
+.fig-loop { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; padding: 6px 10px;
+  border: 1.5px dashed var(--line-strong); border-top: 0; border-radius: 0 0 12px 12px; font-size: 13px; color: var(--ink-2); }
+.fig-loop .ic { color: var(--accent); flex: none; }
+.fig-base { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 10px;
+  padding: 10px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); text-align: center; }
+.fig-base b { font-size: 14px; }
+@media (max-width: 640px) {
+  .fig { padding: 14px 14px 12px; }
+  .fig-flow { flex-direction: column; gap: 18px; }
+  .fig-step + .fig-step::before { left: 50%; top: -14px; width: 2px; height: 10px; }
+  .fig-step + .fig-step::after { left: calc(50% - 4px); top: -6px; border: 5px solid transparent; border-top: 6px solid var(--line-strong); border-bottom: 0; }
+  .fig-loop { border: 1.5px dashed var(--line-strong); border-radius: 10px; }
+}
+.fig-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -4px 0 12px; font-size: 12px; color: var(--ink-2); }
+.fig-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.fig-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.fig-sw.s0, .fig-bar.s0 { background: var(--line-strong); }
+.fig-sw.s1, .fig-bar.s1 { background: var(--accent); }
+.fig-rows { display: flex; flex-direction: column; gap: 12px; }
+.fig-row { display: grid; grid-template-columns: minmax(80px, 150px) minmax(0, 1fr) 56px; gap: 12px; align-items: center; }
+.fig-label { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.fig-track { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fig-bar { position: relative; display: block; height: 14px; width: var(--w); border-radius: 0 4px 4px 0; }
+.fig-bar em { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px;
+  font-family: var(--font-mono); color: var(--ink-2); white-space: nowrap; }
+.fig-bar.s1 em { color: var(--accent-ink); font-weight: 600; }
+.fig-track { padding-right: 64px; }
+.fig-delta { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--try-fg); text-align: right; }
+@media (max-width: 640px) {
+  .fig-row { grid-template-columns: minmax(0, 1fr) 52px; row-gap: 4px; }
+  .fig-label { grid-column: 1 / -1; }
+}
+
+/* ---------- share card dialog ---------- */
+dialog.share { border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+  width: min(460px, calc(100% - 24px)); max-height: calc(100vh - 32px); overflow: auto; }
+dialog.share::backdrop { background: rgba(0, 0, 0, .45); }
+.share-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
+.share-head h2 { margin: 0; font-size: 17px; }
+.share-head .muted { font-size: 13px; }
+.share-preview { position: relative; aspect-ratio: 1080 / 1350; border-radius: 10px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); }
+.share-preview img { display: block; width: 100%; height: 100%; }
+.share-preview img:not([src]) { visibility: hidden; }
+.share-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--ink-3); }
+.share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.share-actions form { margin: 0; }
+
 /* ---------- footer, toast, dialog ---------- */
 .site-footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--ink-3); font-size: 13px; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 50; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: var(--shadow); }
