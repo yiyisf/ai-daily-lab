@@ -157,6 +157,24 @@ def validate_issue(path: Path, check_links: bool) -> Report:
         if not it["id"].startswith(d + "-"):
             rep.err(f"条目 id `{it['id']}` 应以日期 `{d}-` 开头")
 
+    # 今日三件事 & 实用度
+    tldr = data.get("tldr")
+    if not tldr:
+        rep.warn("缺少 tldr（今日三件事），页面将退回显示重要度最高的 3 条标题")
+    else:
+        refs = [t["item_id"] for t in tldr]
+        for r in refs:
+            if r not in ids:
+                rep.err(f"tldr 引用的条目 `{r}` 不在当期条目中")
+        if len(set(refs)) != len(refs):
+            rep.err("tldr 中有重复引用的条目")
+        if len(tldr) < 3 and len(items) >= 3:
+            rep.warn(f"tldr 只有 {len(tldr)} 句，建议 3 句")
+    missing_act = [it["id"] for it in items if "actionability" not in it]
+    if missing_act:
+        rep.warn(f"{len(missing_act)} 条缺少 actionability（实用度）：" + "、".join(f"`{i}`" for i in missing_act[:5])
+                 + ("…" if len(missing_act) > 5 else ""))
+
     # Category balance (warnings)
     counts = Counter(it["category"] for it in items)
     for cat, (lo, hi) in CATEGORY_RANGE.items():

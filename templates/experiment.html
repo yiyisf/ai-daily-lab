@@ -1,49 +1,49 @@
 {% extends "base.html" %}
-{% block title %}{{ e.title }} · 实验 · AI Daily Lab{% endblock %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ e.title }} · 实验室 · AI Daily Lab{% endblock %}
 {% block description %}{{ e.goal }}{% endblock %}
 {% block main %}
-<section class="issue-head">
-  <div class="issue-meta">
-    <span class="kicker">实验</span>
-    <a href="{{ root }}daily/{{ e.id[:10] }}.html#{{ e.related_item }}">{{ e.id[:10] }} 日报</a>
+<div class="wrap narrow">
+  <nav class="crumbs" aria-label="面包屑">
+    <a href="{{ root }}experiments/index.html">实验室</a><span aria-hidden="true">/</span>
+    {% if e.related_item %}<a href="{{ root }}item/{{ e.related_item }}.html">相关条目</a>{% else %}<span>{{ e.id[:10] }}</span>{% endif %}
+  </nav>
+  <div class="page-head" style="padding-top:16px">
+    <h1>{{ e.title }}</h1>
+    <p>{{ e.goal }}</p>
+    <div class="result-bar">
+      <span class="badge status-{{ e.status }}">{{ status_label[e.status] }}</span>
+      {% if e.result %}
+        <span>{{ e.result.runtime_version or e.runtime }}</span>
+        {% if e.result.duration_seconds is not none %}<span>耗时 {{ e.result.duration_seconds | dur }}</span>{% endif %}
+        <span>运行于 {{ e.result.ran_at[:16] | replace('T', ' ') }} UTC</span>
+        {% if e.result.failure %}<span style="color:var(--bad-fg)">{{ e.result.failure }}</span>{% endif %}
+      {% else %}<span>尚未执行</span>{% endif %}
+    </div>
   </div>
-  <h1>{{ e.title }}</h1>
-  <p class="lede">{{ e.goal }}</p>
-  <div class="result-bar">
-    <span class="status status-{{ e.status }}">{{ status_label[e.status] }}</span>
-    {% if e.result %}
-      <span>耗时 {{ e.result.duration_seconds }}s</span>
-      {% if e.result.runtime_version %}<span>{{ e.result.runtime_version }}</span>{% endif %}
-      <span>运行于 {{ e.result.ran_at[:16]|replace('T', ' ') }} UTC</span>
-      {% if e.result.failure %}<span class="fail">{{ e.result.failure }}</span>{% endif %}
-    {% else %}
-      <span class="muted">尚未执行</span>
-    {% endif %}
-  </div>
-</section>
 
-<article class="prose">{{ readme_html|safe }}</article>
-
-{% if e.result %}
-<section class="category">
-  <h2>实际运行输出</h2>
-  <pre class="output">{{ e.result.stdout or '（无输出）' }}</pre>
-  {% if e.result.stderr %}
-  <details><summary>stderr</summary><pre class="output">{{ e.result.stderr }}</pre></details>
+  <section class="exp-card" style="margin-top:28px">
+    <div class="exp-card-foot" style="border-top:0">
+      <code>{{ e.entry }}</code>
+      <button type="button" class="btn btn-sm js-only js-copy-text" data-text="{{ e.entry }}">{{ icon('copy') }}复制命令</button>
+    </div>
+    {% if e.result %}<pre class="terminal">{{ output | safe }}</pre>{% endif %}
+  </section>
+  {% if e.result and e.result.stderr %}
+  <details class="more-out"><summary>stderr</summary><pre class="terminal" style="border-radius:10px;margin-top:8px">{{ e.result.stderr }}</pre></details>
   {% endif %}
-  {% if e.result.packages %}
-  <details><summary>依赖版本（{{ e.result.packages|length }}）</summary><pre class="output">{{ e.result.packages|join('\n') }}</pre></details>
+  {% if e.result and e.result.packages %}
+  <details class="more-out"><summary>依赖版本（{{ e.result.packages | length }}）</summary><pre class="terminal" style="border-radius:10px;margin-top:8px">{{ e.result.packages | join('\n') }}</pre></details>
   {% endif %}
-</section>
-{% endif %}
 
-<section class="category">
-  <h2>代码</h2>
+  <article class="prose">{{ readme_html | safe }}</article>
+
+  <h2 style="margin:40px 0 4px;font-size:20px">代码</h2>
   {% for f in code_files %}
-  <details {% if loop.first %}open{% endif %} class="code-file">
-    <summary>{{ f.name }}</summary>
-    {{ f.html|safe }}
+  <details class="code-file" {% if loop.first %}open{% endif %}>
+    <summary>{{ f.name }}<span class="spacer"></span><span class="muted">{{ f.lines }} 行</span></summary>
+    {{ f.html | safe }}
   </details>
   {% endfor %}
-</section>
+</div>
 {% endblock %}

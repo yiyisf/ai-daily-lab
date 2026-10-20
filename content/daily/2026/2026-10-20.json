@@ -3,6 +3,20 @@
   "date": "2026-10-20",
   "generated_at": "2026-10-20T06:40:00+08:00",
   "editor_note": "今天的主线是「更快、更便宜、可本地化」：Inception 的扩散模型 Mercury 3 与 MiniMax M3.1 Flash 主打速度和成本，Reflection Beam、NVIDIA Nemotron 3.5 Bolt 等开放权重持续扩容。理念方面，PostgreSQL 19 因 LLM 评审挖出大量问题而撤回功能，引发对 AI 评审节奏的讨论。配套实验用正则复现了「AI 腔」评分。",
+  "tldr": [
+    {
+      "text": "PostgreSQL 19 撤回 8–10 个功能，LLM 评审发现问题的速度超过了修复速度",
+      "item_id": "2026-10-20-postgres-19-llm-review-reverts"
+    },
+    {
+      "text": "Reflection AI 开源 501B 参数的 Beam，Apache 2.0 许可，可商用私有化部署",
+      "item_id": "2026-10-20-reflection-beam-501b"
+    },
+    {
+      "text": "Inception 的扩散式模型 Mercury 3 上下文扩展到 1M，官方称可达 1,068 tokens/s",
+      "item_id": "2026-10-20-inception-mercury-3"
+    }
+  ],
   "items": [
     {
       "id": "2026-10-20-inception-mercury-3",
@@ -29,7 +43,8 @@
         "llm",
         "inference"
       ],
-      "importance": 4
+      "importance": 4,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-minimax-m3-1-flash",
@@ -57,7 +72,8 @@
         "agent",
         "coding"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-anthropic-independent-evaluators",
@@ -84,7 +100,8 @@
         "safety",
         "policy"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "know"
     },
     {
       "id": "2026-10-20-cern-mistral-physics-model",
@@ -117,7 +134,8 @@
         "research",
         "llm"
       ],
-      "importance": 2
+      "importance": 2,
+      "actionability": "know"
     },
     {
       "id": "2026-10-20-aws-torchneuron",
@@ -148,7 +166,8 @@
       "repo": {
         "url": "https://github.com/aws-neuron/torch-neuronx",
         "license": "Apache-2.0"
-      }
+      },
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-reflection-beam-501b",
@@ -185,7 +204,8 @@
       "repo": {
         "url": "https://huggingface.co/reflection/Beam-1.0-501B-A23B",
         "license": "Apache-2.0"
-      }
+      },
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-nemotron-3-5-bolt",
@@ -213,7 +233,8 @@
         "inference",
         "multimodal"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "try"
     },
     {
       "id": "2026-10-20-ibm-granite-switch-4-1",
@@ -249,7 +270,8 @@
       "importance": 2,
       "repo": {
         "url": "https://github.com/generative-computing/granite-switch"
-      }
+      },
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-claude-code-2-1-304",
@@ -277,7 +299,8 @@
         "devtools",
         "agent"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "try"
     },
     {
       "id": "2026-10-20-ai-memory-coding-agents",
@@ -309,7 +332,8 @@
         "url": "https://github.com/akitaonrails/ai-memory",
         "license": "MIT",
         "language": "Rust"
-      }
+      },
+      "actionability": "try"
     },
     {
       "id": "2026-10-20-postgres-19-llm-review-reverts",
@@ -343,7 +367,8 @@
         "coding",
         "evaluation"
       ],
-      "importance": 4
+      "importance": 4,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-anthropic-employment-report",
@@ -370,7 +395,8 @@
         "agent",
         "policy"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "know"
     },
     {
       "id": "2026-10-20-qwen3-4b-deslop",
@@ -404,7 +430,8 @@
         "evaluation"
       ],
       "importance": 3,
-      "experiment_id": "2026-10-20-slop-detector"
+      "experiment_id": "2026-10-20-slop-detector",
+      "actionability": "try"
     },
     {
       "id": "2026-10-20-claude-quantum-circuits",
@@ -432,7 +459,8 @@
         "agent",
         "reasoning"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "know"
     },
     {
       "id": "2026-10-20-officetown-bench",
@@ -465,7 +493,8 @@
         "evaluation",
         "research"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-20-hy-memory-30b-a3b",
@@ -492,7 +521,8 @@
         "context-engineering",
         "research"
       ],
-      "importance": 2
+      "importance": 2,
+      "actionability": "know"
     }
   ],
   "experiments": [

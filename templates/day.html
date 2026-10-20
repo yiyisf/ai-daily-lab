@@ -1,80 +1,105 @@
 {% extends "base.html" %}
+{% from "_macros.html" import item_card, icon %}
 {% block title %}AI 日报 {{ issue.date }} · AI Daily Lab{% endblock %}
 {% block description %}{{ issue.editor_note }}{% endblock %}
 {% block main %}
-<section class="issue-head">
-  <div class="issue-meta">
-    <span class="kicker">AI 日报</span>
-    <time datetime="{{ issue.date }}">{{ issue.date_cn }}</time>
-    <span class="dot">·</span><span>{{ issue['items']|length }} 条</span>
-    {% if exps %}<span class="dot">·</span><span>{{ exps|length }} 个实验</span>{% endif %}
-  </div>
-  <p class="lede">{{ issue.editor_note }}</p>
-  <div class="issue-nav">
-    {% if prev %}<a href="{{ root }}daily/{{ prev }}.html">← {{ prev }}</a>{% else %}<span></span>{% endif %}
-    {% if next %}<a href="{{ root }}daily/{{ next }}.html">{{ next }} →</a>{% endif %}
-  </div>
-</section>
-
-{% if highlights %}
-<section class="highlights" aria-label="今日重点">
-  {% for it in highlights %}
-  <a class="highlight" href="#{{ it.id }}">
-    <span class="chip chip-{{ it.category }}">{{ categories[it.category] }}</span>
-    <strong>{{ it.title }}</strong>
-  </a>
-  {% endfor %}
-</section>
-{% endif %}
-
-<nav class="toc" aria-label="栏目">
-  {% for cat, items in groups %}<a href="#cat-{{ cat }}">{{ categories[cat] }} <span>{{ items|length }}</span></a>{% endfor %}
-  {% if exps %}<a href="#cat-experiments">实验 <span>{{ exps|length }}</span></a>{% endif %}
-</nav>
-
-{% for cat, items in groups %}
-<section class="category" id="cat-{{ cat }}">
-  <h2>{{ categories[cat] }}</h2>
-  {% for it in items %}
-  <article class="item" id="{{ it.id }}">
-    <div class="item-top">
-      <span class="importance" title="重要度 {{ it.importance }}/5" aria-label="重要度 {{ it.importance }}/5">
-        {% for i in range(5) %}<i class="{{ 'on' if i < it.importance else '' }}"></i>{% endfor %}
-      </span>
-      {% for t in it.tags %}<span class="tag">#{{ t }}</span>{% endfor %}
-      {% if it.follow_up_of %}<span class="tag tag-follow">跟进</span>{% endif %}
+<div class="wrap layout">
+  <aside class="side" aria-label="栏目与筛选">
+    <div>
+      <div class="side-label">栏目</div>
+      <div class="cat-list js-cats">
+        <button type="button" class="cat-btn" data-cat="all" aria-pressed="true"><span class="dot dot-all"></span>全部<span class="count">{{ issue['items'] | length }}</span></button>
+        {% for c in cat_counts %}
+        <button type="button" class="cat-btn" data-cat="{{ c.key }}" aria-pressed="false"><span class="dot dot-{{ c.key }}"></span>{{ c.name }}<span class="count">{{ c.count }}</span></button>
+        {% endfor %}
+      </div>
     </div>
-    <h3><a href="#{{ it.id }}">{{ it.title }}</a></h3>
-    <p>{{ it.summary }}</p>
-    <ul class="points">{% for p in it.key_points %}<li>{{ p }}</li>{% endfor %}</ul>
-    <p class="why"><b>为什么值得关注</b>{{ it.why_it_matters }}</p>
-    {% if it.experiment_id %}
-    <p class="exp-link"><a href="{{ root }}experiments/{{ it.experiment_id }}.html">🧪 查看配套实验 →</a></p>
-    {% endif %}
-    <div class="sources">
-      {% for s in it.sources %}
-      <a href="{{ s.url }}" target="_blank" rel="noopener" class="src src-{{ s.kind }}">
-        <span class="src-kind">{{ source_kinds[s.kind] }}</span>{{ s.title }}{% if s.publisher %} · {{ s.publisher }}{% endif %}
+    <div class="filters js-only">
+      <div class="side-label">筛选</div>
+      <label class="check"><input type="checkbox" class="js-only-try">只看可动手<span class="count">{{ try_count }}</span></label>
+      <label class="check"><input type="checkbox" class="js-only-top">只看重点<span class="count">{{ top_count }}</span></label>
+    </div>
+    <div class="keys-block js-only">
+      <div class="side-label">键盘</div>
+      <div class="keys"><span class="kbd">j</span> <span class="kbd">k</span> 上下条<br><span class="kbd">o</span> 展开　<span class="kbd">c</span> 复制链接<br><span class="kbd">?</span> 全部快捷键</div>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="issue-kicker">
+      <span class="badge">AI 日报 · 第 {{ issue_no }} 期</span>
+      <span>{{ issue['items'] | length }} 条</span>{% if exps %}<span aria-hidden="true">·</span><span>{{ exps | length }} 个实验</span>{% endif %}
+      <span class="spacer"></span>
+      {% if prev %}<a href="{{ root }}daily/{{ prev }}.html">← {{ prev[5:] | replace('-', '月', 1) }}日</a>{% endif %}
+      {% if next %}<a href="{{ root }}daily/{{ next }}.html">{{ next[5:] | replace('-', '月', 1) }}日 →</a>{% endif %}
+    </div>
+    <h1 class="issue-title">{{ date_cn }}</h1>
+    <p class="lede">{{ issue.editor_note }}</p>
+
+    <section class="panel tldr" aria-labelledby="tldr-title">
+      <div class="tldr-head">
+        <h2 id="tldr-title">{{ '今日重点' if tldr_auto else '今日三件事' }}</h2>
+        <span class="muted" style="font-size:13px">{{ '按重要度自动选出' if tldr_auto else '30 秒看懂今天' }}</span>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-sm js-only js-copy-tldr" data-day-href="{{ root }}daily/{{ issue.date }}.html" data-day-label="{{ date_cn }}">{{ icon('copy') }}复制为 IM 消息</button>
+      </div>
+      <ol>
+        {% for t in tldr %}
+        <li><span class="num">{{ loop.index }}</span><a href="{{ root }}item/{{ t.item_id }}.html">{{ t.text }}</a></li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <div class="toolbar js-only">
+      <div class="seg" role="group" aria-label="信息密度">
+        <button type="button" data-density="title" aria-pressed="false">标题</button>
+        <button type="button" data-density="summary" aria-pressed="true">摘要</button>
+        <button type="button" data-density="full" aria-pressed="false">完整</button>
+      </div>
+      <span class="status js-status">显示 {{ issue['items'] | length }} 条</span>
+      <span class="active-filter js-tag-filter" hidden><span class="js-tag-name"></span><button type="button" class="js-clear-tag" aria-label="清除标签筛选">×</button></span>
+      <span class="spacer"></span>
+    </div>
+
+    <div class="feed" data-density="summary">
+      {% for cat, items in groups %}
+      <section class="group" data-group="{{ cat }}">
+        <h2 class="group-title"><span class="dot dot-{{ cat }}"></span>{{ categories[cat] }}<span class="count">{{ items | length }}</span></h2>
+        {% for it in items %}{{ item_card(it, root, act_labels, exp_status, status_label) }}{% endfor %}
+      </section>
+      {% endfor %}
+      <p class="empty js-empty" hidden>没有符合筛选条件的条目。<button type="button" class="btn btn-sm js-reset">清除筛选</button></p>
+    </div>
+  </div>
+
+  <aside class="rail" aria-label="今日概览">
+    {% if exps %}
+    <section class="panel">
+      <h2 class="panel-title">今日实验</h2>
+      {% for e in exps %}
+      <a class="rail-exp" href="{{ root }}experiments/{{ e.id }}.html">
+        <span class="badge status-{{ e.status }}" style="align-self:flex-start">{{ status_label[e.status] }}{% if e.result %} · Actions 实际运行{% endif %}</span>
+        <strong>{{ e.title }}</strong>
+        <span class="muted" style="font-size:13px">{{ e.runtime | capitalize }}{% if e.result and e.result.duration_seconds is not none %} · 耗时 {{ e.result.duration_seconds | dur }}{% endif %}</span>
       </a>
       {% endfor %}
-    </div>
-  </article>
-  {% endfor %}
-</section>
-{% endfor %}
-
-{% if exps %}
-<section class="category" id="cat-experiments">
-  <h2>可验证实验</h2>
-  <div class="exp-grid">
-  {% for e in exps %}
-    <a class="exp-card" href="{{ root }}experiments/{{ e.id }}.html">
-      <span class="status status-{{ e.status }}">{{ status_label[e.status] }}</span>
-      <strong>{{ e.title }}</strong>
-      <span class="muted">{{ e.goal }}</span>
-    </a>
-  {% endfor %}
-  </div>
-</section>
-{% endif %}
+    </section>
+    {% endif %}
+    <section class="panel">
+      <h2 class="panel-title">本期构成</h2>
+      <dl class="mini-stats">
+        {% for c in cat_counts %}<dt><span class="dot dot-{{ c.key }}"></span>{{ c.name }}</dt><dd>{{ c.count }}</dd>{% endfor %}
+        <dt><span class="badge act-try">可动手</span></dt><dd>{{ try_count }}</dd>
+      </dl>
+    </section>
+    {% if recent_tags %}
+    <section class="panel">
+      <h2 class="panel-title">热门标签<small>{{ tags_window }}</small></h2>
+      <div class="tag-cloud">
+        {% for t, n in recent_tags %}<button type="button" class="chip js-tag" data-tag="{{ t }}" aria-pressed="false">{{ t }} {{ n }}</button>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </aside>
+</div>
 {% endblock %}
