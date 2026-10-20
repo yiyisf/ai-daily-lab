@@ -24,6 +24,11 @@ starting_points:
   opensource:
     - https://github.com/trending
     - https://huggingface.co/models?sort=trending
+  skills:      # AI 软技能：官方使用指南、知名从业者文章、人机协作研究（不受时效限制）
+    - https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview
+    - https://www.anthropic.com/engineering
+    - https://platform.openai.com/docs/guides/prompt-engineering
+    - https://ai.google.dev/gemini-api/docs/prompting-strategies
   community:   # 只作线索，必须追溯到一手来源
     - https://news.ycombinator.com/
     - https://simonwillison.net/
@@ -39,6 +44,7 @@ tags:
   - rag
   - context-engineering
   - prompting
+  - ai-collaboration
   - evaluation
   - inference
   - fine-tuning

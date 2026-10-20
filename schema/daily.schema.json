@@ -99,7 +99,8 @@
             "tools",
             "ideas",
             "practices",
-            "research"
+            "research",
+            "skills"
           ]
         },
         "title": {
@@ -209,6 +210,66 @@
             "know"
           ],
           "description": "try=可动手（读者今天就能安装或试用），watch=值得关注，know=了解即可"
+        },
+        "skill": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "AI 软技能条目专用：一个场景下「较差 vs 更好」的对比示例",
+          "required": [
+            "area",
+            "scenario",
+            "bad",
+            "good",
+            "why"
+          ],
+          "properties": {
+            "area": {
+              "enum": [
+                "goal",
+                "context",
+                "decompose",
+                "review",
+                "iterate",
+                "delegate",
+                "judgment"
+              ],
+              "description": "goal=目标表达 context=上下文供给 decompose=任务拆解 review=审查验证 iterate=反馈迭代 delegate=委派与边界 judgment=判断与取舍"
+            },
+            "scenario": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "description": "具体工作场景"
+            },
+            "bad": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 600,
+              "description": "较差的做法/描述（示例）"
+            },
+            "good": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 1200,
+              "description": "更好的做法/描述（示例）"
+            },
+            "why": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 120
+              },
+              "description": "好在哪里，每条一句"
+            },
+            "practice": {
+              "type": "string",
+              "maxLength": 160,
+              "description": "可选：一个今天就能做的小练习"
+            }
+          }
         }
       }
     }
