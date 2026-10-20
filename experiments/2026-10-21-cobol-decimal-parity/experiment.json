@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-21-cobol-decimal-parity",
+  "title": "COBOL 截断 vs 四舍五入：迁移后逐字节对比",
+  "goal": "参考 OpenAI COBOL 迁移评测中提到的定点运算陷阱，用 Python decimal 模拟一段不带 ROUNDED 的计息逻辑，对比保留截断、改成四舍五入、改用浮点三种迁移写法与参考实现的逐字节输出是否一致。",
+  "related_item": "2026-10-21-openai-low-resource-languages",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "保留截断语义的写法与参考逐字节一致；四舍五入写法能跑通但有大量行不一致，总金额偏高",
+  "tags": ["coding", "evaluation"]
+}

@@ -1,0 +1,703 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-21",
+  "generated_at": "2026-10-21T06:30:00+08:00",
+  "editor_note": "今天的主线是「基础设施开放」与「AI 读到的内容是否可信」：DeepSeek 开源支撑自家服务的推理引擎 DeepInfer，Google 开源 TPU 的原生 PyTorch 后端；美国国土安全部要求联邦民用机构移除 DeepSeek 产品。理念方面，WhatsApp 帮助页的隐藏 AI 指令和被 LLM 反复引用的虚假统计数据，都指向检索内容的可信度问题。两个配套实验分别演示 COBOL 迁移的截断陷阱和网页隐藏指令检测。",
+  "tldr": [
+    {
+      "text": "DeepSeek 开源推理引擎 DeepInfer，支持 V4.1-Flash，可跑在 SM100 和昇腾 950 上",
+      "item_id": "2026-10-21-deepseek-deepinfer"
+    },
+    {
+      "text": "OpenAI 称 GPT-6 Astra 写 COBOL 的测试通过率从 10.9% 升至 72.1%",
+      "item_id": "2026-10-21-openai-low-resource-languages"
+    },
+    {
+      "text": "美国 DHS 要求联邦民用机构排除并移除 DeepSeek 产品，基于它开发的第三方产品也在内",
+      "item_id": "2026-10-21-dhs-deepseek-federal-ban"
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-10-21-openai-low-resource-languages",
+      "category": "news",
+      "title": "OpenAI 公布低资源编程语言评测：GPT-6 Astra 大幅提升 COBOL 等语言",
+      "summary": "OpenAI 于 10 月 19 日发文介绍模型在 COBOL、Fortran、Visual Basic 等公开代码较少的语言上的编程能力，并给出两个评测：让模型用指定语言实现兼容 SQLite 的数据库引擎的 MultiLangBench（覆盖 20 种语言），以及要求输出逐字节一致的 COBOL 迁移评测。官方称 GPT-6 Astra 在 MultiLangBench 上平均通过率为 87.4%，GPT-5.6 Sol 为 26.8%。",
+      "key_points": [
+        "MultiLangBench 分语言通过率（GPT-5.6 Sol → GPT-6 Astra）：COBOL 10.9% → 72.1%，OCaml 25.6% → 85.8%，Fortran 21.4% → 83.5%，Visual Basic 27.5% → 89.4%",
+        "COBOL 迁移评测：GPT-6.1 Sol 低推理强度下准确率 86.6%（GPT-5.6 Sol 为 5.4%），高推理强度下 97.9%",
+        "文中提醒：COBOL 定点运算默认截断小数，迁移时改成四舍五入能跑通却会算错金额",
+        "MultiLangBench 的评测设置与测试集已在 GitHub 开源（Apache 2.0），标准评测使用其中 272 个测试"
+      ],
+      "why_it_matters": "银行、气象等关键系统仍大量依赖老语言，这组数据说明 AI 辅助遗留系统迁移正变得可行；逐字节对比的验收方式也值得自己的迁移项目借鉴。分数均为 OpenAI 自报。",
+      "sources": [
+        {
+          "title": "Advancing coding in low-resource programming languages",
+          "url": "https://openai.com/index/low-resource-programming-languages/",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-19"
+        },
+        {
+          "title": "openai/MultiLangBench",
+          "url": "https://github.com/openai/MultiLangBench",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "coding",
+        "evaluation",
+        "llm"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "experiment_id": "2026-10-21-cobol-decimal-parity",
+      "figure": {
+        "type": "bars",
+        "title": "GPT-6 Astra 在四种低资源语言上通过率大幅提升",
+        "series": [
+          "GPT-5.6 Sol",
+          "GPT-6 Astra"
+        ],
+        "rows": [
+          {
+            "label": "COBOL",
+            "values": [
+              10.9,
+              72.1
+            ]
+          },
+          {
+            "label": "OCaml",
+            "values": [
+              25.6,
+              85.8
+            ]
+          },
+          {
+            "label": "Fortran",
+            "values": [
+              21.4,
+              83.5
+            ]
+          },
+          {
+            "label": "Visual Basic",
+            "values": [
+              27.5,
+              89.4
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "MultiLangBench 最高推理强度下的测试通过率，数据为 OpenAI 自报"
+      }
+    },
+    {
+      "id": "2026-10-21-dhs-deepseek-federal-ban",
+      "category": "news",
+      "title": "美国国土安全部下令联邦民用机构排除并移除 DeepSeek 产品",
+      "summary": "美国国土安全部（DHS）发布通知，依据 2018 年《联邦采购供应链安全法》（FASCSA）和联邦采购安全委员会的建议，要求联邦民用行政机构在采购中排除 DeepSeek 及其关联方的 IT 产品与服务，并从现有系统中移除。通知定于 10 月 20 日刊登在《联邦公报》上。",
+      "key_points": [
+        "覆盖范围包括 DeepSeek 及关联方的全部产品，以及基于 DeepSeek 实现开发的第三方产品和服务",
+        "据 CyberScoop 报道，命令实际于 6 月 26 日签发，理由包括数据存储在中国服务器、可能导致敏感数据外流等",
+        "据 CyberScoop 报道，机构可申请例外，需提前 60 天提交并给出「令人信服的理由」",
+        "DeepSeek 是该命令中唯一点名的 AI 模型厂商"
+      ],
+      "why_it_matters": "命令把「基于 DeepSeek 开发的第三方产品」也纳入范围，为美国联邦机构提供产品或服务的厂商需要排查自己的模型供应链。",
+      "sources": [
+        {
+          "title": "Notice of Order Regarding Exclusion and Removal of DeepSeek Products (DHS-2026-0628)",
+          "url": "https://public-inspection.federalregister.gov/2026-21447.pdf",
+          "kind": "primary",
+          "publisher": "Federal Register / DHS",
+          "published_at": "2026-10-19"
+        },
+        {
+          "title": "DHS to ban DeepSeek from federal civilian agencies",
+          "url": "https://cyberscoop.com/dhs-bans-deepseek-federal-agencies/",
+          "kind": "secondary",
+          "publisher": "CyberScoop",
+          "published_at": "2026-10-19"
+        }
+      ],
+      "tags": [
+        "policy",
+        "safety"
+      ],
+      "importance": 4,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-21-openai-orchestra-bio",
+      "category": "news",
+      "title": "OpenAI 收购药物研发协同平台 Orchestra Bio，并入 Rosalind",
+      "summary": "OpenAI 10 月 20 日宣布已收购 Orchestra Bio。Orchestra 是帮助生物制药团队协调药物研发流程的平台，由 Agent 跟踪研究进展，出现问题时梳理受影响的活动与时间线、收集信息并比较应对方案，最终由科学家和项目负责人决策。",
+      "key_points": [
+        "Orchestra 团队与平台将并入 OpenAI 的生命科学产品线 Rosalind，与 GPT-Rosalind、Rosalind Workbench 结合",
+        "OpenAI 的理由是药物研发周期长、跨部门和外部合作方协调复杂，文中称美国从靶点发现到获批平均需 10 到 15 年",
+        "公告未披露交易金额等财务条款"
+      ],
+      "why_it_matters": "这是前沿模型公司通过收购切入垂直行业 Agent 工作流的又一案例，Agent 负责跟踪与分析、人负责决策的分工方式也值得其他行业参考。",
+      "sources": [
+        {
+          "title": "OpenAI acquires Orchestra Bio",
+          "url": "https://openai.com/index/openai-to-acquire-orchestra-bio/",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-20"
+        }
+      ],
+      "tags": [
+        "agent",
+        "llm"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-21-mistral-voxtral-3",
+      "category": "news",
+      "title": "Mistral 发布 Voxtral 3 语音模型家族与语音 Agent SDK",
+      "summary": "Mistral 发布 Voxtral 3 系列，包括语音转写模型 Voxtral Small / Mini Transcribe 3、实时转写模型 Voxtral Mini Transcribe Realtime 3 和语音合成模型 Voxtral Speech 3，另有基于 LiveKit 的语音 Agent SDK。转写支持 50 多种语言并带说话人分离，合成支持 35 种以上语言和声音克隆。",
+      "key_points": [
+        "官方图表中说话人分离 cpWER：Voxtral Small Transcribe 3 为 18.4%，Mini Transcribe 3 为 18.6%（越低越好）",
+        "定价：Mini Transcribe 3 批量转写 $0.0035/分钟，Realtime 3 为 $0.008/分钟，Speech 3 为每百万字符 $13",
+        "已通过 Mistral API 的欧盟、美国和全球端点上线，可在 Studio 试用；自部署需联系销售",
+        "发布页未说明许可证或是否开放权重"
+      ],
+      "why_it_matters": "转写、合成和语音 Agent 编排由同一厂商提供，并有欧盟端点，适合对数据驻留有要求的语音客服、会议转写类应用评估。",
+      "sources": [
+        {
+          "title": "Voxtral 3",
+          "url": "https://mistral.ai/news/voxtral-3/",
+          "kind": "primary",
+          "publisher": "Mistral AI",
+          "published_at": "2026-10-20"
+        }
+      ],
+      "tags": [
+        "multimodal",
+        "agent"
+      ],
+      "importance": 3,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-10-21-deepseek-deepinfer",
+      "category": "opensource",
+      "title": "DeepSeek 开源推理引擎 DeepInfer，称其支撑自家线上服务",
+      "summary": "DeepSeek 在 GitHub 开源 DeepInfer，这是面向 DeepSeek 模型的高性能推理框架，官方称其支撑 DeepSeek 的大规模生产服务。本次开源版本只覆盖离线推理，目前支持 DeepSeek-V4.1-Flash（默认权重为 V4.1-Flash-1017），硬件支持 NVIDIA SM100 GPU 和华为昇腾 950 NPU。",
+      "key_points": [
+        "集成 FlashMLA、DeepGEMM、DeepEP 等自研算子库，支持注意力数据并行、上下文并行和带 EPLB 的 MoE 专家并行",
+        "提供 DSpark 投机解码、异步调度、正则 / JSON Schema / EBNF 约束的结构化输出；批次不变推理与确定性采样仅限 NVIDIA",
+        "暂不包含 KV cache 系统、PD 分离和跨数据并行副本的负载均衡，离完整服务栈还有距离",
+        "Apache 2.0 许可；README 致谢称主要基于 vLLM 构建，并参考了 SGLang 和 TensorRT-LLM"
+      ],
+      "why_it_matters": "这是头部模型厂商少见地公开生产推理栈，对研究 MoE 大模型推理优化的团队有参考价值；同时支持昇腾 950，值得国产算力用户关注。硬件门槛较高，一般团队短期内难以直接使用。",
+      "sources": [
+        {
+          "title": "deepseek-ai/DeepInfer",
+          "url": "https://github.com/deepseek-ai/DeepInfer",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "DeepSeek just open-sourced its inference engine (HN)",
+          "url": "https://news.ycombinator.com/item?id=50163277",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "inference",
+        "open-weights",
+        "infra"
+      ],
+      "importance": 5,
+      "actionability": "watch",
+      "repo": {
+        "url": "https://github.com/deepseek-ai/DeepInfer",
+        "license": "Apache-2.0",
+        "language": "Python"
+      }
+    },
+    {
+      "id": "2026-10-21-google-torchtpu",
+      "category": "opensource",
+      "title": "Google 开源 TorchTPU：在 TPU 上原生运行 PyTorch",
+      "summary": "torch_tpu 是面向 Google TPU 的 PyTorch 后端，让 PyTorch 模型和算子直接在 TPU 设备上运行。项目实现了 TPU 的 ATen 算子，支持 torch.compile() 图模式、数据并行和张量并行，并提供 Llama、Qwen、ResNet 等示例模型。",
+      "key_points": [
+        "已在 PyPI 发布 0.2.0 版本，支持 Python 3.11 及以上",
+        "带有 XLA 计算的编译缓存，以及调试和基准测试工具",
+        "Apache 2.0 许可；README 未标注项目成熟度",
+        "前一天 AWS 刚为 Trainium 开源了原生 PyTorch 后端 TorchNeuron，云厂商自研芯片都在补齐 PyTorch 原生支持"
+      ],
+      "why_it_matters": "过去在 TPU 上用 PyTorch 主要依赖 PyTorch/XLA，原生后端有望降低迁移成本；有 TPU 资源的团队可以评估现有训练代码的改动量。",
+      "sources": [
+        {
+          "title": "google-pytorch/torch_tpu",
+          "url": "https://github.com/google-pytorch/torch_tpu",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Google open-sources TorchTPU, a native PyTorch back end for TPUs (HN)",
+          "url": "https://news.ycombinator.com/item?id=50169053",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "infra"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/google-pytorch/torch_tpu",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "2026-10-21-penmentor",
+      "category": "tools",
+      "title": "Penmentor：让 Claude 像老师一样批改手写数学作业",
+      "summary": "Penmentor 是一个开源的手写数学辅导工具：用户在 xournal++ 里用数位板手写解题过程，按下快捷键后，插件把整页内容交给 Claude，由 Claude 用彩色笔迹直接批注在页面上。它通过用户自己的 Claude Code 订阅运行。",
+      "key_points": [
+        "圈出第一个真正的错误、给正确的行打勾，并划出建立在错误之上的后续步骤",
+        "按「轻微提示 → 点出方法 → 浅色提示下一行」逐级给提示，而不是直接给答案",
+        "可以出练习题、找错题，还能把框选区域生成 manim 动画",
+        "目前需要 Linux X11 环境和 rofi、slop、xdotool、PyQt6；MIT 许可"
+      ],
+      "why_it_matters": "这是把编码 Agent 当作通用「批注引擎」的有趣用法，「先指出第一个错误、分级给提示」的设计对做教育类 AI 产品的人也有参考价值。",
+      "sources": [
+        {
+          "title": "AbdullahAlhariri/penmentor",
+          "url": "https://github.com/AbdullahAlhariri/penmentor",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Show HN: Penmentor – Claude marks up your handwritten math like a teacher",
+          "url": "https://news.ycombinator.com/item?id=50167604",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "multimodal",
+        "coding"
+      ],
+      "importance": 2,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-10-21-scientific-agent-skills",
+      "category": "kits",
+      "title": "Scientific Agent Skills：177 个面向科研的 Agent Skill 合集",
+      "summary": "K-Dense-AI 维护的 Scientific Agent Skills（原名 Claude Scientific Skills）为编码 Agent 提供科研领域的操作指南，涵盖特定 Python 包的用法、科学数据库查询和经过验证的工作流，目前共 177 个技能。最新的 2.72.0 版不再捆绑 docx、pdf、pptx、xlsx 四个来自 Anthropic 的技能。",
+      "key_points": [
+        "覆盖生物信息与基因组学（32 个）、数据分析与可视化、科学写作、化学信息学与药物发现等领域",
+        "Database Lookup 技能整理了 80 个科学数据库的查询方式",
+        "技能可以执行代码、安装包、联网和改文件，维护方建议只装需要的技能，并在安装前阅读 SKILL.md、用扫描工具检查",
+        "安装技能文件不会自动安装其 Python 依赖，部分技能依赖版本互相冲突，建议按工作流分环境"
+      ],
+      "why_it_matters": "适合用 Claude Code、Codex 等做数据分析和科研计算的研究人员，让 Agent 按领域最佳实践调用工具，而不是凭记忆写代码。",
+      "sources": [
+        {
+          "title": "K-Dense-AI/scientific-agent-skills",
+          "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "agent",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "Scientific Agent Skills",
+        "version": "2.72.0",
+        "repo": "https://github.com/K-Dense-AI/scientific-agent-skills",
+        "license": "MIT",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "Cursor",
+          "Gemini CLI",
+          "Google Antigravity",
+          "Claude Cowork"
+        ],
+        "capabilities": [
+          "指导 Agent 正确使用 scanpy 等科研 Python 包",
+          "查询 80 个科学数据库",
+          "提供生物信息、化学信息学、临床研究等领域的标准工作流",
+          "生成科研演示文稿等科学写作产物"
+        ],
+        "highlights": [
+          "遵循开放的 Agent Skills 标准，可按单个技能安装，不必整包装入",
+          "仓库每周做安全扫描并公开报告，README 给出了第三方技能的审查方法",
+          "可用 --pin 固定版本，便于团队复现"
+        ],
+        "install": "npx skills add K-Dense-AI/scientific-agent-skills\ngh skill install K-Dense-AI/scientific-agent-skills scanpy\ngh skill install K-Dense-AI/scientific-agent-skills --agent claude-code",
+        "changes": [
+          "2.72.0：不再捆绑 docx、pdf、pptx、xlsx 技能，需要时从 Anthropic 仓库单独安装",
+          "2.72.0：Scientific Slides 技能改用 PptxGenJS 或 python-pptx 生成 PowerPoint",
+          "2.71.0：Database Lookup 扩展到 80 个数据源，并更新多个依赖包的基线版本"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-21-caveman-token-saver",
+      "category": "kits",
+      "title": "Caveman：用「极简话术」技能和本地代理给编码 Agent 省 token",
+      "summary": "Caveman 包含两部分：一个让 Agent 用极简「穴居人」式语言回复的技能，代码、命令、路径和报错原样保留；以及一个位于 Agent 和模型服务之间的本地代理，在每次调用前压缩日志、JSON、diff 等输入内容，原文备份在本地 SQLite 中供 Agent 取回。",
+      "key_points": [
+        "维护者自测：技能在 10 个编程提示上平均减少 65% 输出 token（1214 → 294），但每轮会增加约 1–1.5k 输入 token",
+        "代理在 54 次 Claude Code 基准运行中减少 33.2% 输入 token，有一个 HTML 用例反而增加 9.9%",
+        "CLI 默认发送匿名使用统计，可用 caveman telemetry off 或 DO_NOT_TRACK=1 关闭",
+        "许可分层：技能与 CLI 为 MIT，代理等运行时为 BSL-1.1，托管给第三方需商业许可"
+      ],
+      "why_it_matters": "适合 token 成本敏感、输出冗长的编码 Agent 用户；README 坦白列出了反例和额外开销，代理会接触全部请求内容，接入前应评估权限与许可。",
+      "sources": [
+        {
+          "title": "JuliusBrussee/caveman",
+          "url": "https://github.com/JuliusBrussee/caveman",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "coding",
+        "context-engineering"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "kit": {
+        "kind": "skill",
+        "name": "caveman",
+        "version": "v2.6.0",
+        "repo": "https://github.com/JuliusBrussee/caveman",
+        "license": "MIT / BSL-1.1",
+        "compatible": [
+          "Claude Code",
+          "Codex CLI",
+          "Gemini CLI",
+          "Cursor",
+          "Aider",
+          "opencode"
+        ],
+        "capabilities": [
+          "让 Agent 用极简语言回复，减少输出 token",
+          "本地代理按内容类型压缩日志、JSON、diff、搜索结果等输入",
+          "被压缩的原文存入本地 SQLite，Agent 需要时可取回",
+          "附带提交信息、代码评审、子 Agent 等辅助技能"
+        ],
+        "highlights": [
+          "技能和代理可以分开用，只装技能不需要改动网络链路",
+          "基准表保留了 token 反增的失败用例，并有单独的方法说明文档",
+          "代码、命令、路径和报错原样保留，不影响可执行内容"
+        ],
+        "install": "npx skills add JuliusBrussee/caveman\nclaude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman"
+      }
+    },
+    {
+      "id": "2026-10-21-whatsapp-hidden-ai-notes",
+      "category": "ideas",
+      "title": "WhatsApp 帮助页藏有只给 AI 看的指令，引发「隐形提示词」争议",
+      "summary": "数据删除服务商 Redact 披露，WhatsApp 帮助页中有对人类读者不可见、但会被 AI 读取的隐藏文本，在 80 个页面中共发现 102 段。其中两段要求 AI 不要建议用户联系数据保护机构或监管方，并在用户提到律师、诉讼时不要引用 GDPR、CCPA 等隐私法规。WhatsApp 称这些是给支持机器人的说明，因 bug 出现在页面上，现已全部移除。",
+      "key_points": [
+        "Redact 的观点：企业不让机器人给法律意见可以理解，但隐去用户依法享有的投诉、删除权利信息就越界了",
+        "WhatsApp 的回应：希望支持机器人专注于 WhatsApp 本身的建议，而不是提供法律意见",
+        "Redact 也承认其他隐藏说明中有些在保护用户，例如不建议用虚报年龄绕过最低年龄限制",
+        "Redact 没有测试 WhatsApp 机器人或外部 AI 助手是否真的遵循了这些说明"
+      ],
+      "why_it_matters": "页面上「人看到的」和「AI 读到的」可以不一样，这既是企业做知识库和客服机器人时的治理问题，也提醒做 RAG 和网页抓取的团队，抓来的内容里可能藏着针对模型的指令。",
+      "sources": [
+        {
+          "title": "WhatsApp's Hidden Notes Told AI Not to Recommend a Regulator",
+          "url": "https://redact.dev/blog/whatsapp-help-pages-hidden-ai-instructions",
+          "kind": "primary",
+          "publisher": "Redact",
+          "published_at": "2026-10-19"
+        },
+        {
+          "title": "WhatsApp's help pages hid LLM instructions (HN)",
+          "url": "https://news.ycombinator.com/item?id=50159341",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "safety",
+        "rag",
+        "policy"
+      ],
+      "importance": 4,
+      "actionability": "know",
+      "experiment_id": "2026-10-21-hidden-llm-notes"
+    },
+    {
+      "id": "2026-10-21-fake-stats-llm-citations",
+      "category": "ideas",
+      "title": "5 万页 AI 编造的统计数据被 LLM 反复引用：检索不等于排名",
+      "summary": "Peec AI 的 GEO 研究员 Metehan Yesilyurt 公开了一个实验：他用 GPT-4.1 一天生成 5 万个未经核实的统计数据页面，总花费约 50 美元。网站在 Google 上的曝光很快被削减，却被 ChatGPT 等工具反复检索引用，这些虚假数字还出现在一篇学术论文和一份投资研究报告中。",
+      "key_points": [
+        "Cloudflare 日志显示近 30 天有超过 60 万次爬虫请求，其中约 7.2 万次来自实时取页回答问题的 ChatGPT-User",
+        "作者观点：LLM 的检索会改写查询、重排并只打开少数页面，带具体数字和年份的统计页天然容易被选中，而模型很少核实",
+        "风险视角：一个假数字每被机构引用一次就更「可信」，可能进入后续网页抓取和训练数据，即「引用洗白」",
+        "作者表示发布虚假内容是错误的，分享是作为研究而非操作手册，网站已加免责声明"
+      ],
+      "why_it_matters": "做 RAG 和联网搜索的团队不能把「被检索到」当作「可信」，需要来源评级和交叉核实；写作和研究时引用 AI 给出的统计数字，也应追溯到原始出处。",
+      "sources": [
+        {
+          "title": "Publish stats, get cited: the tactic that put my data all over the web",
+          "url": "https://peec.ai/blog/publish-stats-get-cited-the-tactic-that-put-my-data-all-over-the-web",
+          "kind": "primary",
+          "publisher": "Peec AI",
+          "published_at": "2026-10-07"
+        },
+        {
+          "title": "Publish fake stats, get cited in LLMs (HN)",
+          "url": "https://news.ycombinator.com/item?id=50165801",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "rag",
+        "safety",
+        "evaluation"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-21-programming-obituary",
+      "category": "ideas",
+      "title": "「编程的讣告」：编码 Agent 拿走了解谜的乐趣吗？",
+      "summary": "独立开发者 Jeremy Scheff 撰文回顾自己从抗拒到使用编码 Agent 的过程：Agent 能根据报错定位修复 bug、完成他拖延多年的大型重构，但他认为编程从「解逻辑谜题」变成了「获得能力却不完全理解」。Simon Willison 转载并评论，认为文章准确道出了一部分程序员的真实损失。",
+      "key_points": [
+        "Scheff 的观点：vibecoding 不算编程、令人上瘾却缺乏意义，但他自己也已习惯先找 Agent 再开编辑器",
+        "Scheff 同时承认工具不是炒作：非程序员能做出以前做不到的东西，优秀工程师也取得了显著成果",
+        "Willison 的区分：只想要能用的系统的人会觉得 LLM 是「源源不断的礼物」，以解题为乐的人则确实失去了很多"
+      ],
+      "why_it_matters": "AI 编程带来的不只是效率问题，也关乎从业者的职业认同和动力；团队推广编码 Agent 时，值得关注不同类型工程师的感受和角色转变。",
+      "sources": [
+        {
+          "title": "My obituary for programming",
+          "url": "https://dumbmatter.com/2026/10/programming-obituary/",
+          "kind": "primary",
+          "publisher": "Jeremy Scheff",
+          "published_at": "2026-10-08"
+        },
+        {
+          "title": "My obituary for programming (Simon Willison)",
+          "url": "https://simonwillison.net/2026/Oct/19/my-obituary-for-programming/",
+          "kind": "secondary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-10-19"
+        }
+      ],
+      "tags": [
+        "coding",
+        "ai-collaboration"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-21-agentic-monitoring",
+      "category": "practices",
+      "title": "Agent 做线上监控：让 Agent 写监控规格，由确定性系统执行",
+      "summary": "工程师 Ben Congdon 撰文讨论用 Agent 监控线上系统，聚焦二进制发布、配置推送等变更点。他做了一个原型：Agent 读服务代码提出监控计划，交给确定性脚手架执行，监控触发后再由 Agent 调查，必要时升级给人。他认为纯 Agent 循环并不是最佳形态，「Agent 写规格、确定性系统执行」信号更干净，token 消耗也低得多。",
+      "key_points": [
+        "作者认为关键在三点：降噪启发式规则、能产出好规格的提示词、用于验证改动的标注评测集",
+        "他提到一次让 Agent 分析性能数据，在一个热路径库中找到 50% 的堆内存节省和 30% 的延迟下降",
+        "作者估计用较小模型监控整个大型集群的成本约在每天 100 美元量级",
+        "让 Agent 自动执行回滚等修复动作有风险，作者建议从扩容这类范围明确的任务开始；文中没有正式评测"
+      ],
+      "why_it_matters": "编码 Agent 让代码产出变多、人读过的代码比例变小，把 Agent 用在变更监控上是一个可落地的方向；「LLM 生成规格、确定性系统执行」的分工也适用于其他高频、需要稳定的场景。",
+      "sources": [
+        {
+          "title": "Agentic Monitoring",
+          "url": "https://benjamincongdon.me/blog/2026/10/19/Agentic-Monitoring/",
+          "kind": "primary",
+          "publisher": "Ben Congdon",
+          "published_at": "2026-10-19"
+        }
+      ],
+      "tags": [
+        "agent",
+        "infra",
+        "workflow"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "figure": {
+        "type": "steps",
+        "title": "Agent 负责判断，确定性系统负责执行",
+        "steps": [
+          {
+            "label": "提出计划",
+            "sub": "Agent 读服务代码写监控计划"
+          },
+          {
+            "label": "确定性执行",
+            "sub": "脚手架按计划持续检查"
+          },
+          {
+            "label": "调查告警",
+            "sub": "监控触发后由 Agent 排查"
+          },
+          {
+            "label": "升级给人",
+            "sub": "需要时交给人类处理"
+          }
+        ],
+        "base": {
+          "label": "降噪规则 + 标注评测集",
+          "sub": "用于过滤噪声并验证每次改动"
+        },
+        "caption": "结构出自 Ben Congdon《Agentic Monitoring》中的原型描述"
+      }
+    },
+    {
+      "id": "2026-10-21-skill-quote-before-claim",
+      "category": "skills",
+      "title": "让 AI 基于材料下结论时，先摘原文、再分析，找不到出处就删掉",
+      "summary": "Anthropic 的「减少幻觉」指南给出几条简单做法：明确允许模型说「不知道」；处理长文档时先逐字摘录相关原文，再只基于摘录分析；写完后逐条为结论找支持的原话，找不到就删除。这些做法不需要写代码，任何人把文件交给 AI 分析时都能用。",
+      "key_points": [
+        "允许 AI 说「信息不足」，能显著减少它为了给出答案而编造内容",
+        "先摘录原文再分析，让结论有据可查，也方便人对照核实",
+        "指南同时提醒，这些方法能显著减少但不能消除幻觉，关键信息仍要人工核实"
+      ],
+      "why_it_matters": "把合同、报告、政策文件交给 AI 总结是最常见的用法之一，也是编造最难被发现的场景；多加两句要求，就能把「看起来对」变成「可以核对」。",
+      "sources": [
+        {
+          "title": "Reduce hallucinations",
+          "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "review",
+        "scenario": "把一份 40 页的供应商合同交给 AI，让它总结风险条款",
+        "bad": "帮我看看这份合同有什么风险，总结一下要点。",
+        "good": "请审阅下面这份与[供应商名]的合同，找出对我方不利的条款，重点看付款、违约责任和解约条件。\n1. 先逐字摘录与这三方面相关的原文，每段编号；找不到相关条款就写「未找到相关条款」。\n2. 只根据摘录分析风险，每条结论注明引用的是第几段摘录。\n3. 写完后逐条检查：找不到摘录支持的结论直接删掉。\n4. 合同中没有写明、你无法确定的地方，直接写「信息不足，无法判断」，不要推测。\n<合同>\n[粘贴合同全文]\n</合同>",
+        "why": [
+          "先摘原文再分析，结论被限定在合同实际写了什么",
+          "要求注明摘录编号，人可以快速翻回原文逐条核对",
+          "写完自查并删除无依据的结论，减少编造条款",
+          "明确允许说「信息不足」，AI 不必为了完整而硬凑答案"
+        ],
+        "practice": "找一份你熟悉的文档让 AI 总结，加上「每条结论注明引用的原文」，再随机抽两条核对原文是否真的这么写。"
+      }
+    },
+    {
+      "id": "2026-10-21-self-hpo",
+      "category": "research",
+      "title": "微软 Self-HPO：编码 Agent 交替优化外围系统与模型自身",
+      "summary": "微软研究院提出 Self-HPO，在优化 Agent 的 harness（模型与环境交互的外围脚手架）和优化策略模型之间交替进行：当前模型分析自己的失败并提出 harness 候选，在选中的 harness 下用强化学习更新模型，遇到的难题再成为下一轮 harness 搜索集。论文称在 Qwen3.5-35B-A3B 上，三个 SWE-Bench 基准的平均解决率从 57.8% 提升到 64.8%。",
+      "key_points": [
+        "在 SWE-Bench Verified、Multilingual 和 Pro 三个基准上均优于只优化 harness 或只优化模型的基线",
+        "作者报告 Pass@1 可靠性和 Pass@k 能力上限都有提升，并能泛化到分布外场景",
+        "用更强的外部模型担任 harness 提议者可进一步提升",
+        "代码、模型和 RL 数据已在 GitHub 与 Hugging Face 公开"
+      ],
+      "why_it_matters": "近期 harness 工程是热门方向，这篇工作说明 harness 与模型可以协同进化，而不是二选一；做编码 Agent 的团队可参考其「用失败样本驱动 harness 搜索」的思路。",
+      "sources": [
+        {
+          "title": "Self-Evolving Coding Agents via Harness-Policy Optimization",
+          "url": "https://huggingface.co/papers/2610.22791",
+          "kind": "primary",
+          "publisher": "Hugging Face Papers",
+          "published_at": "2026-10-16"
+        },
+        {
+          "title": "MSR-Orchard/Self-HPO",
+          "url": "https://github.com/MSR-Orchard/Self-HPO",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "coding",
+        "research"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "steps",
+        "title": "Self-HPO 在 harness 与模型之间交替优化",
+        "steps": [
+          {
+            "label": "分析失败",
+            "sub": "当前模型复盘自己的失败"
+          },
+          {
+            "label": "提出 harness",
+            "sub": "生成并挑选 harness 候选"
+          },
+          {
+            "label": "RL 更新模型",
+            "sub": "在选中的 harness 下训练"
+          },
+          {
+            "label": "收集难题",
+            "sub": "难题成为下一轮搜索集"
+          }
+        ],
+        "loop": "进入下一轮交替优化",
+        "caption": "结构出自论文摘要"
+      }
+    },
+    {
+      "id": "2026-10-21-or-license-benchmark",
+      "category": "research",
+      "title": "OR-License：用真实付费咨询项目评测 Agent 做运筹优化",
+      "summary": "港科大等团队发布 OR-License 基准，检验 LLM Agent 能否直接从客户原始材料出发，交付专家级的运筹优化方案。基准包含来自真实付费运筹咨询项目的 31 个实例、覆盖 10 个工业场景，项目总金额 368 万美元，并保留原始需求、数据和交付格式。作者还构建了只透露业务事实、不懂运筹的模拟客户 ORSim，用来研究 Agent 如何收集信息。",
+      "key_points": [
+        "评测 11 个前沿模型，多个在目标函数质量上超过专家参考解，但按「不可行交付记零分」的 DAQ 指标没有一个达到专家水平",
+        "最佳配置为 Claude Code，严格可行率 88.39%，DAQ 为 0.87（专家参考为 1）",
+        "各模型的完整研究链路完成率在 24% 到 45% 之间",
+        "作者认为 Agent 还需要补足信息缺口的持续追问、忠实的问题建模和基于证据的自我改进"
+      ],
+      "why_it_matters": "「方案最优但不可交付」是 Agent 进入专业咨询类工作的典型差距，用真实项目和可交付性来评测，比单纯比分数更接近实际落地要求。",
+      "sources": [
+        {
+          "title": "OR-License: Evaluating LLM Agents as Real-World Operations Research Practitioners",
+          "url": "https://arxiv.org/abs/2610.24087",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-16"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "agent",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    }
+  ],
+  "experiments": [
+    "2026-10-21-cobol-decimal-parity",
+    "2026-10-21-hidden-llm-notes"
+  ]
+}
