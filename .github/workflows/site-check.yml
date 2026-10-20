@@ -1,0 +1,85 @@
+name: 站点检查
+
+# 站点本身的改动（模板、样式、脚本、Schema、配置）走这里：
+# 用全部历史日报重新校验并构建，截取桌面与手机页面截图，打包成预览产物。
+# 这类 PR 不会被自动合并，需要人工查看预览后合并。
+
+on:
+  pull_request:
+    paths:
+      - "templates/**"
+      - "scripts/**"
+      - "schema/**"
+      - "config/**"
+      - "requirements.txt"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: site-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt playwright==1.55.0
+
+      - name: 全量校验历史日报
+        run: python scripts/validate.py --all
+
+      - name: 构建站点
+        run: python scripts/build_site.py --out _site
+
+      - name: 页面截图（桌面 / 手机，浅色 / 深色）
+        run: |
+          python -m playwright install --with-deps chromium
+          python scripts/screenshot.py _site _site/_preview
+
+      - name: 上传预览
+        id: artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-preview
+          path: _site
+          retention-days: 7
+
+      - name: 在 PR 中发布预览
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          URL: ${{ steps.artifact.outputs.artifact-url }}
+        run: |
+          marker="<!-- ai-daily-site-check -->"
+          {
+            echo "$marker"
+            echo "## 🧩 站点检查"
+            echo ""
+            echo "- ✅ 全部历史日报校验通过，站点构建成功"
+            echo "- 预览：下载 [site-preview]($URL)，解压后用浏览器打开 \`index.html\`"
+            echo "- 截图在压缩包的 \`_preview/\` 目录（首页、日报页、实验页 × 桌面/手机 × 浅色/深色）"
+            echo ""
+            echo "站点改动不会自动合并，请查看预览后人工合并。"
+          } > comment.md
+          id=$(gh api "repos/$REPO/issues/$PR/comments?per_page=100" \
+                 --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -n1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@comment.md >/dev/null
+          else
+            gh api "repos/$REPO/issues/$PR/comments" -F body=@comment.md >/dev/null
+          fi
