@@ -14,6 +14,7 @@ CATEGORIES = {
     "news": "要闻",
     "opensource": "开源项目",
     "tools": "工具与产品",
+    "kits": "Skill 精选",
     "ideas": "理念与讨论",
     "practices": "方法与实践",
     "skills": "AI 软技能",
@@ -30,6 +31,15 @@ SKILL_AREAS = {
     "judgment": "判断与取舍",
 }
 
+KIT_KINDS = {
+    "skill": "Agent Skill",
+    "mcp": "MCP 服务",
+    "plugin": "插件",
+    "subagent": "子 Agent",
+    "hook": "Hook",
+    "other": "扩展",
+}
+
 # Issues from this date on must carry tldr / actionability / a skills item (older issues only warn).
 STRICT_FROM = "2026-10-21"
 CATEGORY_ORDER = list(CATEGORIES)
@@ -39,12 +49,13 @@ CATEGORY_RANGE = {
     "news": (3, 6),
     "opensource": (2, 4),
     "tools": (1, 3),
+    "kits": (1, 2),
     "ideas": (1, 3),
     "practices": (1, 3),
     "research": (1, 3),
     "skills": (1, 1),
 }
-TOTAL_RANGE = (11, 19)
+TOTAL_RANGE = (12, 20)
 
 STATUS_LABEL = {
     "passed": "✅ 已验证",

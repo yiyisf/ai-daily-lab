@@ -97,10 +97,11 @@
             "news",
             "opensource",
             "tools",
+            "kits",
             "ideas",
             "practices",
-            "research",
-            "skills"
+            "skills",
+            "research"
           ]
         },
         "title": {
@@ -268,6 +269,94 @@
               "type": "string",
               "maxLength": 160,
               "description": "可选：一个今天就能做的小练习"
+            }
+          }
+        },
+        "kit": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Skill 精选条目专用：一个 Agent Skill / MCP 服务 / 插件的能力、亮点、安装方式和版本更新",
+          "required": [
+            "kind",
+            "name",
+            "capabilities",
+            "highlights",
+            "install"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "skill",
+                "mcp",
+                "plugin",
+                "subagent",
+                "hook",
+                "other"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "compatible": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "description": "适用的 Agent / 客户端"
+            },
+            "capabilities": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 5,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 120
+              },
+              "description": "能做什么"
+            },
+            "highlights": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 140
+              },
+              "description": "好在哪里（设计上的亮点）"
+            },
+            "install": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 400,
+              "description": "安装或启用方式，必须来自原文"
+            },
+            "changes": {
+              "type": "array",
+              "maxItems": 6,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 140
+              },
+              "description": "本次版本更新内容"
+            },
+            "license": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "pattern": "^https://"
             }
           }
         }

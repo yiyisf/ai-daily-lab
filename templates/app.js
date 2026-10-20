@@ -137,7 +137,7 @@
   /* ---------- search palette ---------- */
   var palette = $('dialog.palette'), pInput = $('.js-palette-input'), pResults = $('.js-palette-results'), pCount = $('.js-palette-count');
   var searchData = null, searchLoading = null, pOptions = [], pSel = 0;
-  var CAT = { news: '要闻', opensource: '开源项目', tools: '工具与产品', ideas: '理念与讨论', practices: '方法与实践', skills: 'AI 软技能', research: '论文' };
+  var CAT = { news: '要闻', opensource: '开源项目', tools: '工具与产品', kits: 'Skill 精选', ideas: '理念与讨论', practices: '方法与实践', skills: 'AI 软技能', research: '论文' };
   var ACT = { try: '可动手', watch: '值得关注', know: '了解即可' };
 
   function loadSearch() {

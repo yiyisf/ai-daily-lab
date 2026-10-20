@@ -24,6 +24,11 @@ starting_points:
   opensource:
     - https://github.com/trending
     - https://huggingface.co/models?sort=trending
+  kits:        # Skill 精选：只作线索，来源写具体仓库或发布说明
+    - https://github.com/anthropics/skills
+    - https://github.com/anthropics/claude-plugins-official
+    - https://github.com/topics/agent-skills
+    - https://github.com/modelcontextprotocol/servers
   skills:      # AI 软技能：官方使用指南、知名从业者文章、人机协作研究（不受时效限制）
     - https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview
     - https://www.anthropic.com/engineering
@@ -45,6 +50,7 @@ tags:
   - context-engineering
   - prompting
   - ai-collaboration
+  - agent-skills
   - evaluation
   - inference
   - fine-tuning

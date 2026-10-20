@@ -38,7 +38,7 @@ from pygments.util import ClassNotFound
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (  # noqa: E402
-    CATEGORIES, CATEGORY_ORDER, EXPERIMENTS_DIR, ROOT, SKILL_AREAS, STATUS_LABEL,
+    CATEGORIES, CATEGORY_ORDER, EXPERIMENTS_DIR, KIT_KINDS, ROOT, SKILL_AREAS, STATUS_LABEL,
     experiment_status, issue_files, load_experiment, load_issue,
 )
 
@@ -111,6 +111,16 @@ def issue_markdown(issue: dict, exps: list[dict], site_url: str) -> str:
             if it.get("follow_up_of"):
                 meta += "　（跟进报道）"
             out += [meta, "", it["summary"], ""]
+            if it.get("kit"):
+                k = it["kit"]
+                head = f"**{KIT_KINDS[k['kind']]}** `{k['name']}`" + (f" {k['version']}" if k.get("version") else "")
+                if k.get("compatible"):
+                    head += "　适用：" + " / ".join(k["compatible"])
+                out += [head, "", "能做什么："] + [f"- {c}" for c in k["capabilities"]]
+                out += ["", "好在哪里："] + [f"- {h}" for h in k["highlights"]]
+                if k.get("changes"):
+                    out += ["", "本次更新："] + [f"- {c}" for c in k["changes"]]
+                out += ["", "安装 / 启用：", "", "```", k["install"], "```", ""]
             if it.get("skill"):
                 sk = it["skill"]
                 out += [f"**场景**：{sk['scenario']}", "", "| 较差的描述 | 更好的描述 |", "| --- | --- |",
@@ -322,7 +332,7 @@ def main() -> int:
     env.globals["date_cn"] = date_cn
     env.filters["dur"] = lambda v: "不到 0.1s" if v is not None and v < 0.1 else f"{v}s"
     common = dict(categories=CATEGORIES, source_kinds=SOURCE_KINDS, status_label=BADGE_LABEL,
-                  act_labels=ACT_LABELS, skill_areas=SKILL_AREAS, build_time=build_time)
+                  act_labels=ACT_LABELS, skill_areas=SKILL_AREAS, kit_kinds=KIT_KINDS, build_time=build_time)
 
     (out / "assets" / "style.css").write_text(
         (ROOT / "templates" / "style.css").read_text(encoding="utf-8") + pygments_css(), encoding="utf-8")

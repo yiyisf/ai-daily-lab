@@ -182,6 +182,13 @@ def validate_issue(path: Path, check_links: bool) -> Report:
             rep.err(f"`{it['id']}` 属于 AI 软技能，但缺少 skill（场景与好坏对比）")
         if it["category"] != "skills" and "skill" in it:
             rep.err(f"`{it['id']}` 不是 AI 软技能条目，不应包含 skill 字段")
+    for it in items:
+        if it["category"] == "kits" and "kit" not in it:
+            rep.err(f"`{it['id']}` 属于 Skill 精选，但缺少 kit（能力、亮点、安装方式）")
+        if it["category"] != "kits" and "kit" in it:
+            rep.err(f"`{it['id']}` 不是 Skill 精选条目，不应包含 kit 字段")
+        if it.get("kit", {}).get("changes") and not it.get("follow_up_of") and not it["kit"].get("version"):
+            rep.warn(f"`{it['id']}` 写了版本更新（kit.changes），建议同时填写 kit.version")
     areas_today = [it["skill"]["area"] for it in items if it.get("skill")]
     if areas_today:
         recent_areas = []
@@ -203,7 +210,7 @@ def validate_issue(path: Path, check_links: bool) -> Report:
     # Category balance (warnings)
     counts = Counter(it["category"] for it in items)
     for cat, (lo, hi) in CATEGORY_RANGE.items():
-        if cat == "skills" and not strict:
+        if cat in ("skills", "kits") and not strict:
             continue  # category introduced on STRICT_FROM
         n = counts.get(cat, 0)
         if not lo <= n <= hi:
