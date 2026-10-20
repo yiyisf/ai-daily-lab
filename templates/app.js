@@ -323,13 +323,334 @@
   var feed = $('.feed');
   var focused = null;
 
+  /* ---------- share card (1080×1350 PNG drawn on canvas) ---------- */
+  var shareDlg = $('dialog.share'), shareDataEl = $('.js-share-data');
+  var SHARE_INK = '#1C1917', SHARE_INK2 = '#44403C', SHARE_INK3 = '#6F6A64', SHARE_LINE = '#E7E5E4', SHARE_BG = '#FAFAF9';
+  var SHARE_ACCENT = '#C2410C', SHARE_ACCENT_INK = '#9A3412', SHARE_ACCENT_SOFT = '#FFF1E8';
+  var F_SANS = 'Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif';
+  var F_SERIF = '"Noto Serif SC", "Songti SC", serif';
+  var F_MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+  var NO_LINE_START = '，。、；：？！）」』》”’,.;:?!)%';
+
+  function shareUrl(path) {
+    var base = (doc.body && doc.body.getAttribute('data-site-url')) || '';
+    return base ? base + path : absUrl(ROOT + path);
+  }
+  function tokens(text) { return String(text).match(/[A-Za-z0-9][A-Za-z0-9.\-_/+:#%@]*|\s+|./g) || []; }
+  // Wrap text to width; CJK breaks per character, Latin per word. Returns at most maxLines lines.
+  function wrap(ctx, text, width, maxLines) {
+    var lines = [], line = '';
+    tokens(text).forEach(function (tk) {
+      var trial = line + tk;
+      if (ctx.measureText(trial).width <= width || !line.trim() || (tk.length === 1 && NO_LINE_START.indexOf(tk) !== -1)) { line = trial; return; }
+      lines.push(line.replace(/\s+$/, ''));
+      line = tk.replace(/^\s+/, '');
+      while (ctx.measureText(line).width > width && line.length > 1) {   // a single token wider than the line
+        var cut = line.length - 1;
+        while (cut > 1 && ctx.measureText(line.slice(0, cut)).width > width) cut--;
+        lines.push(line.slice(0, cut)); line = line.slice(cut);
+      }
+    });
+    if (line.trim()) lines.push(line);
+    if (maxLines && lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      var last = lines[maxLines - 1];
+      while (last.length && ctx.measureText(last + '…').width > width) last = last.slice(0, -1);
+      lines[maxLines - 1] = last.replace(/[，。、；：\s]+$/, '') + '…';
+    }
+    return lines;
+  }
+  function rrect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function svgImage(inner, color, size) {
+    return new Promise(function (resolve) {
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color +
+        '" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { resolve(null); };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    });
+  }
+  function loadFonts(specs) {
+    if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
+    var all = Promise.all(specs.map(function (s) { return doc.fonts.load(s[0], s[1]).catch(function () {}); }));
+    return Promise.race([all, new Promise(function (r) { setTimeout(r, 4000); })]);
+  }
+  function text(ctx, str, x, y, font, color, align) {
+    ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(str, x, y);
+  }
+  function drawHeader(ctx, pill) {
+    ctx.save();
+    ctx.translate(100, 92); ctx.rotate(Math.PI / 4);
+    ctx.fillStyle = SHARE_ACCENT; rrect(ctx, -13, -13, 26, 26, 5); ctx.fill();
+    ctx.restore();
+    text(ctx, 'AI Daily Lab', 136, 104, '700 32px ' + F_SANS, SHARE_INK);
+    ctx.font = '600 24px ' + F_SANS;
+    var w = ctx.measureText(pill).width + 36;
+    ctx.fillStyle = SHARE_ACCENT_SOFT; rrect(ctx, 1000 - w, 72, w, 40, 20); ctx.fill();
+    text(ctx, pill, 1000 - w / 2, 101, '600 24px ' + F_SANS, SHARE_ACCENT_INK, 'center');
+  }
+  function drawFooter(ctx, label, url) {
+    var y = 1350 - 64 - 184;
+    ctx.fillStyle = SHARE_LINE; ctx.fillRect(80, y - 28, 920, 2);
+    text(ctx, label, 80, y + 76, '600 26px ' + F_SANS, SHARE_INK);
+    ctx.font = '400 22px ' + F_MONO;
+    var shown = url.replace(/^https?:\/\//, ''), maxW = 920 - 184 - 40;
+    if (ctx.measureText(shown).width > maxW) {
+      while (shown.length && ctx.measureText(shown + '…').width > maxW) shown = shown.slice(0, -1);
+      shown += '…';
+    }
+    text(ctx, shown, 80, y + 116, '400 22px ' + F_MONO, SHARE_INK3);
+    if (typeof window.ADLqr !== 'function') return;
+    try {
+      var q = window.ADLqr(url), box = 184, n = q.size + 4, px = Math.floor(box / n), off = (box - px * q.size) / 2, x0 = 1000 - box;
+      ctx.fillStyle = '#FFFFFF'; rrect(ctx, x0, y, box, box, 12); ctx.fill();
+      ctx.strokeStyle = SHARE_LINE; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = SHARE_INK;
+      for (var yy = 0; yy < q.size; yy++) for (var xx = 0; xx < q.size; xx++)
+        if (q.get(xx, yy)) ctx.fillRect(x0 + off + xx * px, y + off + yy * px, px, px);
+    } catch (e) { /* URL too long for the QR encoder: keep the text link only */ }
+  }
+  var FOOT_TOP = 1350 - 64 - 184 - 28 - 40;   // content must end above this line
+
+  function drawDay(ctx, d) {
+    drawHeader(ctx, '第 ' + d.issue_no + ' 期');
+    // overview panel: one dot per item, colored by category, sized by importance
+    var cols = 8, rows = Math.ceil(d.dots.length / cols), cellH = 76;
+    ctx.font = '400 18px ' + F_SANS;
+    var legend = d.cats.map(function (c) { return c[1] + ' ' + c[2]; }).concat(['圆点越大越重要']);
+    var lx = 0, lRows = 1;
+    legend.forEach(function (l) { var w = ctx.measureText(l).width + 44; if (lx + w > 848) { lRows++; lx = 0; } lx += w; });
+    var panelY = 160, panelH = 32 + 66 + 28 + rows * cellH + 12 + lRows * 32 + 24;
+    ctx.fillStyle = '#FFFFFF'; rrect(ctx, 80, panelY, 920, panelH, 28); ctx.fill();
+    ctx.strokeStyle = SHARE_LINE; ctx.lineWidth = 2; ctx.stroke();
+    text(ctx, d.label, 116, panelY + 32 + 58, '700 60px ' + F_SERIF, SHARE_INK);
+    text(ctx, d.count + ' 条' + (d.exp_count ? ' · ' + d.exp_count + ' 个实验' : ''), 964, panelY + 32 + 54, '400 22px ' + F_SANS, SHARE_INK3, 'right');
+    var gy = panelY + 32 + 66 + 28, cw = 848 / cols;
+    d.dots.forEach(function (dot, i) {
+      var r = ({ 5: 32, 4: 27, 3: 22, 2: 18, 1: 15 })[dot[1]] || 20;
+      ctx.fillStyle = d.colors[dot[0]] || SHARE_INK3;
+      ctx.beginPath(); ctx.arc(116 + cw * (i % cols) + cw / 2, gy + cellH * Math.floor(i / cols) + cellH / 2, r, 0, Math.PI * 2); ctx.fill();
+    });
+    var ly = gy + rows * cellH + 12 + 22; lx = 116;
+    legend.forEach(function (l, i) {
+      ctx.font = '400 18px ' + F_SANS;
+      var w = ctx.measureText(l).width + 44;
+      if (lx + w > 116 + 848) { lx = 116; ly += 32; }
+      var cat = d.cats[i];
+      if (cat) { ctx.fillStyle = d.colors[cat[0]]; ctx.beginPath(); ctx.arc(lx + 6, ly - 6, 6, 0, Math.PI * 2); ctx.fill(); }
+      text(ctx, l, cat ? lx + 20 : lx, ly, '400 18px ' + F_SANS, cat ? '#57534E' : SHARE_INK3);
+      lx += w;
+    });
+    // three things, shrinking the type until it fits above the footer
+    var top = panelY + panelH + 60;
+    for (var size = 34; size >= 26; size -= 2) {
+      ctx.font = '500 ' + size + 'px ' + F_SANS;
+      var lh = Math.round(size * 1.5), blocks = d.tldr.map(function (t) { return wrap(ctx, t, 852, 3); });
+      var h = 26 + 30 + blocks.reduce(function (a, b) { return a + b.length * lh + 28; }, 0);
+      if (top + h <= FOOT_TOP || size === 26) break;
+    }
+    text(ctx, d.heading, 80, top + 26, '700 26px ' + F_SANS, SHARE_ACCENT_INK);
+    var y = top + 26 + 30;
+    blocks.forEach(function (lines, i) {
+      text(ctx, String(i + 1), 80, y + lh * 0.8, '700 48px ' + F_SERIF, SHARE_ACCENT);
+      lines.forEach(function (ln, j) { text(ctx, ln, 148, y + lh * 0.75 + j * lh, '500 ' + size + 'px ' + F_SANS, SHARE_INK); });
+      y += lines.length * lh + 28;
+    });
+    drawFooter(ctx, '完整内容与配套实验', shareUrl(d.path));
+  }
+
+  // Figure on an item card: same data as the page figure, drawn at a fixed scale. Returns its height.
+  function drawFigure(ctx, f, y, draw) {
+    var h = 0, x = 80, W = 920;
+    function t(str, xx, yy, font, color, align) { if (draw) text(ctx, str, xx, yy, font, color, align); }
+    h += 34; t(f.title, x, y + 26, '700 26px ' + F_SANS, SHARE_INK);
+    h += 18;
+    if (f.type === 'bars') {
+      var top = 0;
+      f.rows.forEach(function (r) { r.values.forEach(function (v) { top = Math.max(top, v); }); });
+      top = top || 1;
+      if (f.series.length > 1) {
+        var lx = x;
+        f.series.forEach(function (s, i) {
+          if (draw) { ctx.fillStyle = i ? SHARE_ACCENT : '#D6D3D1'; rrect(ctx, lx, y + h + 4, 16, 16, 4); ctx.fill(); }
+          ctx.font = '400 20px ' + F_SANS;
+          t(s, lx + 24, y + h + 19, '400 20px ' + F_SANS, SHARE_INK2);
+          lx += 24 + ctx.measureText(s).width + 28;
+        });
+        h += 40;
+      }
+      var labelW = 250, trackW = W - labelW - 20 - 90 - 70;
+      f.rows.forEach(function (r) {
+        var rowH = r.values.length * 24 + 4 + 16;
+        t(r.label, x, y + h + rowH / 2 + 2, '400 22px ' + F_SANS, SHARE_INK2);
+        r.values.forEach(function (v, i) {
+          var by = y + h + i * 24, bw = Math.max(trackW * v / top, 4), last = i === r.values.length - 1 && r.values.length > 1;
+          if (draw) { ctx.fillStyle = last ? SHARE_ACCENT : '#D6D3D1'; rrect(ctx, x + labelW + 20, by, bw, 20, 4); ctx.fill(); }
+          t((r.disp ? r.disp[i] : String(v)) + (f.unit || ''), x + labelW + 20 + bw + 10, by + 17, (last ? '600' : '400') + ' 18px ' + F_MONO, last ? SHARE_ACCENT_INK : SHARE_INK3);
+        });
+        if (r.delta) t(r.delta, x + W, y + h + rowH / 2 + 2, '600 20px ' + F_MONO, '#166534', 'right');
+        h += rowH;
+      });
+    } else {
+      var n = f.steps.length, gap = 40, bw2 = (W - gap * (n - 1)) / n, boxH = 0, subs = [];
+      ctx.font = '400 20px ' + F_SANS;
+      f.steps.forEach(function (s) { var l = s.sub ? wrap(ctx, s.sub, bw2 - 36, 3) : []; subs.push(l); boxH = Math.max(boxH, 18 + 34 + l.length * 30 + 18); });
+      f.steps.forEach(function (s, i) {
+        var bx = x + i * (bw2 + gap);
+        if (draw) {
+          ctx.fillStyle = SHARE_ACCENT_SOFT; rrect(ctx, bx, y + h, bw2, boxH, 14); ctx.fill();
+          ctx.strokeStyle = '#FED7C3'; ctx.lineWidth = 2; ctx.stroke();
+          if (i) { ctx.strokeStyle = '#A8A29E'; ctx.beginPath(); ctx.moveTo(bx - gap + 8, y + h + boxH / 2); ctx.lineTo(bx - 10, y + h + boxH / 2); ctx.stroke();
+            ctx.fillStyle = '#A8A29E'; ctx.beginPath(); ctx.moveTo(bx - 8, y + h + boxH / 2); ctx.lineTo(bx - 16, y + h + boxH / 2 - 6); ctx.lineTo(bx - 16, y + h + boxH / 2 + 6); ctx.fill(); }
+        }
+        ctx.font = '700 26px ' + F_SANS;
+        t(wrap(ctx, s.label, bw2 - 36, 1)[0], bx + 18, y + h + 18 + 26, '700 26px ' + F_SANS, SHARE_ACCENT_INK);
+        subs[i].forEach(function (ln, j) { t(ln, bx + 18, y + h + 18 + 34 + 22 + j * 30, '400 20px ' + F_SANS, SHARE_INK2); });
+      });
+      h += boxH;
+      if (f.loop) {
+        if (draw) { ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = '#A8A29E'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(x + 20, y + h + 4); ctx.lineTo(x + 20, y + h + 30); ctx.lineTo(x + W - 20, y + h + 30); ctx.lineTo(x + W - 20, y + h + 4); ctx.stroke(); ctx.restore(); }
+        ctx.font = '400 20px ' + F_SANS;
+        var lw = ctx.measureText('↻ ' + f.loop).width + 24;
+        if (draw) { ctx.fillStyle = SHARE_BG; ctx.fillRect(x + W / 2 - lw / 2, y + h + 16, lw, 28); }
+        t('↻ ' + f.loop, x + W / 2, y + h + 38, '400 20px ' + F_SANS, SHARE_INK2, 'center');
+        h += 50;
+      }
+      if (f.base) {
+        h += 12;
+        var bt = f.base.label + (f.base.sub ? '  ·  ' + f.base.sub : '');
+        if (draw) { ctx.fillStyle = '#F5F5F4'; rrect(ctx, x, y + h, W, 56, 14); ctx.fill(); }
+        ctx.font = '600 22px ' + F_SANS;
+        t(wrap(ctx, bt, W - 40, 1)[0], x + W / 2, y + h + 36, '600 22px ' + F_SANS, SHARE_INK, 'center');
+        h += 56;
+      }
+    }
+    if (f.caption) { h += 34; t(f.caption, x, y + h - 6, '400 18px ' + F_SANS, SHARE_INK3); }
+    return h;
+  }
+
+  function drawItem(ctx, d, iconImg) {
+    drawHeader(ctx, d.label);
+    var y = 196;
+    if (iconImg) ctx.drawImage(iconImg, 80, y - 38, 48, 48);
+    text(ctx, d.cat_name, iconImg ? 142 : 80, y, '700 30px ' + F_SANS, d.color);
+    if (d.act) {
+      ctx.font = '700 30px ' + F_SANS;
+      var ax = (iconImg ? 142 : 80) + ctx.measureText(d.cat_name).width + 20;
+      ctx.font = '600 22px ' + F_SANS;
+      var aw = ctx.measureText(d.act).width + 28;
+      ctx.fillStyle = '#F5F5F4'; rrect(ctx, ax, y - 30, aw, 38, 19); ctx.fill();
+      text(ctx, d.act, ax + aw / 2, y - 3, '600 22px ' + F_SANS, SHARE_INK2, 'center');
+    }
+    // fit title + summary + body by stepping the scale down
+    for (var k = 1; k >= 0.72; k -= 0.04) {
+      var tSize = Math.round(56 * k), sSize = Math.round(30 * k), bSize = Math.round(28 * k);
+      ctx.font = '700 ' + tSize + 'px ' + F_SERIF; var tl = wrap(ctx, d.title, 920, 4), tLh = Math.round(tSize * 1.32);
+      ctx.font = '400 ' + sSize + 'px ' + F_SANS; var sl = wrap(ctx, d.summary, 920, 6), sLh = Math.round(sSize * 1.6);
+      var body = [], bLh = Math.round(bSize * 1.55), bh = 0;
+      ctx.font = '400 ' + bSize + 'px ' + F_SANS;
+      if (d.skill) {
+        body = [['较差', d.skill.bad, '#991B1B', '#FEF2F2'], ['更好', d.skill.good, '#166534', '#F0FDF4']].map(function (b) {
+          return { label: b[0], color: b[2], bg: b[3], lines: wrap(ctx, b[1], 920 - 56, 5) };
+        });
+        bh = body.reduce(function (a, b) { return a + 40 + 30 + b.lines.length * bLh + 24 + 20; }, 0);
+      } else {
+        body = d.points.map(function (p) { return wrap(ctx, p, 920 - 40, 3); });
+        bh = body.reduce(function (a, b) { return a + b.length * bLh + 18; }, 0);
+      }
+      var figH = d.figure ? drawFigure(ctx, d.figure, 0, false) + 40 : 0;
+      if (d.figure && !d.skill) { body = []; bh = 0; }   // the figure replaces the bullet points
+      var total = 52 + tl.length * tLh + 28 + sl.length * sLh + 40 + figH + bh;
+      if (y + total <= FOOT_TOP || k < 0.75) break;
+    }
+    y += 52;
+    tl.forEach(function (ln) { y += tLh; text(ctx, ln, 80, y - tLh * 0.24, '700 ' + tSize + 'px ' + F_SERIF, SHARE_INK); });
+    y += 28;
+    sl.forEach(function (ln) { y += sLh; text(ctx, ln, 80, y - sLh * 0.3, '400 ' + sSize + 'px ' + F_SANS, SHARE_INK2); });
+    y += 40;
+    if (d.figure) { y += drawFigure(ctx, d.figure, y, true) + 40; }
+    if (d.skill) {
+      body.forEach(function (b) {
+        var h = 40 + 30 + b.lines.length * bLh + 24;
+        ctx.fillStyle = b.bg; rrect(ctx, 80, y, 920, h, 18); ctx.fill();
+        text(ctx, b.label + '的描述', 108, y + 52, '700 ' + Math.round(bSize * 0.86) + 'px ' + F_SANS, b.color);
+        b.lines.forEach(function (ln, j) { text(ctx, ln, 108, y + 70 + (j + 1) * bLh - bLh * 0.3, '400 ' + bSize + 'px ' + F_SANS, SHARE_INK); });
+        y += h + 20;
+      });
+    } else {
+      body.forEach(function (lines) {
+        ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(90, y + bLh * 0.5, 6, 0, Math.PI * 2); ctx.fill();
+        lines.forEach(function (ln, j) { text(ctx, ln, 120, y + (j + 1) * bLh - bLh * 0.3, '400 ' + bSize + 'px ' + F_SANS, SHARE_INK); });
+        y += lines.length * bLh + 18;
+      });
+    }
+    drawFooter(ctx, '阅读全文与原始来源', shareUrl(d.path));
+  }
+
+  function renderShare(d) {
+    var sample = JSON.stringify(d) + 'AI Daily Lab 第期条个实验圆点越大越重要完整内容与配套实验阅读全文与原始来源较差更好的描述0123456789…';
+    var fonts = [['700 60px "Noto Serif SC"', sample], ['700 32px Inter', sample], ['500 34px "Noto Sans SC"', sample],
+                 ['400 30px "Noto Sans SC"', sample], ['700 30px "Noto Sans SC"', sample], ['400 22px "JetBrains Mono"', 'abc']];
+    return Promise.all([loadFonts(fonts), d.icon ? svgImage(d.icon, d.color, 96) : Promise.resolve(null)]).then(function (r) {
+      var c = doc.createElement('canvas');
+      c.width = 1080; c.height = 1350;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = SHARE_BG; ctx.fillRect(0, 0, 1080, 1350);
+      ctx.textBaseline = 'alphabetic';
+      if (d.kind === 'day') drawDay(ctx, d); else drawItem(ctx, d, r[1]);
+      return new Promise(function (resolve, reject) { c.toBlob(function (b) { b ? resolve(b) : reject(new Error('toBlob')); }, 'image/png'); });
+    });
+  }
+
+  if (shareDlg && shareDataEl) {
+    var shareData = null, shareBlob = null, shareObjUrl = null;
+    try { shareData = JSON.parse(shareDataEl.textContent); } catch (e) { shareData = null; }
+    var sImg = $('.js-share-img', shareDlg), sLoading = $('.js-share-loading', shareDlg);
+    var sCopy = $('.js-share-copy', shareDlg), sDownload = $('.js-share-download', shareDlg);
+    var canCopyImage = !!(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write && window.isSecureContext);
+    function openShare() {
+      if (!shareData || !shareDlg.showModal) return;
+      if (!shareDlg.open) shareDlg.showModal();
+      if (shareBlob) return;
+      sLoading.hidden = false; sLoading.textContent = '正在生成…';
+      renderShare(shareData).then(function (blob) {
+        shareBlob = blob;
+        shareObjUrl = URL.createObjectURL(blob);
+        sImg.src = shareObjUrl;
+        sLoading.hidden = true;
+        sCopy.hidden = !canCopyImage;
+      }, function () { sLoading.textContent = '生成失败，请换个浏览器重试'; });
+    }
+    $$('.js-share-card').forEach(function (b) { b.addEventListener('click', openShare); });
+    sDownload.addEventListener('click', function () {
+      if (!shareObjUrl) return;
+      var a = doc.createElement('a');
+      a.href = shareObjUrl; a.download = (shareData.file || 'ai-daily') + '.png';
+      doc.body.appendChild(a); a.click(); doc.body.removeChild(a);
+      toast('已下载分享图');
+    });
+    sCopy.addEventListener('click', function () {
+      if (!shareBlob) return;
+      navigator.clipboard.write([new window.ClipboardItem({ 'image/png': shareBlob })]).then(
+        function () { toast('已复制图片，可直接粘贴到聊天窗口'); },
+        function () { toast('复制失败，请改用下载'); });
+    });
+    shareDlg.addEventListener('click', function (ev) { if (ev.target === shareDlg) shareDlg.close(); });
+  }
+
   var TEXT_INPUTS = ['text', 'search', 'email', 'url', 'tel', 'password', 'number'];
   function typingTarget(ev) {
     var el = ev.target, tag = (el.tagName || '').toLowerCase();
     if (tag === 'input') return TEXT_INPUTS.indexOf((el.type || 'text').toLowerCase()) !== -1;
     return tag === 'textarea' || tag === 'select' || el.isContentEditable;
   }
-  function anyDialogOpen() { return (help && help.open) || (palette && palette.open); }
+  function anyDialogOpen() { return (help && help.open) || (palette && palette.open) || (shareDlg && shareDlg.open); }
 
   // Ctrl/⌘ + K works everywhere, even while typing
   doc.addEventListener('keydown', function (ev) {

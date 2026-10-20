@@ -10,7 +10,7 @@
       <div class="cat-list js-cats">
         <button type="button" class="cat-btn" data-cat="all" aria-pressed="true"><span class="dot dot-all"></span>全部<span class="count">{{ issue['items'] | length }}</span></button>
         {% for c in cat_counts %}
-        <button type="button" class="cat-btn" data-cat="{{ c.key }}" aria-pressed="false"><span class="dot dot-{{ c.key }}"></span>{{ c.name }}<span class="count">{{ c.count }}</span></button>
+        <button type="button" class="cat-btn" data-cat="{{ c.key }}" aria-pressed="false"><span class="cat-ic c-{{ c.key }}">{{ cat_icon(c.key, 16) }}</span>{{ c.name }}<span class="count">{{ c.count }}</span></button>
         {% endfor %}
       </div>
     </div>
@@ -43,6 +43,7 @@
         <span class="muted" style="font-size:13px">{{ '按重要度自动选出' if tldr_auto else '30 秒看懂今天' }}</span>
         <span class="spacer"></span>
         <button type="button" class="btn btn-sm js-only js-copy-tldr" data-day-href="{{ root }}daily/{{ issue.date }}.html" data-day-label="{{ date_cn }}">{{ icon('copy') }}复制为 IM 消息</button>
+        <button type="button" class="btn btn-sm js-only js-share-card">{{ icon('image') }}分享图</button>
       </div>
       <ol>
         {% for t in tldr %}
@@ -66,7 +67,7 @@
     <div class="feed" data-density="summary">
       {% for cat, items in groups %}
       <section class="group" data-group="{{ cat }}">
-        <h2 class="group-title"><span class="dot dot-{{ cat }}"></span>{{ categories[cat] }}<span class="count">{{ items | length }}</span></h2>
+        <h2 class="group-title"><span class="cat-ic c-{{ cat }}">{{ cat_icon(cat, 18) }}</span>{{ categories[cat] }}<span class="count">{{ items | length }}</span></h2>
         {% for it in items %}{{ item_card(it, root, act_labels, exp_status, status_label, kit_kinds) }}{% endfor %}
       </section>
       {% endfor %}

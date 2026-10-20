@@ -359,6 +359,162 @@
               "pattern": "^https://"
             }
           }
+        },
+        "figure": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "可选的结构图：steps=流程/结构（2–5 步，可带循环和底座），bars=前后或多项对比的数字。每期最多 3 张，只画原文支持的内容",
+          "required": [
+            "type",
+            "title"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "steps",
+                "bars"
+              ]
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "这张图要说明的结论，一句话"
+            },
+            "caption": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "description": "图注：数据或结构出自哪里"
+            },
+            "steps": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 18,
+                    "description": "步骤名，可用英文原名"
+                  },
+                  "sub": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28,
+                    "description": "一句中文说明"
+                  }
+                }
+              }
+            },
+            "loop": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 24,
+              "description": "从最后一步回到第一步的循环说明，如「不满意就再迭代一轮」"
+            },
+            "base": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 24,
+                  "description": "各步共同沉淀或依赖的底座"
+                },
+                "sub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                }
+              }
+            },
+            "series": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 24
+              },
+              "description": "bars 的数据系列名，如 [\"旧版\", \"新版\"]"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "values"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  },
+                  "values": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            },
+            "unit": {
+              "type": "string",
+              "maxLength": 12,
+              "description": "数值单位，如 分、%、tokens/s"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "steps"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "steps"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "bars"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "series",
+                  "rows"
+                ]
+              }
+            }
+          ]
         }
       }
     }

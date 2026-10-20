@@ -14,6 +14,7 @@ Exit code 1 when any error is found. Warnings never fail the run.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 import urllib.error
@@ -127,6 +128,37 @@ def validate_experiment(exp_id: str, rep: Report, issue_ids: set[str]):
         rep.err(f"实验 `{exp_id}` 的入口文件 `{first_file}` 不存在")
 
 
+def number_forms(v: float) -> set[str]:
+    forms = {repr(v), f"{v:g}", f"{v:,}", f"{v:,g}"}
+    if isinstance(v, float) and v.is_integer():
+        forms |= {str(int(v)), f"{int(v):,}"}
+    return forms
+
+
+def check_figure(it: dict, rep: Report):
+    fig = it.get("figure")
+    if not fig:
+        return
+    iid = it["id"]
+    other = {"steps": ("series", "rows", "unit"), "bars": ("steps", "loop", "base")}[fig["type"]]
+    extra = [k for k in other if k in fig]
+    if extra:
+        rep.err(f"`{iid}` 结构图类型是 {fig['type']}，不应包含字段：{', '.join(extra)}")
+    if fig["type"] == "bars":
+        n = len(fig["series"])
+        text = " ".join([it["title"], it["summary"], it["why_it_matters"], *it["key_points"]])
+        for row in fig["rows"]:
+            if len(row["values"]) != n:
+                rep.err(f"`{iid}` 结构图「{row['label']}」有 {len(row['values'])} 个数值，应与 series 数量 {n} 一致")
+            for v in row["values"]:
+                if v < 0:
+                    rep.err(f"`{iid}` 结构图数值不能为负：{v}")
+                if not any(re.search(rf"(?<![\d.,]){re.escape(f)}(?![\d])", text) for f in number_forms(v)):
+                    rep.err(f"`{iid}` 结构图中的数值 {v:g}（{row['label']}）没有出现在标题、摘要或要点中；图里的数字必须是正文写过的")
+        if n == 1 and len(fig["rows"]) < 2:
+            rep.warn(f"`{iid}` 柱状图只有 1 个数值，不如直接写在正文里")
+
+
 def validate_issue(path: Path, check_links: bool) -> Report:
     rel = path.resolve().relative_to(ROOT) if path.resolve().is_relative_to(ROOT) else path
     rep = Report(str(rel))
@@ -189,6 +221,10 @@ def validate_issue(path: Path, check_links: bool) -> Report:
             rep.err(f"`{it['id']}` 不是 Skill 精选条目，不应包含 kit 字段")
         if it.get("kit", {}).get("changes") and not it.get("follow_up_of") and not it["kit"].get("version"):
             rep.warn(f"`{it['id']}` 写了版本更新（kit.changes），建议同时填写 kit.version")
+        check_figure(it, rep)
+    n_fig = sum(1 for it in items if it.get("figure"))
+    if n_fig > 3:
+        rep.warn(f"本期有 {n_fig} 张结构图，建议最多 3 张，只给最需要的条目配图")
     areas_today = [it["skill"]["area"] for it in items if it.get("skill")]
     if areas_today:
         recent_areas = []
