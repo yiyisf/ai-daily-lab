@@ -14,10 +14,34 @@ CATEGORIES = {
     "news": "要闻",
     "opensource": "开源项目",
     "tools": "工具与产品",
+    "kits": "Skill 精选",
     "ideas": "理念与讨论",
     "practices": "方法与实践",
+    "skills": "AI 软技能",
     "research": "论文",
 }
+
+SKILL_AREAS = {
+    "goal": "目标表达",
+    "context": "上下文供给",
+    "decompose": "任务拆解",
+    "review": "审查验证",
+    "iterate": "反馈迭代",
+    "delegate": "委派与边界",
+    "judgment": "判断与取舍",
+}
+
+KIT_KINDS = {
+    "skill": "Agent Skill",
+    "mcp": "MCP 服务",
+    "plugin": "插件",
+    "subagent": "子 Agent",
+    "hook": "Hook",
+    "other": "扩展",
+}
+
+# Issues from this date on must carry tldr / actionability / a skills item (older issues only warn).
+STRICT_FROM = "2026-10-21"
 CATEGORY_ORDER = list(CATEGORIES)
 
 # Suggested ranges from CLAUDE.md; outside the range is a warning, not an error.
@@ -25,11 +49,13 @@ CATEGORY_RANGE = {
     "news": (3, 6),
     "opensource": (2, 4),
     "tools": (1, 3),
+    "kits": (1, 2),
     "ideas": (1, 3),
     "practices": (1, 3),
     "research": (1, 3),
+    "skills": (1, 1),
 }
-TOTAL_RANGE = (10, 18)
+TOTAL_RANGE = (12, 20)
 
 STATUS_LABEL = {
     "passed": "✅ 已验证",

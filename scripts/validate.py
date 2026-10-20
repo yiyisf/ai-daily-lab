@@ -28,7 +28,7 @@ from jsonschema import Draft202012Validator
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (  # noqa: E402
     CATEGORIES, CATEGORY_RANGE, CONTENT_DIR, EXPERIMENTS_DIR, ROOT, SCHEMA_DIR,
-    TOTAL_RANGE, issue_files, load_json,
+    SKILL_AREAS, STRICT_FROM, TOTAL_RANGE, issue_files, load_json,
 )
 
 DAILY_SCHEMA = Draft202012Validator(load_json(SCHEMA_DIR / "daily.schema.json"))
@@ -158,9 +158,10 @@ def validate_issue(path: Path, check_links: bool) -> Report:
             rep.err(f"条目 id `{it['id']}` 应以日期 `{d}-` 开头")
 
     # 今日三件事 & 实用度
+    strict = d >= STRICT_FROM
     tldr = data.get("tldr")
     if not tldr:
-        rep.warn("缺少 tldr（今日三件事），页面将退回显示重要度最高的 3 条标题")
+        (rep.err if strict else rep.warn)("缺少 tldr（今日三件事）")
     else:
         refs = [t["item_id"] for t in tldr]
         for r in refs:
@@ -172,15 +173,49 @@ def validate_issue(path: Path, check_links: bool) -> Report:
             rep.warn(f"tldr 只有 {len(tldr)} 句，建议 3 句")
     missing_act = [it["id"] for it in items if "actionability" not in it]
     if missing_act:
-        rep.warn(f"{len(missing_act)} 条缺少 actionability（实用度）：" + "、".join(f"`{i}`" for i in missing_act[:5])
+        (rep.err if strict else rep.warn)(f"{len(missing_act)} 条缺少 actionability（实用度）：" + "、".join(f"`{i}`" for i in missing_act[:5])
                  + ("…" if len(missing_act) > 5 else ""))
+
+    # AI 软技能
+    for it in items:
+        if it["category"] == "skills" and "skill" not in it:
+            rep.err(f"`{it['id']}` 属于 AI 软技能，但缺少 skill（场景与好坏对比）")
+        if it["category"] != "skills" and "skill" in it:
+            rep.err(f"`{it['id']}` 不是 AI 软技能条目，不应包含 skill 字段")
+    for it in items:
+        if it["category"] == "kits" and "kit" not in it:
+            rep.err(f"`{it['id']}` 属于 Skill 精选，但缺少 kit（能力、亮点、安装方式）")
+        if it["category"] != "kits" and "kit" in it:
+            rep.err(f"`{it['id']}` 不是 Skill 精选条目，不应包含 kit 字段")
+        if it.get("kit", {}).get("changes") and not it.get("follow_up_of") and not it["kit"].get("version"):
+            rep.warn(f"`{it['id']}` 写了版本更新（kit.changes），建议同时填写 kit.version")
+    areas_today = [it["skill"]["area"] for it in items if it.get("skill")]
+    if areas_today:
+        recent_areas = []
+        try:
+            cur = date.fromisoformat(d)
+            for p_ in issue_files():
+                try:
+                    pd = date.fromisoformat(p_.stem)
+                except ValueError:
+                    continue
+                if cur - timedelta(days=3) <= pd < cur:
+                    recent_areas += [it["skill"]["area"] for it in load_json(p_).get("items", []) if it.get("skill")]
+        except ValueError:
+            pass
+        for a in areas_today:
+            if a in recent_areas:
+                rep.warn(f"AI 软技能方向「{SKILL_AREAS[a]}」近 3 天已出现过，建议换一个方向")
 
     # Category balance (warnings)
     counts = Counter(it["category"] for it in items)
     for cat, (lo, hi) in CATEGORY_RANGE.items():
+        if cat in ("skills", "kits") and not strict:
+            continue  # category introduced on STRICT_FROM
         n = counts.get(cat, 0)
         if not lo <= n <= hi:
-            rep.warn(f"栏目「{CATEGORIES[cat]}」{n} 条，建议 {lo}–{hi} 条")
+            want = f"{lo}" if lo == hi else f"{lo}–{hi}"
+            rep.warn(f"栏目「{CATEGORIES[cat]}」{n} 条，建议 {want} 条")
     if not TOTAL_RANGE[0] <= len(items) <= TOTAL_RANGE[1]:
         rep.warn(f"共 {len(items)} 条，建议 {TOTAL_RANGE[0]}–{TOTAL_RANGE[1]} 条")
     top = [it["id"] for it in items if it["importance"] == 5]

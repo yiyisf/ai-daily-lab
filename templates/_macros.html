@@ -18,7 +18,8 @@
 {%- if it.actionability -%}<span class="badge act-{{ it.actionability }}">{{ act_labels[it.actionability] }}</span>{%- endif -%}
 {%- endmacro %}
 
-{% macro item_card(it, root, act_labels, exp_status, status_label) -%}
+{% macro item_card(it, root, act_labels, exp_status, status_label, kit_kinds={}) -%}
+{#- it.skill → AI 软技能 contrast block -#}
 <article class="item" id="{{ it.id }}" data-cat="{{ it.category }}" data-act="{{ it.actionability or '' }}" data-imp="{{ it.importance }}" data-tags="{{ it.tags | join(' ') }}"
   data-id="{{ it.id }}" data-date="{{ it.date }}" data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html">
   <div class="item-meta">
@@ -30,6 +31,24 @@
   </div>
   <h3 class="item-title"><a href="{{ root }}item/{{ it.id }}.html">{{ it.title }}</a></h3>
   <p class="item-summary">{{ it.summary }}</p>
+  {%- if it.kit %}
+  <div class="kit-strip">
+    <span class="kit-kind">{{ kit_kinds[it.kit.kind] }}</span>
+    <span class="kit-name">{{ it.kit.name }}</span>
+    {%- if it.kit.version %}<span class="kit-ver">{{ it.kit.version }}</span>{% endif %}
+    {%- if it.kit.compatible %}<span class="kit-compat">适用：{{ it.kit.compatible | join(' / ') }}</span>{% endif %}
+  </div>
+  <ul class="kit-caps">{% for c in it.kit.capabilities %}<li>{{ c }}</li>{% endfor %}</ul>
+  {%- endif %}
+  {%- if it.skill %}
+  <div class="contrast item-contrast">
+    <div class="contrast-scenario">场景：{{ it.skill.scenario }}</div>
+    <div class="contrast-pair">
+      <div class="contrast-bad"><div class="contrast-label">较差的描述</div><p>{{ it.skill.bad }}</p></div>
+      <div class="contrast-good"><div class="contrast-label">更好的描述</div><p>{{ it.skill.good }}</p></div>
+    </div>
+  </div>
+  {%- endif %}
   <div class="item-full">
     <ul class="points">{% for p in it.key_points %}<li>{{ p }}</li>{% endfor %}</ul>
     <p class="why"><b>为什么值得关注</b>{{ it.why_it_matters }}</p>

@@ -97,8 +97,10 @@
             "news",
             "opensource",
             "tools",
+            "kits",
             "ideas",
             "practices",
+            "skills",
             "research"
           ]
         },
@@ -209,6 +211,154 @@
             "know"
           ],
           "description": "try=可动手（读者今天就能安装或试用），watch=值得关注，know=了解即可"
+        },
+        "skill": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "AI 软技能条目专用：一个场景下「较差 vs 更好」的对比示例",
+          "required": [
+            "area",
+            "scenario",
+            "bad",
+            "good",
+            "why"
+          ],
+          "properties": {
+            "area": {
+              "enum": [
+                "goal",
+                "context",
+                "decompose",
+                "review",
+                "iterate",
+                "delegate",
+                "judgment"
+              ],
+              "description": "goal=目标表达 context=上下文供给 decompose=任务拆解 review=审查验证 iterate=反馈迭代 delegate=委派与边界 judgment=判断与取舍"
+            },
+            "scenario": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "description": "具体工作场景"
+            },
+            "bad": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 600,
+              "description": "较差的做法/描述（示例）"
+            },
+            "good": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 1200,
+              "description": "更好的做法/描述（示例）"
+            },
+            "why": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 120
+              },
+              "description": "好在哪里，每条一句"
+            },
+            "practice": {
+              "type": "string",
+              "maxLength": 160,
+              "description": "可选：一个今天就能做的小练习"
+            }
+          }
+        },
+        "kit": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Skill 精选条目专用：一个 Agent Skill / MCP 服务 / 插件的能力、亮点、安装方式和版本更新",
+          "required": [
+            "kind",
+            "name",
+            "capabilities",
+            "highlights",
+            "install"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "skill",
+                "mcp",
+                "plugin",
+                "subagent",
+                "hook",
+                "other"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "compatible": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "description": "适用的 Agent / 客户端"
+            },
+            "capabilities": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 5,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 120
+              },
+              "description": "能做什么"
+            },
+            "highlights": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 140
+              },
+              "description": "好在哪里（设计上的亮点）"
+            },
+            "install": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 400,
+              "description": "安装或启用方式，必须来自原文"
+            },
+            "changes": {
+              "type": "array",
+              "maxItems": 6,
+              "items": {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 140
+              },
+              "description": "本次版本更新内容"
+            },
+            "license": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "pattern": "^https://"
+            }
+          }
         }
       }
     }

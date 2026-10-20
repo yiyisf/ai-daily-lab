@@ -67,7 +67,7 @@
       {% for cat, items in groups %}
       <section class="group" data-group="{{ cat }}">
         <h2 class="group-title"><span class="dot dot-{{ cat }}"></span>{{ categories[cat] }}<span class="count">{{ items | length }}</span></h2>
-        {% for it in items %}{{ item_card(it, root, act_labels, exp_status, status_label) }}{% endfor %}
+        {% for it in items %}{{ item_card(it, root, act_labels, exp_status, status_label, kit_kinds) }}{% endfor %}
       </section>
       {% endfor %}
       <p class="empty js-empty" hidden>没有符合筛选条件的条目。<button type="button" class="btn btn-sm js-reset">清除筛选</button></p>

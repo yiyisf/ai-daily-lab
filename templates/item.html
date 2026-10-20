@@ -27,6 +27,45 @@
 
       <p class="lead">{{ it.summary }}</p>
 
+      {% if it.kit %}
+      <section class="kit-panel">
+        <div class="kit-head">
+          <span class="kit-kind">{{ kit_kinds[it.kit.kind] }}</span>
+          <strong class="kit-name">{{ it.kit.name }}</strong>
+          {% if it.kit.version %}<span class="kit-ver">{{ it.kit.version }}</span>{% endif %}
+          {% if it.kit.license %}<span class="muted">{{ it.kit.license }}</span>{% endif %}
+          {% if it.kit.repo %}<a class="kit-repo" href="{{ it.kit.repo }}" target="_blank" rel="noopener">仓库 →</a>{% endif %}
+        </div>
+        {% if it.kit.compatible %}<div class="kit-compat">适用：{% for c in it.kit.compatible %}<span class="chip">{{ c }}</span>{% endfor %}</div>{% endif %}
+        <div class="kit-grid">
+          <div><h3>能做什么</h3><ul>{% for c in it.kit.capabilities %}<li>{{ c }}</li>{% endfor %}</ul></div>
+          <div><h3>好在哪里</h3><ul>{% for h in it.kit.highlights %}<li>{{ h }}</li>{% endfor %}</ul></div>
+        </div>
+        {% if it.kit.changes %}<div class="kit-changes"><h3>本次更新{% if it.kit.version %} · {{ it.kit.version }}{% endif %}</h3><ul>{% for c in it.kit.changes %}<li>{{ c }}</li>{% endfor %}</ul></div>{% endif %}
+        <div class="kit-install">
+          <div class="kit-install-head"><h3>安装 / 启用</h3><button type="button" class="btn btn-sm js-only js-copy-text" data-text="{{ it.kit.install }}">{{ icon('copy') }}复制</button></div>
+          <pre class="terminal">{{ it.kit.install }}</pre>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if it.skill %}
+      <h2>对比示例<small class="muted" style="font-size:13px;font-weight:400;margin-left:8px">{{ skill_areas[it.skill.area] }}</small></h2>
+      <section class="contrast contrast-detail">
+        <div class="contrast-scenario">场景：{{ it.skill.scenario }}</div>
+        <div class="contrast-pair">
+          <div class="contrast-bad"><div class="contrast-label">较差的描述</div><p>{{ it.skill.bad }}</p></div>
+          <div class="contrast-good">
+            <div class="contrast-label">更好的描述<button type="button" class="btn btn-sm js-only js-copy-text" data-text="{{ it.skill.good }}">{{ icon('copy') }}复制</button></div>
+            <p>{{ it.skill.good }}</p>
+          </div>
+        </div>
+        <ul class="contrast-why">{% for w in it.skill.why %}<li>{{ w }}</li>{% endfor %}</ul>
+        {% if it.skill.practice %}<p class="contrast-practice"><b>今天就试试</b>{{ it.skill.practice }}</p>{% endif %}
+        <p class="contrast-note">示例由编辑根据下方来源中的原则撰写。</p>
+      </section>
+      {% endif %}
+
       <h2>要点</h2>
       <ul class="points">{% for p in it.key_points %}<li>{{ p }}</li>{% endfor %}</ul>
 
