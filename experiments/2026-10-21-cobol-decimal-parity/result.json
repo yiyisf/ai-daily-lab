@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-21-cobol-decimal-parity",
+  "ran_at": "2026-10-20T22:07:06+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.6,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "truncate       byte_parity=True  diff_rows=   0/1000 total_delta_cents=+0\nround_half_up  byte_parity=False diff_rows= 529/1000 total_delta_cents=+529\nfloat          byte_parity=False diff_rows= 528/1000 total_delta_cents=+528\nRESULT: truncate parity=True; round_half_up parity=False (529 rows differ, +529 cents); float parity=False (528 rows differ)\n",
+  "stderr": ""
+}
