@@ -3,6 +3,20 @@
   "date": "2026-10-19",
   "generated_at": "2026-10-19T23:40:00+08:00",
   "editor_note": "本期重点是「Agent 工程化」：Claude Code 团队公开了在 AI 写约九成代码时如何做代码评审，Google Research 开源了自动优化 Agent 外围系统的 Harness²，Perplexity 开源了 Agent 沙箱 SPACE。模型方面，Meta 发布 816B 参数的开放权重模型 Muse Spark Open，DeepSeek 更新 V4.1-Flash。配套实验用标准库复现了会话记忆检索。",
+  "tldr": [
+    {
+      "text": "Claude Code 团队公开评审做法：AI 写约九成代码，按变更风险分级，低风险改动无需人工审批",
+      "item_id": "2026-10-19-claude-code-review-practice"
+    },
+    {
+      "text": "Meta 发布 816B 参数的开放权重模型 Muse Spark Open，支持 1M 上下文，许可有商用限制",
+      "item_id": "2026-10-19-meta-muse-spark-open"
+    },
+    {
+      "text": "Google Research 开源 Harness²，不改模型权重，自动迭代优化 Agent 外围系统",
+      "item_id": "2026-10-19-google-harness2"
+    }
+  ],
   "items": [
     {
       "id": "2026-10-19-meta-muse-spark-open",
@@ -30,7 +44,8 @@
         "llm",
         "inference"
       ],
-      "importance": 5
+      "importance": 5,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-19-deepseek-v4-1-flash-1017",
@@ -64,7 +79,8 @@
         "open-weights",
         "agent"
       ],
-      "importance": 4
+      "importance": 4,
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-mistral-timestral",
@@ -91,7 +107,8 @@
         "open-weights",
         "research"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-liquid-lfm2-5-24b-a2b",
@@ -117,7 +134,8 @@
         "agent",
         "inference"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-anthropic-public-benefit-fund",
@@ -142,7 +160,8 @@
       "tags": [
         "policy"
       ],
-      "importance": 2
+      "importance": 2,
+      "actionability": "know"
     },
     {
       "id": "2026-10-19-google-harness2",
@@ -173,7 +192,8 @@
         "url": "https://github.com/google-research/harness2",
         "license": "Apache-2.0",
         "language": "Python"
-      }
+      },
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-perplexity-space",
@@ -204,7 +224,8 @@
         "url": "https://github.com/perplexityai/SPACE",
         "license": "Apache-2.0",
         "language": "Rust"
-      }
+      },
+      "actionability": "watch"
     },
     {
       "id": "2026-10-19-rea-reverse-engineering-mcp",
@@ -234,7 +255,8 @@
       "repo": {
         "url": "https://github.com/morluto/rea",
         "license": "MIT"
-      }
+      },
+      "actionability": "watch"
     },
     {
       "id": "2026-10-19-context-mode",
@@ -267,7 +289,8 @@
         "url": "https://github.com/mksglu/context-mode",
         "license": "Elastic-2.0",
         "language": "TypeScript"
-      }
+      },
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-ai-decompiling-games",
@@ -302,7 +325,8 @@
         "safety",
         "policy"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "know"
     },
     {
       "id": "2026-10-19-killswitch-lang",
@@ -329,7 +353,8 @@
         "coding",
         "evaluation"
       ],
-      "importance": 2
+      "importance": 2,
+      "actionability": "know"
     },
     {
       "id": "2026-10-19-claude-code-review-practice",
@@ -364,7 +389,8 @@
         "workflow",
         "evaluation"
       ],
-      "importance": 5
+      "importance": 5,
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-harness-engineering-101",
@@ -389,7 +415,8 @@
         "agent",
         "context-engineering"
       ],
-      "importance": 3
+      "importance": 3,
+      "actionability": "try"
     },
     {
       "id": "2026-10-19-run-your-own-llm-proxy",
@@ -415,7 +442,8 @@
         "infra",
         "evaluation"
       ],
-      "importance": 2
+      "importance": 2,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-19-hybrid-reasoning-agents",
@@ -441,7 +469,8 @@
         "agent",
         "research"
       ],
-      "importance": 4
+      "importance": 4,
+      "actionability": "watch"
     },
     {
       "id": "2026-10-19-agentic-bbo",
@@ -469,7 +498,8 @@
         "evaluation",
         "research"
       ],
-      "importance": 2
+      "importance": 2,
+      "actionability": "know"
     }
   ],
   "experiments": [

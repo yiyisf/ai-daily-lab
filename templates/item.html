@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, act_badge %}
+{% block title %}{{ it.title }} · AI Daily Lab{% endblock %}
+{% block description %}{{ it.brief }}{% endblock %}
+{% block main %}
+<div class="wrap">
+  <nav class="crumbs" aria-label="面包屑">
+    <a href="{{ root }}daily/{{ date }}.html">{{ date_cn }}</a><span aria-hidden="true">/</span>
+    <a href="{{ root }}daily/{{ date }}.html#{{ it.id }}">{{ categories[it.category] }}</a>
+  </nav>
+  <div class="detail">
+    <article data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html" class="js-detail">
+      <div class="detail-meta">
+        <span class="detail-cat"><span class="dot dot-{{ it.category }}"></span>{{ categories[it.category] }}</span>
+        {{ act_badge(it, act_labels) }}
+        {% if it.importance >= 4 %}<span class="top-mark">重点</span>{% endif %}
+        <span>{{ date_cn }}</span>
+        <span class="tags">{% for t in it.tags %}<span>#{{ t }}</span>{% endfor %}</span>
+      </div>
+      <h1>{{ it.title }}</h1>
+      <div class="actions js-only">
+        <button type="button" class="btn js-copy-link">{{ icon('link') }}复制链接</button>
+        <button type="button" class="btn js-copy-im">{{ icon('chat') }}复制为 IM 消息</button>
+        <button type="button" class="btn js-copy-md">{{ icon('markdown') }}复制为 Markdown</button>
+      </div>
+
+      <p class="lead">{{ it.summary }}</p>
+
+      <h2>要点</h2>
+      <ul class="points">{% for p in it.key_points %}<li>{{ p }}</li>{% endfor %}</ul>
+
+      <div class="why-panel">
+        <div class="label">为什么值得关注</div>
+        <p>{{ it.why_it_matters }}</p>
+      </div>
+
+      {% if exp %}
+      <h2>配套实验</h2>
+      <section class="exp-card">
+        <div class="exp-card-head">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+            <span class="badge status-{{ exp.status }}">{{ status_label[exp.status] }}</span>
+            <span class="muted" style="font-size:13px">{% if exp.result %}GitHub Actions 实际运行 · {{ exp.result.runtime_version or exp.runtime }}{% if exp.result.duration_seconds is not none %} · 耗时 {{ exp.result.duration_seconds | dur }}{% endif %}{% else %}等待 Actions 执行{% endif %}</span>
+          </div>
+          <div class="title">{{ exp.title }}</div>
+          <p>{{ exp.goal }}</p>
+        </div>
+        {% if exp_output %}<pre class="terminal">{{ exp_output | safe }}</pre>{% endif %}
+        <div class="exp-card-foot">
+          <code>{{ exp.entry }}</code>
+          <button type="button" class="btn btn-sm js-only js-copy-text" data-text="{{ exp.entry }}">{{ icon('copy') }}复制命令</button>
+          <span class="spacer"></span>
+          <a class="more" href="{{ root }}experiments/{{ exp.id }}.html">查看代码与内网复现步骤 →</a>
+        </div>
+      </section>
+      {% endif %}
+
+      <h2>来源</h2>
+      <div class="sources">
+        {% for s in it.sources %}
+        <a class="source" href="{{ s.url }}" target="_blank" rel="noopener">
+          <span class="kind kind-{{ s.kind }}">{{ source_kinds[s.kind] }}</span>
+          <span class="name">{{ s.title }}</span>
+          <span class="where">{% if s.publisher %}{{ s.publisher }} · {% endif %}{{ s.host }}{% if s.published_at %} · {{ s.published_at }}{% endif %}</span>
+        </a>
+        {% endfor %}
+      </div>
+
+      <nav class="pager" aria-label="同期条目">
+        {% if prev_item %}<a href="{{ root }}item/{{ prev_item.id }}.html"><span class="dir">← 上一条</span>{{ prev_item.title }}</a>{% endif %}
+        {% if next_item %}<a class="next" href="{{ root }}item/{{ next_item.id }}.html"><span class="dir">下一条 →</span>{{ next_item.title }}</a>{% endif %}
+      </nav>
+      <pre hidden class="js-md-src">{{ md_src }}</pre>
+    </article>
+
+    <aside class="rail" aria-label="延伸阅读">
+      {% if related %}
+      <section class="panel">
+        <h2 class="panel-title">相关条目<small>按共同标签</small></h2>
+        <div class="rel-list">
+          {% for r in related %}
+          <a href="{{ root }}item/{{ r.id }}.html">{{ r.title }}<span class="sub">{{ r.date[5:] }} · {{ r.shared | map('format_tag') | join(' ') }}</span></a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      {% if same_cat %}
+      <section class="panel">
+        <h2 class="panel-title">同期{{ categories[it.category] }}</h2>
+        <div class="rel-list">
+          {% for r in same_cat %}<a href="{{ root }}item/{{ r.id }}.html">{{ r.title }}</a>{% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

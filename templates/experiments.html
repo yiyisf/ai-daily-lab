@@ -1,17 +1,20 @@
 {% extends "base.html" %}
-{% block title %}实验 · AI Daily Lab{% endblock %}
+{% block title %}实验室 · AI Daily Lab{% endblock %}
 {% block main %}
-<section class="issue-head">
-  <div class="issue-meta"><span class="kicker">可验证实验</span><span>共 {{ exps|length }} 个</span></div>
-  <p class="lede">每个实验都由 GitHub Actions 在干净环境中实际执行，状态和输出来自真实运行结果。失败的实验同样保留，帮大家少踩坑。</p>
-</section>
-<div class="exp-grid">
-{% for e in exps %}
-  <a class="exp-card" href="{{ root }}experiments/{{ e.id }}.html">
-    <span class="status status-{{ e.status }}">{{ status_label[e.status] }}</span>
-    <strong>{{ e.title }}</strong>
-    <span class="muted">{{ e.id[:10] }} · {{ e.runtime }}</span>
-  </a>
-{% endfor %}
+<div class="wrap narrow">
+  <div class="page-head">
+    <div class="issue-kicker"><span class="badge">实验室</span><span>共 {{ exps | length }} 个实验</span></div>
+    <h1>可验证实验</h1>
+    <p>每个实验都由 GitHub Actions 在干净环境中实际执行，状态和输出来自真实运行结果。失败的实验同样保留，帮大家少踩坑。</p>
+  </div>
+  <div class="exp-grid">
+    {% for e in exps %}
+    <a class="exp-tile" href="{{ root }}experiments/{{ e.id }}.html">
+      <span class="badge status-{{ e.status }}" style="align-self:flex-start">{{ status_label[e.status] }}</span>
+      <strong>{{ e.title }}</strong>
+      <span class="sub">{{ e.id[:10] }} · {{ e.runtime | capitalize }}{% if e.result and e.result.duration_seconds is not none %} · 耗时 {{ e.result.duration_seconds | dur }}{% endif %}</span>
+    </a>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

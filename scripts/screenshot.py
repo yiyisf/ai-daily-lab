@@ -32,6 +32,13 @@ def pages(site: Path) -> dict[str, str]:
     exps = sorted((site / "experiments").glob("20*.html"))
     if exps:
         out["experiment"] = f"experiments/{exps[-1].name}"
+    # an item page, preferring one with an experiment attached
+    pkg = site / "data" / f"{manifest['latest']}.json" if manifest.get("latest") else None
+    if pkg and pkg.exists():
+        items = json.loads(pkg.read_text(encoding="utf-8")).get("items", [])
+        pick = next((i for i in items if i.get("experiment_id")), items[0] if items else None)
+        if pick and (site / "item" / f"{pick['id']}.html").exists():
+            out["item"] = f"item/{pick['id']}.html"
     return out
 
 
