@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import act_badge %}
+{% block title %}#{{ tag }} · AI Daily Lab{% endblock %}
+{% block description %}标签 #{{ tag }} 下的全部 {{ items | length }} 条内容{% endblock %}
+{% block main %}
+<div class="wrap narrow">
+  <nav class="crumbs" aria-label="面包屑"><a href="{{ root }}tags/index.html">标签</a><span aria-hidden="true">/</span><span>#{{ tag }}</span></nav>
+  <div class="page-head" style="padding-top:12px">
+    <h1 class="mono" style="font-family:var(--font-mono)">#{{ tag }}</h1>
+    <p>共 {{ items | length }} 条，覆盖 {{ by_date | length }} 期。</p>
+  </div>
+
+  <section class="panel tag-trend" aria-label="每期条数">
+    <h2 class="panel-title">每期条数<small>最近 {{ trend | length }} 期</small></h2>
+    <div class="trend-bars" role="img" aria-label="#{{ tag }} 在最近 {{ trend | length }} 期中的条数">
+      {% for p in trend %}
+      <a class="trend-col" href="{{ root }}daily/{{ p.date }}.html" title="{{ p.date }}：{{ p.count }} 条">
+        <span class="trend-val">{{ p.count if p.count else '' }}</span>
+        <span class="trend-bar" style="height: {{ p.pct }}%"></span>
+        <span class="trend-label">{{ p.date[5:] }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if co_tags %}
+  <div class="co-tags">
+    <span class="muted" style="font-size:13px">常一起出现：</span>
+    {% for t, n in co_tags %}<a class="chip" href="{{ root }}tags/{{ t }}.html">#{{ t }} {{ n }}</a>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% for d, its in by_date %}
+  <section class="group">
+    <h2 class="group-title"><a href="{{ root }}daily/{{ d }}.html">{{ date_cn(d) }}</a><span class="count">{{ its | length }}</span></h2>
+    {% for it in its %}
+    <article class="item compact" data-id="{{ it.id }}">
+      <div class="item-meta">
+        <span class="detail-cat" style="font-size:12px"><span class="dot dot-{{ it.category }}"></span>{{ categories[it.category] }}</span>
+        {{ act_badge(it, act_labels) }}
+        {% if it.importance >= 4 %}<span class="top-mark">重点</span>{% endif %}
+        <span class="read-mark js-read-mark" hidden>已读</span>
+      </div>
+      <h3 class="item-title"><a href="{{ root }}item/{{ it.id }}.html">{{ it.title }}</a></h3>
+      <p class="item-summary">{{ it.brief }}</p>
+    </article>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -25,7 +25,13 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def pages(site: Path) -> dict[str, str]:
-    out = {"home": "index.html", "archive": "archive.html", "experiments": "experiments/index.html"}
+    out = {"home": "index.html", "archive": "archive.html", "experiments": "experiments/index.html",
+           "tags": "tags/index.html", "saved": "saved.html"}
+    tag_pages = sorted((site / "tags").glob("*.html")) if (site / "tags").exists() else []
+    if (site / "tags" / "agent.html").exists():
+        out["tag"] = "tags/agent.html"
+    elif [t for t in tag_pages if t.name != "index.html"]:
+        out["tag"] = "tags/" + [t for t in tag_pages if t.name != "index.html"][0].name
     manifest = json.loads((site / "data" / "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("latest"):
         out["day"] = f"daily/{manifest['latest']}.html"

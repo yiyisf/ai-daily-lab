@@ -9,16 +9,17 @@
     <a href="{{ root }}daily/{{ date }}.html#{{ it.id }}">{{ categories[it.category] }}</a>
   </nav>
   <div class="detail">
-    <article data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html" class="js-detail">
+    <article data-id="{{ it.id }}" data-cat="{{ it.category }}" data-date="{{ date }}" data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html" class="js-detail">
       <div class="detail-meta">
         <span class="detail-cat"><span class="dot dot-{{ it.category }}"></span>{{ categories[it.category] }}</span>
         {{ act_badge(it, act_labels) }}
         {% if it.importance >= 4 %}<span class="top-mark">重点</span>{% endif %}
         <span>{{ date_cn }}</span>
-        <span class="tags">{% for t in it.tags %}<span>#{{ t }}</span>{% endfor %}</span>
+        <span class="tags">{% for t in it.tags %}<a class="tag-link" href="{{ root }}tags/{{ t }}.html">#{{ t }}</a>{% endfor %}</span>
       </div>
       <h1>{{ it.title }}</h1>
       <div class="actions js-only">
+        <button type="button" class="btn js-save" aria-pressed="false">{{ icon('bookmark') }}<span class="js-save-label">收藏</span></button>
         <button type="button" class="btn js-copy-link">{{ icon('link') }}复制链接</button>
         <button type="button" class="btn js-copy-im">{{ icon('chat') }}复制为 IM 消息</button>
         <button type="button" class="btn js-copy-md">{{ icon('markdown') }}复制为 Markdown</button>

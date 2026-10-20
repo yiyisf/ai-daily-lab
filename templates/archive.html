@@ -3,9 +3,35 @@
 {% block main %}
 <div class="wrap narrow">
   <div class="page-head">
-    <div class="issue-kicker"><span class="badge">往期日报</span><span>共 {{ issues | length }} 期</span></div>
+    <div class="issue-kicker"><span class="badge">往期日报</span><span>共 {{ issues | length }} 期 · {{ total_items }} 条</span></div>
     <h1>往期</h1>
   </div>
+
+  {% for m in months %}
+  <section class="month" aria-labelledby="m-{{ m.key }}">
+    <h2 id="m-{{ m.key }}" class="month-title">{{ m.label }}<span class="muted">{{ m.issue_count }} 期 · {{ m.item_count }} 条</span></h2>
+    <div class="cal" role="grid" aria-labelledby="m-{{ m.key }}">
+      <div class="cal-row cal-head" role="row">{% for w in '一二三四五六日' %}<span role="columnheader">周{{ w }}</span>{% endfor %}</div>
+      {% for week in m.weeks %}
+      <div class="cal-row" role="row">
+        {% for c in week %}
+          {% if not c %}<span class="cal-cell is-blank" role="gridcell"></span>
+          {% elif c.issue %}
+          <a class="cal-cell has-issue" role="gridcell" href="{{ root }}daily/{{ c.date }}.html" aria-label="{{ c.label }}，{{ c.issue.count }} 条">
+            <span class="cal-day">{{ c.day }}</span>
+            <span class="cal-count">{{ c.issue.count }} 条{% if c.issue.exp_count %} · 实验 {{ c.issue.exp_count }}{% endif %}</span>
+            <span class="cal-top">{{ c.issue.top }}</span>
+          </a>
+          {% else %}<span class="cal-cell" role="gridcell"><span class="cal-day">{{ c.day }}</span></span>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <h2 class="month-title" style="margin-top:48px">逐期导读</h2>
   <ol class="archive">
     {% for i in issues %}
     <li>

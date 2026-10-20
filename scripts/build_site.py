@@ -16,6 +16,7 @@ Usage: python3 scripts/build_site.py [--out _site] [--site-url https://owner.git
 from __future__ import annotations
 
 import argparse
+import calendar
 import hashlib
 import json
 import re
@@ -241,6 +242,32 @@ def atom_feed(issues: list[dict], site_url: str, now: str) -> str:
     )
 
 
+def all_exps_sorted(exps: list[dict]) -> list[dict]:
+    return sorted(exps, key=lambda e: e["id"], reverse=True)
+
+
+def calendar_months(by_day: dict[str, dict]) -> list[dict]:
+    """Month grids (Monday first), newest month first."""
+    months = sorted({d[:7] for d in by_day}, reverse=True)
+    out = []
+    for mo in months:
+        y, m = int(mo[:4]), int(mo[5:])
+        weeks = []
+        for week in calendar.Calendar(firstweekday=0).monthdayscalendar(y, m):
+            row = []
+            for day in week:
+                if not day:
+                    row.append(None)
+                    continue
+                ds = f"{mo}-{day:02d}"
+                row.append({"day": day, "date": ds, "label": date_cn(ds), "issue": by_day.get(ds)})
+            weeks.append(row)
+        in_month = [v for k, v in by_day.items() if k.startswith(mo)]
+        out.append({"key": mo, "label": f"{y} 年 {m} 月", "weeks": weeks,
+                    "issue_count": len(in_month), "item_count": sum(v["count"] for v in in_month)})
+    return out
+
+
 def related_items(it: dict, all_items: list[dict], limit: int = 4) -> list[dict]:
     mine = set(it["tags"])
     scored = []
@@ -269,13 +296,14 @@ def main() -> int:
     out = Path(args.out)
     if out.exists():
         shutil.rmtree(out)
-    for sub in ("assets", "daily", "item", "experiments", "data"):
+    for sub in ("assets", "daily", "item", "experiments", "data/search", "tags"):
         (out / sub).mkdir(parents=True)
 
     now = datetime.now(timezone.utc)
     build_time = now.astimezone().strftime("%Y-%m-%d %H:%M")
     env = Environment(loader=FileSystemLoader(ROOT / "templates"), autoescape=select_autoescape(["html"]))
     env.filters["format_tag"] = lambda t: f"#{t}"
+    env.globals["date_cn"] = date_cn
     env.filters["dur"] = lambda v: "不到 0.1s" if v is not None and v < 0.1 else f"{v}s"
     common = dict(categories=CATEGORIES, source_kinds=SOURCE_KINDS, status_label=BADGE_LABEL,
                   act_labels=ACT_LABELS, build_time=build_time)
@@ -365,14 +393,64 @@ def main() -> int:
                                  "bytes": pkg_path.stat().st_size})
         archive.append({"date": d, "short": date_cn(d, weekday=False), "weekday": "周" + WEEKDAYS[date.fromisoformat(d).weekday()],
                         "editor_note": issue["editor_note"], "tldr": issue.get("tldr"),
-                        "count": len(issue["items"]), "exp_count": len(exps)})
+                        "top": tldr[0]["text"], "count": len(issue["items"]), "exp_count": len(exps)})
 
     if not issues:
         (out / "index.html").write_text("<!doctype html><meta charset=utf-8><p>还没有日报。</p>", encoding="utf-8")
 
+    by_day = {a["date"]: a for a in archive}
     archive.reverse()
     (out / "archive.html").write_text(
-        env.get_template("archive.html").render(common, issues=archive, root="", nav="archive"), encoding="utf-8")
+        env.get_template("archive.html").render(common, issues=archive, months=calendar_months(by_day),
+                                                total_items=len(all_items), root="", nav="archive"),
+        encoding="utf-8")
+
+    # tags
+    tag_items: dict[str, list[dict]] = {}
+    for it in all_items:
+        for t in it["tags"]:
+            tag_items.setdefault(t, []).append(it)
+    max_n = max((len(v) for v in tag_items.values()), default=1)
+    tag_list = []
+    for t, its in sorted(tag_items.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        its = sorted(its, key=lambda i: (i["date"], i["importance"]), reverse=True)
+        tag_list.append({"name": t, "count": len(its), "weight": round(len(its) / max_n, 3),
+                         "latest_title": its[0]["title"]})
+        by_date: dict[str, list[dict]] = {}
+        for it in its:
+            by_date.setdefault(it["date"], []).append(it)
+        recent = dates[-14:]
+        counts = [len(by_date.get(dd, [])) for dd in recent]
+        peak = max(counts) or 1
+        trend = [{"date": dd, "count": n, "pct": round(n / peak * 100)} for dd, n in zip(recent, counts)]
+        co = Counter(x for it in its for x in it["tags"] if x != t).most_common(6)
+        (out / "tags" / f"{t}.html").write_text(
+            env.get_template("tag.html").render(common, tag=t, items=its, by_date=list(by_date.items()),
+                                                trend=trend, co_tags=co, root="../", nav="tags"),
+            encoding="utf-8")
+    (out / "tags" / "index.html").write_text(
+        env.get_template("tags.html").render(common, tags=tag_list, total=len(all_items), root="../", nav="tags"),
+        encoding="utf-8")
+
+    # saved (rendered client-side from localStorage)
+    (out / "saved.html").write_text(env.get_template("saved.html").render(common, root="", nav="saved"), encoding="utf-8")
+
+    # search index: one shard per month + a small manifest
+    shards: dict[str, list[dict]] = {}
+    for it in all_items:
+        shards.setdefault(it["date"][:7], []).append({
+            "i": it["id"], "d": it["date"], "c": it["category"], "t": it["title"], "s": it["summary"],
+            "g": it["tags"], "a": it.get("actionability", ""), "p": it["importance"]})
+    for mo, rows in shards.items():
+        (out / "data" / "search" / f"{mo}.json").write_text(json.dumps(rows, ensure_ascii=False, separators=(",", ":")),
+                                                            encoding="utf-8")
+    search_manifest = {
+        "months": sorted(shards, reverse=True),
+        "dates": [{"date": a["date"], "label": f"{a['short']} {a['weekday']}", "count": a["count"]} for a in archive],
+        "tags": [[t["name"], t["count"]] for t in tag_list],
+        "experiments": [{"id": e["id"], "title": e["title"], "status_label": BADGE_LABEL[e["status"]]} for e in all_exps_sorted(all_exps)],
+    }
+    (out / "data" / "search" / "manifest.json").write_text(json.dumps(search_manifest, ensure_ascii=False), encoding="utf-8")
 
     all_exps.sort(key=lambda e: e["id"], reverse=True)
     (out / "experiments" / "index.html").write_text(
