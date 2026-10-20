@@ -83,3 +83,4 @@ python3 scripts/run_experiment.py experiments/<id> --out /tmp/r.json   # 本地�
 - 实验在只读权限、无 secrets、无 git 凭证的 job 中执行；结果由另一个不执行代码的 job 提交
 - 来自 fork 的 PR 不会获得写权限，也不会被提交实验结果
 - 仓库公开，不包含任何内部信息
+

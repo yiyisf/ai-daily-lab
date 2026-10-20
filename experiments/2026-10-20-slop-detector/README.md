@@ -45,3 +45,4 @@ python main.py
 - 把 `main.py` 拷贝到内网机器执行 `python main.py` 即可
 - 如果想对比原项目发布的模型，需要从 Hugging Face 下载权重（需要外网或内网的 Hugging Face 镜像）；没有镜像时，可以用内网已有的任意模型生成文本，粘贴进样例里打分
 
+
