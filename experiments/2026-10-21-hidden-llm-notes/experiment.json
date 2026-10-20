@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-21-hidden-llm-notes",
+  "title": "找出网页里只给 AI 看的隐藏指令",
+  "goal": "受 Redact 发现 WhatsApp 帮助页隐藏 AI 指令一事启发，用 Python 标准库 html.parser 提取被 hidden、aria-hidden、display:none 等方式隐藏的文本，并用关键词规则标出像在给 AI 下指令的句子，同时检查对正常无障碍文本不误报。",
+  "related_item": "2026-10-21-whatsapp-hidden-ai-notes",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "含隐藏指令的样例页标出 2 条；只有无障碍标签和模板的样例页、普通页面均为 0 条",
+  "tags": ["safety", "rag"]
+}
