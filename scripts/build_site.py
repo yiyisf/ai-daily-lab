@@ -311,6 +311,8 @@ def main() -> int:
     (out / "assets" / "style.css").write_text(
         (ROOT / "templates" / "style.css").read_text(encoding="utf-8") + pygments_css(), encoding="utf-8")
     shutil.copyfile(ROOT / "templates" / "app.js", out / "assets" / "app.js")
+    # Content-hash query strings: a page never pairs with a stale cached stylesheet or script.
+    common["asset_v"] = {name: sha256(out / "assets" / name)[:10] for name in ("style.css", "app.js")}
 
     paths = issue_files()
     issues = [load_issue(p) for p in paths]
