@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}标签 · AI Daily Lab{% endblock %}
+{% block main %}
+<div class="wrap narrow">
+  <div class="page-head">
+    <div class="issue-kicker"><span class="badge">标签</span><span>{{ tags | length }} 个标签 · 共 {{ total }} 条内容</span></div>
+    <h1>按标签浏览</h1>
+    <p>每个标签汇总全部往期内容。标签越大，出现得越多。</p>
+  </div>
+  <div class="tag-index">
+    {% for t in tags %}
+    <a class="tag-tile" href="{{ root }}tags/{{ t.name }}.html" style="--w: {{ t.weight }}">
+      <span class="tag-name">#{{ t.name }}</span>
+      <span class="tag-count">{{ t.count }}</span>
+      <span class="tag-bar" aria-hidden="true"><span></span></span>
+      <span class="tag-latest">最近：{{ t.latest_title }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

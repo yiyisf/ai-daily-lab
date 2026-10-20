@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}收藏夹 · AI Daily Lab{% endblock %}
+{% block main %}
+<div class="wrap narrow">
+  <div class="page-head">
+    <div class="issue-kicker"><span class="badge">收藏夹</span><span class="js-saved-summary">保存在本浏览器中</span></div>
+    <h1>我的收藏</h1>
+    <p>收藏只保存在当前浏览器里，换电脑或清理浏览器数据后会丢失。需要长期保存时，可以导出为 Markdown。</p>
+    <div class="actions js-only">
+      <button type="button" class="btn js-export-saved">{{ icon('markdown') }}导出为 Markdown</button>
+      <button type="button" class="btn js-clear-saved">清空收藏</button>
+    </div>
+  </div>
+  <noscript><p class="empty">收藏功能需要启用 JavaScript。</p></noscript>
+  <div class="js-saved-list" data-categories='{{ categories | tojson }}'></div>
+  <p class="empty js-saved-empty" hidden>还没有收藏。在日报或条目详情页点「收藏」，或在日报页选中条目后按 <span class="kbd">s</span>。</p>
+</div>
+{% endblock %}

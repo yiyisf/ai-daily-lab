@@ -24,9 +24,19 @@
     <nav class="nav" aria-label="主导航">
       <a href="{{ root }}index.html" {% if nav == 'today' %}aria-current="page"{% endif %}>今日</a>
       <a href="{{ root }}archive.html" {% if nav == 'archive' %}aria-current="page"{% endif %}>往期</a>
+      <a href="{{ root }}tags/index.html" {% if nav == 'tags' %}aria-current="page"{% endif %}>标签</a>
       <a href="{{ root }}experiments/index.html" {% if nav == 'experiments' %}aria-current="page"{% endif %}>实验室</a>
     </nav>
     <span class="header-spacer"></span>
+    <button type="button" class="search-btn js-only js-search" aria-label="搜索（Ctrl/⌘ + K）">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <span class="search-label">搜索条目、标签、日期</span>
+      <span class="kbd search-kbd">⌘K</span>
+    </button>
+    <a class="icon-btn saved-link js-only" href="{{ root }}saved.html" aria-label="收藏夹" title="收藏夹" {% if nav == 'saved' %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+      <span class="saved-count js-saved-count" hidden></span>
+    </a>
     <button type="button" class="icon-btn js-only js-help" aria-label="键盘快捷键" title="键盘快捷键（?）">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
     </button>
@@ -44,6 +54,17 @@
   <div class="wrap">内容由 Claude 自动搜集整理，经校验后发布。每条均附原始链接，请以原文为准。 · 生成于 {{ build_time }}</div>
 </footer>
 <div class="toast" role="status" aria-live="polite"></div>
+<dialog class="palette" aria-label="搜索">
+  <div class="palette-box">
+    <div class="palette-input">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" class="js-palette-input" placeholder="搜索条目、标签、日期或实验…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-results" aria-autocomplete="list">
+      <span class="kbd">Esc</span>
+    </div>
+    <div id="palette-results" class="palette-results js-palette-results" role="listbox" aria-label="搜索结果"></div>
+    <div class="palette-foot"><span><span class="kbd">↑</span> <span class="kbd">↓</span> 选择</span><span><span class="kbd">Enter</span> 打开</span><span class="js-palette-count"></span></div>
+  </div>
+</dialog>
 <dialog class="help" aria-labelledby="help-title">
   <h2 id="help-title">键盘快捷键</h2>
   <dl>
@@ -51,6 +72,8 @@
     <dt><span class="kbd">o</span></dt><dd>展开或收起当前条目</dd>
     <dt><span class="kbd">Enter</span></dt><dd>打开当前条目详情</dd>
     <dt><span class="kbd">c</span></dt><dd>复制当前条目链接</dd>
+    <dt><span class="kbd">s</span></dt><dd>收藏 / 取消收藏当前条目</dd>
+    <dt><span class="kbd">/</span> 或 <span class="kbd">⌘K</span></dt><dd>搜索</dd>
     <dt><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span></dt><dd>切换密度：标题 / 摘要 / 完整</dd>
     <dt><span class="kbd">t</span></dt><dd>切换主题</dd>
     <dt><span class="kbd">?</span></dt><dd>显示本帮助</dd>
