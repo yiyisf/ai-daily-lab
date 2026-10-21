@@ -16,6 +16,10 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 VIEWPORTS = {"desktop": (1280, 900), "mobile": (390, 844)}
+# Layout-shift budget (our own target; Google's "good" line is 0.1)
+CLS_BUDGET = 0.05
+CLS_PROBE = ("window.__cls=0;try{new PerformanceObserver(function(l){l.getEntries().forEach(function(e){"
+             "if(!e.hadRecentInput)window.__cls+=e.value;});}).observe({type:'layout-shift',buffered:true});}catch(e){}")
 SCHEMES = ("light", "dark")
 
 
@@ -61,10 +65,16 @@ def main() -> int:
         browser = p.chromium.launch()
         for vname, (w, h) in VIEWPORTS.items():
             for scheme in SCHEMES:
-                ctx = browser.new_context(viewport={"width": w, "height": h}, color_scheme=scheme)
+                ctx = browser.new_context(viewport={"width": w, "height": h}, color_scheme=scheme,
+                                          service_workers="block")
+                ctx.add_init_script(CLS_PROBE)
                 page = ctx.new_page()
                 for name, path in pages(site).items():
                     page.goto(base + path)
+                    page.wait_for_timeout(300)
+                    cls = page.evaluate("window.__cls || 0")
+                    if cls > CLS_BUDGET:
+                        problems.append(f"{path} 在 {vname}/{scheme} 下布局偏移 CLS={cls:.3f}（目标 ≤ {CLS_BUDGET}）")
                     page.screenshot(path=str(out / f"{name}-{vname}-{scheme}.png"), full_page=True)
                     sw = page.evaluate("document.documentElement.scrollWidth")
                     if sw > w:

@@ -8,6 +8,41 @@
   var $$ = function (sel, el) { return Array.prototype.slice.call((el || doc).querySelectorAll(sel)); };
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- motion ----------
+     Same-page changes (filters, density, expand, theme) go through the View Transitions API when the browser
+     has it: elements in view get a temporary name so they glide to their new place; elements that leave fade out.
+     Without the API, or with reduced motion, the change is applied instantly. */
+  var canVT = typeof doc.startViewTransition === 'function';
+  function nearView(el) {
+    if (el.hidden) return false;
+    var r = el.getBoundingClientRect();
+    return r.height > 0 && r.bottom > -120 && r.top < window.innerHeight + 120;
+  }
+  function smooth(fn, els) {
+    if (!canVT || reduceMotion || doc.hidden) { fn(); return; }
+    var named = [];
+    (els || []).forEach(function (el) {
+      if (named.length < 40 && nearView(el)) { el.style.viewTransitionName = 'vt-el-' + named.length; named.push(el); }
+    });
+    root.classList.add('vt-local');
+    var t = doc.startViewTransition(fn);
+    var done = function () { named.forEach(function (el) { el.style.viewTransitionName = ''; }); root.classList.remove('vt-local'); };
+    t.finished.then(done, done);
+  }
+  // Pages prerendered by speculation rules run their scripts before anyone sees them: defer side effects.
+  function whenActive(fn) {
+    if (doc.prerendering) doc.addEventListener('prerenderingchange', fn, { once: true }); else fn();
+  }
+  // Inline feedback on the button that was pressed (icon briefly turns into a check).
+  function flash(btn) {
+    if (!btn || !btn.classList) return;
+    btn.classList.remove('is-done');
+    void btn.offsetWidth;
+    btn.classList.add('is-done');
+    clearTimeout(btn._doneTimer);
+    btn._doneTimer = setTimeout(function () { btn.classList.remove('is-done'); }, 1400);
+  }
+
   var store = {
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } },
@@ -25,7 +60,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
   }
-  function copy(text, okMsg) {
+  function copy(text, okMsg, btn) {
     function fallback() {
       var ta = doc.createElement('textarea');
       ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -33,10 +68,11 @@
       var ok = false;
       try { ok = doc.execCommand('copy'); } catch (e) { ok = false; }
       doc.body.removeChild(ta);
+      if (ok) flash(btn);
       toast(ok ? okMsg : '复制失败，请手动复制');
     }
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fallback);
+      navigator.clipboard.writeText(text).then(function () { flash(btn); toast(okMsg); }, fallback);
     } else { fallback(); }
   }
   function absUrl(href) { try { return new URL(href, location.href).href; } catch (e) { return href; } }
@@ -52,7 +88,7 @@
   function cycleTheme() {
     var cur = root.getAttribute('data-theme-pref') || 'system';
     var next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
-    applyTheme(next);
+    smooth(function () { applyTheme(next); });
     toast('主题：' + THEME_LABEL[next]);
   }
   $$('.js-theme').forEach(function (b) { b.addEventListener('click', cycleTheme); });
@@ -90,6 +126,9 @@
     }
     store.setJson(SAVED_KEY, map);
     paintSaved();
+    if (on) $$('[data-id="' + id + '"] .js-save, .js-detail[data-id="' + id + '"] .js-save').forEach(function (b) {
+      b.classList.remove('is-popped'); void b.offsetWidth; b.classList.add('is-popped');
+    });
     toast(on ? '已收藏' : '已取消收藏');
   }
   function paintSaved() {
@@ -106,10 +145,33 @@
   $$('[data-id]').forEach(paintRead);
   paintSaved();
   var detail = $('.js-detail');
-  if (detail) markRead(detail.dataset.id);
+  if (detail) whenActive(function () { markRead(detail.dataset.id); });
   window.addEventListener('storage', function (e) {
     if (e.key === SAVED_KEY) paintSaved();
     if (e.key === READ_KEY) { readSet = store.json(READ_KEY, []); $$('[data-id]').forEach(paintRead); }
+  });
+
+  /* ---------- offline cache (service worker; https or localhost only) ---------- */
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+    whenActive(function () {
+      var reg = function () { navigator.serviceWorker.register(ROOT + 'sw.js').catch(function () { /* optional */ }); };
+      if (doc.readyState === 'complete') reg(); else window.addEventListener('load', reg);
+    });
+  }
+
+  /* ---------- cross-page transition (old page side; the new page side is inline in <head>) ---------- */
+  function itemIdOf(u) { var m = /\/item\/([^\/?#]+)\.html/.exec(u || ''); return m ? decodeURIComponent(m[1]) : null; }
+  var swapNamed = null;
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition || !e.activation || !e.activation.entry) return;
+    var to = itemIdOf(e.activation.entry.url), here = itemIdOf(location.href), el = null;
+    if (to && here) return;                       // item → item: plain cross-fade
+    if (to) el = $('[id="' + to + '"] .item-title');
+    else if (here) el = $('.js-detail h1');
+    if (el && nearView(el)) { el.style.viewTransitionName = 'vt-title'; swapNamed = el; }
+  });
+  window.addEventListener('pageshow', function () {   // back/forward cache: clear the name we left behind
+    if (swapNamed) { swapNamed.style.viewTransitionName = ''; swapNamed = null; }
   });
 
   /* ---------- clicks: copy, save, read ---------- */
@@ -120,17 +182,17 @@
     if (!t) return;
     var host = t.closest('[data-href]');
     if (t.classList.contains('js-save') && host) toggleSave(host);
-    else if (t.classList.contains('js-copy-link') && host) copy(absUrl(host.dataset.href), '已复制链接');
-    else if (t.classList.contains('js-copy-im') && host) copy(imText(host), '已复制，可直接粘贴到群里');
+    else if (t.classList.contains('js-copy-link') && host) copy(absUrl(host.dataset.href), '已复制链接', t);
+    else if (t.classList.contains('js-copy-im') && host) copy(imText(host), '已复制，可直接粘贴到群里', t);
     else if (t.classList.contains('js-copy-md')) {
       var src = $('.js-md-src');
-      if (src) copy(src.textContent.replace('{{URL}}', host ? absUrl(host.dataset.href) : location.href), '已复制 Markdown');
-    } else if (t.classList.contains('js-copy-text')) copy(t.dataset.text, '已复制');
+      if (src) copy(src.textContent.replace('{{URL}}', host ? absUrl(host.dataset.href) : location.href), '已复制 Markdown', t);
+    } else if (t.classList.contains('js-copy-text')) copy(t.dataset.text, '已复制', t);
     else if (t.classList.contains('js-copy-tldr')) {
       var lines = ['【AI 日报】' + t.dataset.dayLabel];
       $$('.tldr li a').forEach(function (a, i) { lines.push((i + 1) + '. ' + a.textContent.trim()); });
       lines.push('完整内容：' + absUrl(t.dataset.dayHref));
-      copy(lines.join('\n'), '已复制今日快报');
+      copy(lines.join('\n'), '已复制今日快报', t);
     }
   });
 
@@ -672,7 +734,9 @@
     var groups = $$('.group', feed);
     var state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, tag: '' };
 
+    var movers = function () { return items.concat($$('.group-title', feed)); };
     var setDensity = function (d, quiet) {
+      if (!quiet && feed.getAttribute('data-density') !== d) { smooth(function () { setDensity(d, true); }, movers()); toast({ title: '只看标题', summary: '标题 + 摘要', full: '完整内容' }[d]); return; }
       feed.setAttribute('data-density', d);
       $$('.seg [data-density]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.density === d)); });
       items.forEach(function (it) { it.classList.remove('is-expanded'); });
@@ -747,15 +811,16 @@
       if (focused && focused.hidden) setFocus(null);
       writeUrl();
     };
-    $$('.js-cats .cat-btn').forEach(function (b) { b.addEventListener('click', function () { state.cat = b.dataset.cat; apply(); }); });
+    var applySmooth = function () { smooth(apply, movers()); };
+    $$('.js-cats .cat-btn').forEach(function (b) { b.addEventListener('click', function () { state.cat = b.dataset.cat; applySmooth(); }); });
     [['.js-only-try', 'onlyTry'], ['.js-only-top', 'onlyTop'], ['.js-only-unread', 'onlyUnread']].forEach(function (p) {
-      var b = $(p[0]); if (b) b.addEventListener('change', function () { state[p[1]] = b.checked; apply(); });
+      var b = $(p[0]); if (b) b.addEventListener('change', function () { state[p[1]] = b.checked; applySmooth(); });
     });
     doc.addEventListener('click', function (ev) {
       var t = ev.target.closest('.js-tag');
-      if (t) { state.tag = state.tag === t.dataset.tag ? '' : t.dataset.tag; apply(); return; }
-      if (ev.target.closest('.js-clear-tag')) { state.tag = ''; apply(); return; }
-      if (ev.target.closest('.js-reset')) { state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, tag: '' }; apply(); }
+      if (t) { state.tag = state.tag === t.dataset.tag ? '' : t.dataset.tag; applySmooth(); return; }
+      if (ev.target.closest('.js-clear-tag')) { state.tag = ''; applySmooth(); return; }
+      if (ev.target.closest('.js-reset')) { state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, tag: '' }; applySmooth(); }
     });
     window.addEventListener('storage', function (e) { if (e.key === READ_KEY) apply(); });
     readUrl();
@@ -781,7 +846,7 @@
       switch (ev.key) {
         case 'j': move(1); break;
         case 'k': move(-1); break;
-        case 'o': if (focused) { focused.classList.toggle('is-expanded'); markRead(focused.dataset.id); } break;
+        case 'o': if (focused) { var f = focused; smooth(function () { f.classList.toggle('is-expanded'); }, movers()); markRead(f.dataset.id); } break;
         case 'Enter':
           if (focused && tag !== 'a' && tag !== 'button') { markRead(focused.dataset.id); location.href = focused.dataset.href; } else return;
           break;
