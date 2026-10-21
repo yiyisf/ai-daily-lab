@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-22-three-arm-patch-proof",
+  "title": "用三臂证明和回归检查验收 AI 补丁",
+  "goal": "受 Trail of Bits patching-bugs / regression-hunt 插件启发，用一个金额解析函数演示：两个候选补丁都能修好报告的 bug 并通过三臂证明（原代码失败、补丁通过、撤回后失败），但只有加上既有行为的回归检查，才能拦下顺手破坏负数解析的那个补丁。",
+  "related_item": "2026-10-22-trailofbits-patching-plugins",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "两个补丁都通过三臂证明；补丁 A 有 1 个回归（-3）被拒绝，补丁 B 无回归被接受",
+  "tags": ["coding", "evaluation"]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-22-three-arm-patch-proof",
+  "ran_at": "2026-10-21T22:38:13+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "== 补丁 A ==\n  原代码: 复现检查失败（期望失败）✓\n  打补丁: 复现检查通过（期望通过）✓\n  撤回补丁: 复现检查失败（期望失败）✓\n  三臂证明：成立\n  回归：1 个，原本支持、现在失败的输入：['-3']\n  结论：拒绝\n\n== 补丁 B ==\n  原代码: 复现检查失败（期望失败）✓\n  打补丁: 复现检查通过（期望通过）✓\n  撤回补丁: 复现检查失败（期望失败）✓\n  三臂证明：成立\n  回归：0 个\n  结论：可接受\n\n[PASS] 两个补丁都通过三臂证明\n[PASS] 补丁 A 被回归检查拦下（负数解析被破坏）\n[PASS] 补丁 B 没有回归\n\nRESULT: 只看 bug 是否修好会接受补丁 A；加上回归检查后只接受补丁 B\n",
+  "stderr": ""
+}

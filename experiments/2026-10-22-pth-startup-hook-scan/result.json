@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-22-pth-startup-hook-scan",
+  "ran_at": "2026-10-21T22:38:09+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "[PASS] clean     CRITICAL=0 (期望 0)  REVIEW=0 (期望 0)\n[PASS] tooling   CRITICAL=0 (期望 0)  REVIEW=1 (期望 1)\n           REVIEW   distutils-precedence.pth:1  启动时会执行的 import 行：import os; var = 'SETUPTOOLS_USE_DISTUTILS'; enabled = os.en\n[PASS] poisoned  CRITICAL=2 (期望 2)  REVIEW=2 (期望 2)\n           CRITICAL cook.pth  哈希与已知恶意文件 cook.pth 一致\n           CRITICAL cook.py  文件名与 LiteLLM 投毒事件公开 IoC 一致\n           REVIEW   distutils-precedence.pth:1  启动时会执行的 import 行：import os; var = 'SETUPTOOLS_USE_DISTUTILS'; enabled = os.en\n           REVIEW   sitecustomize.py  site-packages 中的启动模块，每次启动解释器都会执行\n\n当前解释器 3.12.15 的 site-packages 扫描（仅供参考）：\n  /tmp/exp-isjria1y/venv/lib/python3.12/site-packages: CRITICAL=0 REVIEW=0\n\nRESULT: 3/3 样例环境分类正确\n",
+  "stderr": ""
+}

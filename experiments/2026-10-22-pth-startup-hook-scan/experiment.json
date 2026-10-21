@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-22-pth-startup-hook-scan",
+  "title": "排查 site-packages 里会在 Python 启动时执行的代码",
+  "goal": "受 LiteLLM 1.107.0 投毒事件启发，用 Python 标准库扫描 site-packages 中 .pth 的 import 行、sitecustomize.py 等启动钩子，并比对公开 IoC 文件名与哈希，验证能区分正常路径 .pth、合法但会执行代码的 .pth 和与 IoC 一致的文件。",
+  "related_item": "2026-10-22-litellm-pypi-compromise",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "clean 环境 0 条；tooling 环境 1 条待复核、0 条严重；poisoned 环境 2 条严重、2 条待复核",
+  "tags": ["safety", "infra"]
+}
