@@ -27,15 +27,23 @@
         "两个 CVE 共包含四个内存安全问题，都与 PHP 处理致命错误（尤其是内存耗尽）的方式有关；Wiz 称过去十年发布的 PHP 版本均受影响",
         "Wiz 演示了对 WordPress、Drupal 的未认证远程代码执行（Joomla 受 CVE-2026-109618 影响），漏洞在 PHP 本身，与应用代码无关",
         "Wiz 称 AI 参与了漏洞发现、利用开发、攻击检测和补丁验证，并帮助把利用适配到不同版本与内存布局",
-        "据 Simon Willison 转述的 PHP 基金会说明，CVE 编号于 10 月 20 日提前在网上流传，随后一段 PoC 演示视频被误发，利用代码已在扩散"
+        "PHP 基金会披露：CVE 编号 10 月 20 日提前流传，Calif 误发 PoC 演示视频，Chainguard 在协调发布前 6 个多小时就发布了含修复的镜像",
+        "基金会称 AI 辅助研究让漏洞报告量明显增加，7 月 1 日以来已发布 15 个 CVE，超过 100 份报告无效、重复或无法复现；AI 用于验证和归并报告，但每个决定和补丁都由人负责"
       ],
-      "why_it_matters": "这是 AI 辅助漏洞挖掘直接影响大量线上系统的典型案例；运行 PHP 的团队应尽快升级到上述版本。PHP 8.2 将于 2026 年 12 月 31 日停止支持。",
+      "why_it_matters": "这是 AI 辅助漏洞挖掘直接影响大量线上系统的典型案例，也说明开源项目正面临 AI 带来的报告量激增；运行 PHP 的团队应尽快升级到上述版本。PHP 8.2 将于 2026 年 12 月 31 日停止支持。",
       "sources": [
         {
           "title": "Security advisory: Critical remote code execution vulnerabilities, update now",
           "url": "https://www.php.net/archive/2026",
           "kind": "primary",
           "publisher": "PHP",
+          "published_at": "2026-10-21"
+        },
+        {
+          "title": "Today's PHP Security Release, and How We're Strengthening PHP Security",
+          "url": "https://thephp.foundation/blog/2026/10/21/todays-php-security-release-and-how-were-strengthening-php-security/",
+          "kind": "primary",
+          "publisher": "The PHP Foundation",
           "published_at": "2026-10-21"
         },
         {
@@ -209,27 +217,29 @@
     {
       "id": "2026-10-22-layerfs-agent-filesystem",
       "category": "opensource",
-      "title": "LayerFS v0.1.7：给每个 Agent 一个零拷贝的可丢弃文件系统分支",
-      "summary": "Ephemeral AI Lab 的 Rust 项目 LayerFS 让多个 Agent 在同一份代码库上各自拿到隔离、可丢弃的文件系统分支，不复制共享底座；有用的状态可以提交为去重的检查点，供分支、回退或并行试跑复用。10 月 15 日发布的 v0.1.7 重写了核心，新增 JavaScript SDK 和终端演示界面。",
+      "title": "LayerFS 1.0.0：给每个 Agent 一个零拷贝的可写文件系统分支",
+      "summary": "Ephemeral AI Lab 的 Rust 项目 LayerFS 于 10 月 21 日发布 1.0.0，这是继 0.1.x 开发者预览之后的首个正式版。它让多个 Agent 在共享的已提交历史上各自拿到可写的 Workspace，不复制底座；改动提交为去重的检查点，可以分支、回退或合并。全部数据存在单个 SQLite 文件中，不需要数据库服务。",
       "key_points": [
-        "v0.1.7 中每个挂载的 Workspace 有自己的覆盖层；提交时如果分支头已变化会尝试合并，冲突时写入冲突标记且不提交",
-        "新 SDK 共 29 个方法，覆盖项目、文件、分支和沙箱操作，支持按行读取、blame 和原子化的多处修改",
-        "这是破坏性更新：v0.1.6 的 CLI 和 Rust SDK 被移除，旧版存储不做迁移",
-        "仍为开发者预览：只提供源码，没有 npm 包或预编译二进制，部分测试关卡未重跑"
+        "1.0.0 新增 workspace 接口，每个 Sandbox 最多容纳 16 个 Workspace；字节相同的文件合并时不再算冲突，大段命令输出改为分页返回",
+        "作者自测：快照去重后占用 100.1 MB，Btrfs + zstd 为 1,994.6 MB；POSIX 一致性测试 8,798 项断言无意外失败；顺序写等场景比 libfuse passthrough 慢",
+        "破坏性更新：v0.1.7 及更早版本的存储不再兼容，sandbox 接口被 workspace 取代",
+        "仍只支持「可丢弃」存储模式，没有崩溃或断电持久性，作者提醒不要作为不可重建数据的唯一副本；只提供源码，没有 npm 包或预编译二进制",
+        "运行环境为 Linux，macOS 需通过 DeepSeek Harness 插件 dsh-layerfs 使用"
       ],
-      "why_it_matters": "并行跑多个编码 Agent 时，常见做法是每个开一份 git worktree；LayerFS 提供了另一种按需分叉、失败即丢弃的思路，适合关注 Agent 沙箱设计的团队跟踪，生产使用为时尚早。",
+      "why_it_matters": "并行跑多个编码 Agent 时，常见做法是每个开一份 git worktree；LayerFS 提供了按需分叉、失败即丢弃的另一种思路，适合关注 Agent 沙箱与并行试跑的团队评估，但目前不具备持久性保证。",
       "sources": [
         {
-          "title": "Release LayerFS v0.1.7 — rewritten core, JavaScript SDK and live terminal UI",
-          "url": "https://github.com/Ephemeral-AI-Lab/layerfs/releases/tag/v0.1.7",
+          "title": "Ephemeral-AI-Lab/layerfs",
+          "url": "https://github.com/Ephemeral-AI-Lab/layerfs",
           "kind": "primary",
           "publisher": "GitHub"
         },
         {
-          "title": "Ephemeral AI Lab's LayerFS Gives Parallel AI Agents Forkable Isolated Filesystems",
-          "url": "https://alphasignal.ai/news/ephemeral-ai-lab-s-layerfs-gives-parallel-ai-agents-forkable-isolated",
-          "kind": "secondary",
-          "publisher": "AlphaSignal"
+          "title": "LayerFS v1.0.0 — first official release",
+          "url": "https://github.com/Ephemeral-AI-Lab/layerfs/releases/tag/v1.0.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-21"
         }
       ],
       "tags": [
@@ -241,6 +251,7 @@
       "actionability": "watch",
       "repo": {
         "url": "https://github.com/Ephemeral-AI-Lab/layerfs",
+        "license": "MIT",
         "language": "Rust"
       }
     },
