@@ -6,6 +6,23 @@
 <title>{% block title %}AI Daily Lab{% endblock %}</title>
 <meta name="description" content="{% block description %}每日 AI 资讯、开源项目、业界讨论与可验证实验{% endblock %}">
 <script>(function(){var r=document.documentElement;r.classList.remove('no-js');try{var p=localStorage.getItem('theme')||'system';r.setAttribute('data-theme-pref',p);if(p!=='system')r.setAttribute('data-theme',p);}catch(e){r.setAttribute('data-theme-pref','system');}})();</script>
+<script>
+/* Cross-page transition: the item title morphs between a list card and its detail page (Chrome / Safari 18.2+). */
+(function(){function idOf(u){var m=/\/item\/([^\/?#]+)\.html/.exec(u||'');return m?decodeURIComponent(m[1]):null;}
+addEventListener('pagereveal',function(e){
+  var a=window.navigation&&navigation.activation;if(!e.viewTransition||!a||!a.from)return;
+  var from=idOf(a.from.url),here=idOf(location.href),el=null;
+  if(here&&from!==here)el=document.querySelector('.js-detail h1');
+  else if(from&&!here)el=document.querySelector('[id="'+from+'"] .item-title');
+  if(from&&here)return;
+  if(!el)return;el.style.viewTransitionName='vt-title';
+  e.viewTransition.finished.then(function(){el.style.viewTransitionName='';},function(){el.style.viewTransitionName='';});
+});})();
+</script>
+<link rel="expect" href="#main-end" blocking="render">
+<script type="speculationrules">
+{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"*.xml"}},{"not":{"href_matches":"*/data/*"}},{"not":{"selector_matches":"[target=_blank], [download], [rel~=nofollow]"}}]},"eagerness":"moderate"}]}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap">
@@ -50,6 +67,7 @@
 </header>
 <main id="main">
 {% block main %}{% endblock %}
+<span id="main-end" hidden></span>
 </main>
 <footer class="site-footer">
   <div class="wrap">内容由 Claude 自动搜集整理，经校验后发布。每条均附原始链接，请以原文为准。 · 生成于 {{ build_time }}</div>

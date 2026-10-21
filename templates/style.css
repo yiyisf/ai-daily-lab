@@ -27,7 +27,9 @@
   --term-bg: #1C1917; --term-ink: #E7E5E4; --term-ok: #86EFAC; --term-key: #FDBA74;
   --shadow: 0 1px 2px rgba(28, 25, 23, .06), 0 4px 16px rgba(28, 25, 23, .06);
   --radius: 14px;
-  --font-sans: Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 300ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1); --ease-inout: cubic-bezier(.4, 0, .2, 1);
+  --font-sans: Inter, "Inter Fallback", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   color-scheme: light;
@@ -75,7 +77,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .mono { font-family: var(--font-mono); }
 .wrap { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
 @media (prefers-reduced-motion: no-preference) {
-  a, button, .item { transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s; }
+  a, button, .item { transition: color var(--dur-1), background-color var(--dur-1), border-color var(--dur-1), box-shadow var(--dur-1); }
 }
 
 /* ---------- header ---------- */
@@ -537,6 +539,50 @@ dialog.share::backdrop { background: rgba(0, 0, 0, .45); }
 .share-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--ink-3); }
 .share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
 .share-actions form { margin: 0; }
+
+/* ---------- motion & stability ----------
+   Durations: --dur-1 press/hover, --dur-2 in-page changes, --dur-3 page-level. Exits are faster than entrances.
+   Only transform/opacity animate. Reduced motion: no movement, cross-fades only. */
+@font-face {   /* metric-matched stand-in for Inter while the web font loads, so text does not jump on swap */
+  font-family: "Inter Fallback";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Helvetica");
+  size-adjust: 107.1%; ascent-override: 90.4%; descent-override: 22.5%; line-gap-override: 0%;
+}
+.item, .group, .detail h2, .sources, [id] { scroll-margin-top: 88px; }
+.feed .item, .feed .group { scroll-margin-top: 140px; }
+
+@view-transition { navigation: auto; }
+.site-header { view-transition-name: site-header; }
+::view-transition-group(*) { animation-duration: var(--dur-3); animation-timing-function: var(--ease-out); }
+::view-transition-old(root) { animation-duration: var(--dur-2); animation-timing-function: var(--ease-in); }
+::view-transition-new(root) { animation-duration: var(--dur-3); }
+:root.vt-local::view-transition-group(*) { animation-duration: var(--dur-2); }
+:root.vt-local::view-transition-old(*) { animation-duration: var(--dur-1); animation-timing-function: var(--ease-in); }
+::view-transition-group(vt-title) { animation-timing-function: var(--ease-inout); }
+::view-transition-old(vt-title), ::view-transition-new(vt-title) { height: 100%; object-fit: none; object-position: left top; }
+::view-transition-group(site-header) { animation: none; z-index: 10; }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* button feedback: icon turns into a check for a moment */
+.btn.is-done, .btn-ghost.is-done { color: var(--try-fg); border-color: color-mix(in srgb, var(--try-fg) 35%, transparent); }
+.is-done > svg:first-child { visibility: hidden; }
+.is-done { position: relative; }
+.is-done::before { content: ""; position: absolute; width: 15px; height: 15px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat; }
+.btn.is-done::before { left: 14px; top: calc(50% - 7.5px); }
+.btn-sm.is-done::before { left: 12px; }
+.btn-ghost.is-done::before { left: 6px; top: calc(50% - 7.5px); }
+@media (prefers-reduced-motion: no-preference) {
+  .is-done::before { animation: done-in var(--dur-2) var(--ease-out); }
+  .is-popped svg { animation: pop var(--dur-3) var(--ease-out); }
+  .btn:active, .cat-btn:active, .chip:active, .icon-btn:active { transform: scale(.97); transition: transform var(--dur-1); }
+}
+@keyframes done-in { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
 /* ---------- footer, toast, dialog ---------- */
 .site-footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--ink-3); font-size: 13px; }

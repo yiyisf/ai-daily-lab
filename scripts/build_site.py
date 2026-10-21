@@ -375,6 +375,7 @@ def main() -> int:
         (ROOT / "templates" / "style.css").read_text(encoding="utf-8") + pygments_css(), encoding="utf-8")
     for js in ("app.js", "qr.js"):
         shutil.copyfile(ROOT / "templates" / js, out / "assets" / js)
+    shutil.copyfile(ROOT / "templates" / "sw.js", out / "sw.js")   # at the root so its scope covers the whole site
     # Content-hash query strings: a page never pairs with a stale cached stylesheet or script.
     common["asset_v"] = {name: sha256(out / "assets" / name)[:10] for name in ("style.css", "app.js", "qr.js")}
 
