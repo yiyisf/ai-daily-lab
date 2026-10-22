@@ -18,7 +18,7 @@
       <div class="side-label">筛选</div>
       <label class="check"><input type="checkbox" class="js-only-try">只看可动手<span class="count">{{ try_count }}</span></label>
       <label class="check"><input type="checkbox" class="js-only-top">只看重点<span class="count">{{ top_count }}</span></label>
-      <label class="check"><input type="checkbox" class="js-only-unread">只看未读<span class="count js-unread-count"></span></label>
+      <label class="check"><input type="checkbox" class="js-only-unread">只看未读<span class="count js-unread-count">{{ issue['items'] | length }}</span></label>
       <label class="check js-follow-filter" hidden><input type="checkbox" class="js-only-follow">只看关注<span class="count js-follow-count"></span></label>
     </div>
     <div class="keys-block js-only">
