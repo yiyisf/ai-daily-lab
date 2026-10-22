@@ -1,0 +1,717 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "generated_at": "2026-10-23T07:30:00+08:00",
+  "editor_note": "今天两条线索值得放在一起看：一边是 AI 被直接用于攻击——微软披露国家级黑客用开源 Agent 渗透框架 ARTEX 自动化入侵数百家机构，AWS 发现 PHP2Shell 漏洞在公开前 4 天就已被利用；另一边是 Agent 生态继续走向开放与治理——Anthropic 把 Agent Skills 标准捐给 Linux 基金会旗下的 AAIF，OpenAI 模型登陆 Google Cloud，OpenAI 要求模型路由和 AI 网关先经审批。两个实验分别演示「排序好的控制器未必建议好」和「按成本挑选宏 token」。",
+  "tldr": [
+    {
+      "text": "微软称 Storm-0940 用开源 Agent 框架 ARTEX 自动化攻击，波及 2,250 多个租户",
+      "item_id": "2026-10-23-storm-0940-artex"
+    },
+    {
+      "text": "Anthropic 将 Agent Skills 捐给 AAIF；已有 70 多个平台集成、100 万个技能",
+      "item_id": "2026-10-23-agent-skills-to-aaif"
+    },
+    {
+      "text": "Google Cloud 上线 GPT-6 Astra 等 3 款 OpenAI 模型，目前为私有预览",
+      "item_id": "2026-10-23-openai-models-google-cloud"
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-10-23-storm-0940-artex",
+      "category": "news",
+      "title": "微软：国家级黑客用 Agent 渗透框架 ARTEX 自动化入侵",
+      "summary": "微软威胁情报 10 月 21 日披露，被其归为与中国国家行为体有关的 Storm-0940 自 2026 年 9 月起使用开源的 Agent 渗透测试框架 ARTEX，自动化攻击全球数百家机构，并评估 ConnectWise 云备份等应用的供应链入侵也出自该组织。攻击者窃取这些多租户应用的身份后，无需用户交互登录即可进入下游客户租户，并通过 Microsoft Graph 做侦察、添加凭据维持访问、尝试自授全局管理员。",
+      "key_points": [
+        "10 月 10–14 日的密码喷洒针对 8 家机构的 327 个账户，失败登录超过 151,000 次，峰值约每分钟 2,900 次",
+        "借 ConnectWise 应用凭据触及 2,250 多个租户，多个案例从选定目标到拿到特权访问不到 3 小时；微软称大部分攻击未成功",
+        "ARTEX 是用 Go 编写的多 Agent LLM 系统，可接任意模型，能从侦察到数据外传自主执行，几乎不需要人工介入",
+        "微软建议先保全日志和证据、按应用 ID 排查所有授权过的租户，审查服务主体登录和凭据新增，再删除未授权凭据"
+      ],
+      "why_it_matters": "这是大厂公开确认 Agent 框架被用于规模化真实攻击的案例：攻击节奏变成「机器速度」、全天候并行，防守方用于响应的时间被大幅压缩。使用多租户 SaaS 应用的团队应重点审查 OAuth 应用权限和应用凭据变更。",
+      "sources": [
+        {
+          "title": "AI-driven, large-scale nation-state campaign using ARTEX enables supply chain compromise",
+          "url": "https://www.microsoft.com/en-us/security/blog/2026/10/21/storm-0940-uses-artex-agentic-ai-connectwise-supply-chain-compromise/",
+          "kind": "primary",
+          "publisher": "Microsoft Security Blog",
+          "published_at": "2026-10-21"
+        },
+        {
+          "title": "Microsoft blames ConnectWise attacks on Chinese state hacker using ARTEX AI agents",
+          "url": "https://therecord.media/china-cyber-connectwise-ai",
+          "kind": "secondary",
+          "publisher": "The Record"
+        }
+      ],
+      "tags": [
+        "safety",
+        "agent"
+      ],
+      "importance": 5,
+      "actionability": "watch",
+      "figure": {
+        "type": "steps",
+        "title": "Storm-0940 借受信任的多租户应用进入下游租户",
+        "steps": [
+          {
+            "label": "Password spray",
+            "sub": "对 8 家机构的 327 个账户密码喷洒"
+          },
+          {
+            "label": "App identity",
+            "sub": "入侵 ConnectWise 云应用的身份"
+          },
+          {
+            "label": "Tenant sign-in",
+            "sub": "用应用凭据登录下游客户租户，无需用户交互"
+          },
+          {
+            "label": "Graph abuse",
+            "sub": "侦察、添加应用凭据、尝试提升到全局管理员"
+          }
+        ],
+        "base": {
+          "label": "ARTEX 多 Agent 框架",
+          "sub": "把扫描、侦察、喷洒和 OAuth 滥用提到机器速度"
+        },
+        "caption": "流程据微软威胁情报博客整理"
+      }
+    },
+    {
+      "id": "2026-10-23-agent-skills-to-aaif",
+      "category": "news",
+      "title": "Anthropic 将 Agent Skills 标准捐给 Linux 基金会旗下 AAIF",
+      "summary": "Anthropic 10 月 22 日宣布，把 Agent Skills 开放标准连同名称与标识、GitHub 组织和 agentskills.io 域名捐给 Agentic AI Foundation（AAIF）。AAIF 隶属 Linux 基金会，由 Anthropic 与 Block、OpenAI 于 2025 年共同创立，此前 Anthropic 已将 MCP 捐给该基金会。",
+      "key_points": [
+        "Anthropic 称已有 70 多个 Agent 平台集成 Agent Skills（包括 ChatGPT、Cursor、GitHub Copilot、VS Code），发布了 100 万个技能，安装量近 2.8 亿次",
+        "标准将由来自 Anthropic、Google、OpenAI 等公司的工程师以个人身份维护，首席维护者为 David Soria Parra 和 Mahesh Murag",
+        "拟议路线图包括版本化发布、正式的提案流程，以及面向技能作者和安装者的安全指南",
+        "公告未提到对现有技能格式或产品的改动；不加入 AAIF 也可以继续使用和贡献"
+      ],
+      "why_it_matters": "SKILL.md 技能包已成为跨 Agent 的通用扩展格式，交给中立基金会治理后，跨平台兼容和安全规范有了公共讨论渠道；写技能的团队可以关注 agentskills 仓库里的规范变更提案。",
+      "sources": [
+        {
+          "title": "Donating Agent Skills to the Agentic AI Foundation",
+          "url": "https://www.anthropic.com/news/donating-agent-skills-to-the-agentic-ai-foundation",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-22"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "agent"
+      ],
+      "importance": 4,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-23-openai-models-google-cloud",
+      "category": "news",
+      "title": "Google Cloud 上线 OpenAI 模型，私有预览开放",
+      "summary": "Google Cloud 10 月 21 日宣布在 Model Garden 中提供 OpenAI 模型，首批为 GPT-6 Astra、GPT-6.1 Sol 和 GPT-6 Luna，目前以私有预览形式向部分企业客户开放。Google 称自己由此成为唯一同时提供 Gemini、Claude 和 GPT 的超大规模云厂商。",
+      "key_points": [
+        "即日起可通过 Google Cloud API 调用这些模型，也可把本地 Codex CLI 和桌面端工作流接到 Google 的平台做推理",
+        "OpenAI 模型通过 Google Cloud Marketplace 交易，计入统一账单并可抵扣已有云承诺消费",
+        "提示词、上下文和输出留在客户指定的数据边界内，不用于训练基础模型；零数据保留和机密计算选项「即将推出」",
+        "公告未披露价格和区域；Gemini for business 和 Google Antigravity 中的 OpenAI 模型也标注为即将推出"
+      ],
+      "why_it_matters": "已在 Google Cloud 上的企业可以在同一合同、同一治理体系下比较和切换三家闭源模型，多模型路由的采购门槛进一步降低；但目前仍是私有预览，需要申请。",
+      "sources": [
+        {
+          "title": "Google Cloud expands model choice and flexibility, bringing OpenAI models to customers",
+          "url": "https://cloud.google.com/blog/products/ai-machine-learning/google-cloud-brings-openai-models-to-customers",
+          "kind": "primary",
+          "publisher": "Google Cloud",
+          "published_at": "2026-10-21"
+        }
+      ],
+      "tags": [
+        "llm",
+        "infra"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-23-php2shell-exploited-before-disclosure",
+      "category": "news",
+      "title": "AWS：PHP2Shell 漏洞在公开前 4 天已被利用",
+      "summary": "跟进昨日报道的 PHP 严重漏洞：AWS 10 月 21 日披露，其 MadPot 蜜罐在 10 月 17 日就观察到针对 PHP2Shell 的利用尝试，比公开披露早 4 天；10 月 21 日 UTC 02:00 起，在禁令期内已出现多个 PoC 和来自多个匿名网络的攻击。补丁于当天 14:00 发布，修复 CVE-2026-109618 和 CVE-2026-109619。",
+      "key_points": [
+        "AWS 称攻击者如何在禁令期内拿到漏洞信息目前仍不清楚；公开后数小时内又出现更多 PoC，并几乎立即被用于攻击其传感器",
+        "升级到修复版本是同时解决两个 CVE 的唯一完整办法，没有仅靠配置就能完全规避的方案",
+        "暂时无法升级时可考虑阻止 multipart 文件上传（先测试影响），并在表单上传请求中搜索 PHP_SESSION_UPLOAD_PROGRESS 字符串",
+        "AWS 建议调查应从最早已知活动（10 月 17 日）开始，并把面向公网的严重漏洞修复时限按小时计算"
+      ],
+      "why_it_matters": "说明「由 AI 发现、协调披露」并不保证防守方先手，运行 PHP 的团队不能以公告日期作为排查起点。",
+      "sources": [
+        {
+          "title": "Amazon threat intelligence identifies PHP2Shell exploitation prior to public disclosure in MadPot",
+          "url": "https://aws.amazon.com/blogs/security/amazon-threat-intelligence-identifies-php2shell-exploitation-prior-to-public-disclosure-in-madpot/",
+          "kind": "primary",
+          "publisher": "AWS Security Blog",
+          "published_at": "2026-10-21"
+        }
+      ],
+      "tags": [
+        "safety",
+        "infra"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "follow_up_of": "2026-10-22-php2shell-ai-found-rce"
+    },
+    {
+      "id": "2026-10-23-openai-usage-policy-gateways",
+      "category": "news",
+      "title": "OpenAI 更新使用政策：模型路由和 AI 网关须先经审批",
+      "summary": "OpenAI 10 月 21 日发文，说明将让直接调用、合作方托管和经销商渠道适用一致的安全标准，并更新使用政策，11 月 20 日生效。新规要求提供 OpenAI 模型直接访问的服务（如模型路由、AI 网关）在对外提供前须经 OpenAI 审核批准。",
+      "key_points": [
+        "合作方须维持与 OpenAI 一致的安全措施，调查潜在违规并配合执法",
+        "客户可提交 SafetyID，让 OpenAI 在调查时区分不同终端用户而无需知道其身份",
+        "OpenAI 称滥用可能来自终端用户、被盗账号或泄露的 API key；处置以有记录的行为和风险为依据，并按比例执行"
+      ],
+      "why_it_matters": "自建或采购 LLM 网关、多模型路由的团队需要确认供应商是否已获批准，并评估为终端用户传递 SafetyID 的改造工作量。",
+      "sources": [
+        {
+          "title": "Broad access through consistent standards",
+          "url": "https://openai.com/index/broad-access-through-consistent-standards/",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-21"
+        }
+      ],
+      "tags": [
+        "policy",
+        "safety",
+        "infra"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-23-etsy-ai-listing-rules",
+      "category": "news",
+      "title": "Etsy 收紧 AI 规则：商品须附一张未经编辑的实拍图",
+      "summary": "Etsy 10 月 22 日更新 AI 使用政策和商品图片要求：每个商品至少要有一张在真实背景下拍摄、未经编辑的实物照片（部分品类例外），所有图片必须如实反映买家将收到的商品。AI 生成的图纸、食谱、教程等功能性指南被禁止，完全没有人参与的机器人批量上架会被下架。",
+      "key_points": [
+        "仍允许用 AI 等工具调光、调色、裁剪或换背景，前提是商品看起来与实物一致",
+        "图片不合规且买家以「与描述严重不符」开案时，卖家可能需要退款",
+        "上传图片时表单会标出 AI 生成的图片；用户可通过「举报此商品」反馈误导性 AI 图片，初期只用于收集信息",
+        "AI 生成的艺术品仍可销售，但须披露 AI 使用，不能标为手工或完全原创"
+      ],
+      "why_it_matters": "这是大型电商平台对「AI 生成商品图」划出的较细边界，做电商内容生成工具或在平台开店的团队可以参照这套「允许编辑、禁止失真」的规则。",
+      "sources": [
+        {
+          "title": "Important updates to AI use on Etsy",
+          "url": "https://www.etsy.com/seller-handbook/article/1522733284810",
+          "kind": "primary",
+          "publisher": "Etsy",
+          "published_at": "2026-10-22"
+        }
+      ],
+      "tags": [
+        "policy",
+        "multimodal"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-23-nemotron-3-5-retrieval",
+      "category": "opensource",
+      "title": "NVIDIA 开放 Nemotron 3.5 嵌入、重排与文档解析模型",
+      "summary": "NVIDIA 10 月 21 日发布 Nemotron 3.5 检索模型组合：支持文本和图像的 8B、1B 嵌入模型（含 NVFP4 量化版），8B 重排模型，以及 631M 参数的文档解析模型 Parse，权重在 Hugging Face 发布，可商用。Embed 8B 模型卡标注的许可为 OpenMDW-1.1。",
+      "key_points": [
+        "Embed 8B 在 ViDoRe v3.1 上 nDCG@10 为 61.17，NVIDIA 称在稠密检索模型中排第一；蒸馏得到的 1B 版为 58.38",
+        "Rerank 8B 在图文混合重排上为 60.49，高于 Qwen3-VL-Reranker-8B 的 59.17；加入重排后 Agent 每次查询的 token 成本降低约 14%",
+        "Parse 在 ParseBench 上三遍模式得分 75.20，单张 H100 每秒 10.5 页；单遍模式 72.74，每秒 16.1 页",
+        "可从 Hugging Face 下载，也可经 NIM 或 Baseten、DeepInfra 等平台调用；NeMo 提供微调配方"
+      ],
+      "why_it_matters": "需要在扫描件、图表、幻灯片里做检索的 RAG 和 Agent 团队多了一套可本地部署的「解析—嵌入—重排」组合，可与现有方案做对比评测。",
+      "sources": [
+        {
+          "title": "NVIDIA Nemotron 3.5 Embed, Rerank, and Parse",
+          "url": "https://huggingface.co/blog/nvidia/nemotron-retriever-world-class-agentic-retrieval",
+          "kind": "primary",
+          "publisher": "Hugging Face Blog (NVIDIA)",
+          "published_at": "2026-10-21"
+        },
+        {
+          "title": "nvidia/Nemotron-3.5-Embed-8B-BF16",
+          "url": "https://huggingface.co/nvidia/Nemotron-3.5-Embed-8B-BF16",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": [
+        "rag",
+        "open-weights",
+        "multimodal"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://huggingface.co/nvidia/Nemotron-3.5-Embed-8B-BF16",
+        "license": "OpenMDW-1.1"
+      }
+    },
+    {
+      "id": "2026-10-23-granite-speech-5",
+      "category": "opensource",
+      "title": "IBM 发布 Granite Speech 5.0，并更新会议转写模型",
+      "summary": "IBM 10 月 21 日发布 Granite Speech 5.0 系列，三款模型均为 Apache 2.0 许可。新的 granite-speech-5.0-2b 支持英、法、德、西、葡、日六种语言转写及与英语互译；470M 的 turboctc 编码器扩展到 7 种语言；面向多人对话的 granite-speech-4.1-2b-plus 更新后可直接替换旧版。",
+      "key_points": [
+        "granite-speech-5.0-2b 在 Open ASR 排行榜英语短音频测试中平均 WER 为 5.06%，在开放权重 ASR 模型中排第二；支持最多 2,000 个词的关键词偏置",
+        "turboctc 的 RTFx 达到 19,870，发布时约为 12,600，并原生输出标点和大小写",
+        "2b-plus 更新后长音频 WER 从 13.53 降到 10.22，关键词偏置词 WER 从 11.79 降到 6.48，说话人归属转写 cpWER 从 30.5 降到 28.48",
+        "可用 Transformers、vLLM、llama.cpp 和 mlx-audio 运行"
+      ],
+      "why_it_matters": "做会议纪要、客服录音分析的团队可以用可商用的 2B 级模型在本地完成转写、翻译和说话人区分，关键词偏置适合行业术语多的场景。",
+      "sources": [
+        {
+          "title": "Granite Speech 5.0: Transcribe, Translate, and Attribute",
+          "url": "https://huggingface.co/blog/ibm-granite/granite-speech-5",
+          "kind": "primary",
+          "publisher": "Hugging Face Blog (IBM Granite)",
+          "published_at": "2026-10-21"
+        }
+      ],
+      "tags": [
+        "multimodal",
+        "open-weights"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://huggingface.co/blog/ibm-granite/granite-speech-5",
+        "license": "Apache-2.0"
+      },
+      "figure": {
+        "type": "bars",
+        "title": "granite-speech-4.1-2b-plus 更新后三项错误率均下降",
+        "series": [
+          "更新前",
+          "更新后"
+        ],
+        "rows": [
+          {
+            "label": "长音频 WER",
+            "values": [
+              13.53,
+              10.22
+            ]
+          },
+          {
+            "label": "关键词偏置词 WER",
+            "values": [
+              11.79,
+              6.48
+            ]
+          },
+          {
+            "label": "说话人归属 cpWER",
+            "values": [
+              30.5,
+              28.48
+            ]
+          }
+        ],
+        "caption": "数据来自 IBM Granite 在 Hugging Face 的发布博客，均为错误率，越低越好"
+      }
+    },
+    {
+      "id": "2026-10-23-omnara-managed-agents",
+      "category": "opensource",
+      "title": "Omnara 开源：可自托管的「托管 Agent」运行平台",
+      "summary": "Omnara 以 Show HN 形式发布开源项目，定位为 Claude Managed Agents 的开源替代：平台负责 Agent 的执行与状态，模型、工具、运行机器和交互方式由用户自选。项目采用 Apache 2.0 许可，后端用 Go 编写，可用 Docker Compose 自托管。",
+      "key_points": [
+        "Agent 状态以原子方式提交到 Postgres，可从崩溃、重启和机器临时断连中恢复",
+        "可运行在 Blaxel、Daytona、Unikraft 沙箱或自己的电脑、虚拟机上，运行中可增减机器",
+        "自带 API key，支持 OpenAI Responses、Chat Completions 和 Anthropic Messages 三种接口格式，工具支持技能和 HTTP MCP 服务",
+        "README 提醒本地默认配置不安全，不要直接用于正式部署"
+      ],
+      "why_it_matters": "想要长时间运行、可恢复的后台 Agent，又不想绑定单一模型厂商的团队，可以用它搭原型；自托管时 Agent 历史留在自己的 Postgres 里，便于做评测和分析。",
+      "sources": [
+        {
+          "title": "omnara-ai/omnara",
+          "url": "https://github.com/omnara-ai/omnara",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "infra"
+      ],
+      "importance": 2,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/omnara-ai/omnara",
+        "license": "Apache-2.0",
+        "language": "Go"
+      }
+    },
+    {
+      "id": "2026-10-23-claude-code-2-1-307",
+      "category": "tools",
+      "title": "Claude Code 2.1.305–2.1.308：新增安全事件遥测",
+      "summary": "Claude Code 10 月 20–22 日连续发布 2.1.305 至 2.1.308。2.1.307 新增 claude_code.safety_event OpenTelemetry 事件：每当工具调用被权限规则、自动模式、安全检查、Hook 或沙箱拦截、要求确认或退回时都会上报。",
+      "key_points": [
+        "2.1.307 修复连接中途断开时 HTTP MCP 工具调用被发送两次的问题，现在只对只读或幂等工具重试",
+        "2.1.307 新增 `@claude review stop`（也可用 off、pause），用于结束「每次都评审」的订阅",
+        "2.1.305 新增 sandbox.allowNestedUserNamespaces，允许沙箱内的 Linux 命令创建用户命名空间；更新日志提醒这可能绕过沙箱的文件保护",
+        "2.1.305 修复经 Vertex、Bedrock 等网关时因拒绝工具搜索导致请求失败的问题，这是 2.1.304 引入的回归"
+      ],
+      "why_it_matters": "需要审计编码 Agent 行为的团队，可以把 safety_event 接入现有可观测性平台，统计哪些操作最常被拦截，据此调整权限规则。",
+      "sources": [
+        {
+          "title": "Claude Code changelog",
+          "url": "https://code.claude.com/docs/en/changelog",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "coding",
+        "devtools",
+        "safety"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "follow_up_of": "2026-10-20-claude-code-2-1-304"
+    },
+    {
+      "id": "2026-10-23-openai-cli",
+      "category": "tools",
+      "title": "OpenAI 推出官方命令行工具 OpenAI CLI",
+      "summary": "OpenAI 在 GitHub 公开官方命令行工具 openai-cli，用 Go 编写、Apache 2.0 许可，可在终端或脚本中直接调用 OpenAI REST API，例如生成图片、上传文件、提交批处理任务和查看结果，无需先写应用程序。该项目近日在 Hacker News 上引起讨论。",
+      "key_points": [
+        "命令按资源组织（openai [resource] <command>），也覆盖用量统计等管理端点，管理端点需单独的 admin key",
+        "支持 json、jsonl、yaml 等多种输出格式，可用 GJSON 语法通过 --transform 筛选结果",
+        "可用 @file 方式把文件内容嵌入参数，包括嵌在 JSON 或 YAML 中",
+        "官方文档说明它与编码 Agent Codex CLI 是不同的工具"
+      ],
+      "why_it_matters": "运维和数据同事可以不写代码就完成批处理提交、文件管理和用量查询，也便于把这些操作写进 shell 脚本或交给编码 Agent 调用。",
+      "sources": [
+        {
+          "title": "openai/openai-cli",
+          "url": "https://github.com/openai/openai-cli",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "OpenAI CLI",
+          "url": "https://developers.openai.com/api/reference/cli/index.md",
+          "kind": "primary",
+          "publisher": "OpenAI"
+        }
+      ],
+      "tags": [
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-10-23-defenseclaw-openshell",
+      "category": "kits",
+      "title": "Cisco DefenseClaw：给编码 Agent 加上沙箱、策略与审计",
+      "summary": "Cisco 10 月 21 日介绍了开源的 DefenseClaw 与 NVIDIA OpenShell 的集成。OpenShell 让每个 Agent 运行在零信任沙箱中，由管理员规定可访问的文件、网络、工具和凭据；DefenseClaw 在此之上按登录用户和组选择策略，对每次提示、工具调用和结果做护栏检查，并留下统一的审计记录。",
+      "key_points": [
+        "安装时会询问要保护哪个 Agent（默认 Codex），文档列出的连接器包括 Claude Code、Cursor、GitHub Copilot、OpenHands、OpenCode 等",
+        "策略要求沙箱时，直接在宿主机启动的 Agent 会被拦截，并提示对应的沙箱启动命令，如 defenseclaw sandbox run claude",
+        "OpenShell 中的 Agent 只能看到模型服务凭据的占位符，所有连接由受信任的监管进程转发",
+        "README 明确说明它负责执行策略和记录证据，不保证 Agent 或第三方能力没有风险；安装方式为 curl 管道到 bash，建议先审阅脚本"
+      ],
+      "why_it_matters": "适合需要在团队范围内统一管控编码 Agent 权限、又要满足审计要求的平台或安全团队；个人开发者也可以用沙箱模式降低 Agent 误操作的影响。",
+      "sources": [
+        {
+          "title": "Protect enterprise coding agents with Cisco DefenseClaw and NVIDIA OpenShell",
+          "url": "https://blogs.cisco.com/ai/protect-enterprise-coding-agents-with-cisco-defenseclaw-and-nvidia-openshell",
+          "kind": "primary",
+          "publisher": "Cisco Blogs",
+          "published_at": "2026-10-21"
+        },
+        {
+          "title": "cisco-ai-defense/defenseclaw",
+          "url": "https://github.com/cisco-ai-defense/defenseclaw",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "DefenseClaw: Install",
+          "url": "https://cisco-ai-defense.github.io/defenseclaw/docs/get-started/install/",
+          "kind": "primary",
+          "publisher": "Cisco"
+        }
+      ],
+      "tags": [
+        "safety",
+        "coding",
+        "agent"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "kit": {
+        "kind": "hook",
+        "name": "DefenseClaw",
+        "repo": "https://github.com/cisco-ai-defense/defenseclaw",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "Cursor",
+          "GitHub Copilot",
+          "OpenHands",
+          "OpenCode"
+        ],
+        "capabilities": [
+          "按操作系统登录身份和用户组选择策略配置，决定沙箱与出站规则",
+          "对每次提示、工具调用和工具结果做护栏检查和可观测记录",
+          "按主机名控制 Agent 的访问目标，无需解密流量",
+          "会话结束时让开发者保留、撤销或回退 Agent 的改动",
+          "把审计记录导出到 Splunk 或任意 OpenTelemetry 后端"
+        ],
+        "highlights": [
+          "强制沙箱：策略要求时拦截在宿主机直接启动的 Agent，并给出正确的启动命令",
+          "凭据隔离：配合 OpenShell，Agent 只拿到占位符而非真实的模型服务密钥",
+          "安装器支持用 cosign 校验 checksums.txt 的 Sigstore 签名"
+        ],
+        "install": "curl -LsSf https://github.com/cisco-ai-defense/defenseclaw/releases/latest/download/install.sh | bash\ndefenseclaw quickstart"
+      }
+    },
+    {
+      "id": "2026-10-23-ai-vuln-disclosure-window",
+      "category": "ideas",
+      "title": "AI 批量挖出漏洞后，披露窗口该怎么定？",
+      "summary": "OpenAI 10 月 21 日以 PHP 漏洞为例提出「Patch the Planet」协调披露框架：先在上游修复、给受影响机构预留准备时间、与政府协调、推动各产品线更新，补丁就绪后再发布指南，并预计此类发现会在未来几个月急剧增加。同一天 AWS 却报告 PHP2Shell 在禁令期内就已被利用，主张修复时限按小时计。",
+      "key_points": [
+        "OpenAI 的观点：分阶段提前通知分发商、托管商等防守方，能让补丁和防护在公开时就位；它承诺提供 10 亿美元补贴的 Daybreak 访问，支持资源有限的关键服务防守方",
+        "OpenAI 也承认即使有限的细节也可能暴露漏洞，提出在出现在野利用、泄露或补丁本身暴露问题时重新评估时间表，并公开征求对披露窗口长短的意见",
+        "AWS 的观点：AI 让把补丁或公告变成可用利用的成本更低，7 天或 30 天的修复时限已跟不上威胁，检测也不应依赖针对具体 CVE 的特征",
+        "两者并不完全对立：分歧集中在提前通知范围越大、泄露风险越高这一权衡上"
+      ],
+      "why_it_matters": "当 AI 让发现漏洞和编写利用都变快，协调披露的「保密期」和企业的「补丁 SLA」都需要重新设定；安全和运维负责人可以据此复查自己的紧急补丁流程。",
+      "sources": [
+        {
+          "title": "Patch the Planet: coordinating a global response to critical vulnerabilities that AI agents uncover",
+          "url": "https://openai.com/index/coordinated-disclosure-of-critical-vulnerabilities/",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-21"
+        },
+        {
+          "title": "Amazon threat intelligence identifies PHP2Shell exploitation prior to public disclosure in MadPot",
+          "url": "https://aws.amazon.com/blogs/security/amazon-threat-intelligence-identifies-php2shell-exploitation-prior-to-public-disclosure-in-madpot/",
+          "kind": "primary",
+          "publisher": "AWS Security Blog",
+          "published_at": "2026-10-21"
+        }
+      ],
+      "tags": [
+        "safety",
+        "policy"
+      ],
+      "importance": 3,
+      "actionability": "know",
+      "follow_up_of": "2026-10-22-php2shell-ai-found-rce"
+    },
+    {
+      "id": "2026-10-23-openai-fde-codex-core",
+      "category": "practices",
+      "title": "OpenAI 前线部署工程团队：以 Codex 为公共内核复用交付",
+      "summary": "OpenAI 前线部署工程（FDE）负责人 Colin Jarvis 10 月 22 日撰文介绍团队做法：从业务结果出发攻克客户最难的问题，再把方案沉淀为可复用的产品能力。早期每个项目都要大量定制集成，后来团队把应用重构为以 Codex 为公共内核、在共享基础上以插件和技能扩展，Codex 也取代了各用例单独开发的终端界面。",
+      "key_points": [
+        "重构后每个项目约 90% 的定制代码被删除；一个 2026 年 8 月的案例首次部署用了两个月，推广到第二个团队只用一天",
+        "某半导体客户约 15 名 FDE 做了 10 多个芯片验证用例，AI 生成定向测试节省约 48% 的时间，3 到 6 个月内全部上线",
+        "某电信客户语音客服场景中，关键生产评测从约 60% 提升到 90% 以上才达到上线要求，前后约六个月",
+        "原则之一是奥卡姆剃刀：LLM 开发中最简单的方案通常胜出"
+      ],
+      "why_it_matters": "企业内部做 AI 落地的团队可以借鉴「先做成一个、再抽出公共内核和技能」的路线，用插件和技能代替逐个项目的定制代码；文中数字均为 OpenAI 自述的客户案例。",
+      "sources": [
+        {
+          "title": "What forward deployed engineering means at OpenAI",
+          "url": "https://openai.com/index/forward-deployed-engineering-means/",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-22"
+        }
+      ],
+      "tags": [
+        "agent",
+        "agent-skills",
+        "workflow"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-23-vocabx-vocabulary-specialization",
+      "category": "practices",
+      "title": "VocabX：按成本重建小模型词表，评分模型推理成本降 77%",
+      "summary": "Dharma-AI 10 月 21 日介绍 VocabX：在基础模型、数据和训练配方不变的前提下，为领域小模型重建分词词表。新 token 不按出现频次挑选，而按省下的钱挑选——每个被省掉的 token 按其所在字段（系统提示、用户消息或模型回复）的价格加权，在他们的场景中省一个回复 token 的价值是输入 token 的 7.4 倍。",
+      "key_points": [
+        "同时作用于两层：重建子词切分，并把重复出现的表达、整行或 JSON 外壳合并为「宏 token」",
+        "在基于 Qwen3-4B 的葡萄牙语作文评分模型上，平均回复长度从 350 降到 101 个 token，实测成本降低 77.0%，评测分数从 0.703 升到 0.810",
+        "一个把分数和 JSON 结构合并成单个 token 的早期版本得分仅 0.689；作者结论是承载模型决策的片段不应被压缩",
+        "作者说明论文仍在评审中，77% 只来自一个生产案例，7.4 倍的价格比也取决于其硬件和负载"
+      ],
+      "why_it_matters": "输出格式固定、调用量大的领域小模型（评分、抽取、分类）可以考虑「词表专门化」这条降本路径；评估时要同时看质量，别让关键决策被合并进结构 token。",
+      "sources": [
+        {
+          "title": "How Specializing the Vocabulary of SLMs Can Cut Inference Cost by 77%",
+          "url": "https://huggingface.co/blog/Dharma-AI/vocabx-vocabulary-specialization",
+          "kind": "primary",
+          "publisher": "Hugging Face Blog (Dharma-AI)",
+          "published_at": "2026-10-21"
+        }
+      ],
+      "tags": [
+        "inference",
+        "fine-tuning"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "experiment_id": "2026-10-23-cost-weighted-vocab"
+    },
+    {
+      "id": "2026-10-23-skill-explain-the-why",
+      "category": "skills",
+      "title": "给 AI 提要求时说出「为什么」，它才能举一反三",
+      "summary": "Anthropic 的提示词指南建议，把 Claude 当作「聪明但刚入职、不了解你们规矩」的新同事：只下禁令，它只能照字面执行；说明这条要求背后的原因，它就能理解目标，把原则推广到你没写到的情况。指南举的例子是：与其只写「不要用省略号」，不如说明「这段话会由语音合成朗读，引擎不知道怎么读省略号」。",
+      "key_points": [
+        "原因让 AI 能处理规则没覆盖到的情况，例如同样不适合朗读的括号、表情符号",
+        "指南建议的自查方法：把提示词给一位不了解任务的同事看，如果他会困惑，AI 也会",
+        "顺序或完整性重要的要求，用编号列表写出步骤"
+      ],
+      "why_it_matters": "很多「AI 不听话」其实是只给了规则、没给目的；补一句「这是给谁用、用在哪里」，往往比多写十条禁令更有效。",
+      "sources": [
+        {
+          "title": "Be clear, direct, and detailed",
+          "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/be-clear-and-direct",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "context",
+        "scenario": "让 AI 改写一段将在门店广播里播放的活动通知",
+        "bad": "帮我把这段活动通知改得更好一点。不要用缩写，不要用括号，不要超过 200 字。",
+        "good": "帮我改写下面这段活动通知。它会在[门店广播]里由语音合成朗读，听众是[正在排队结账的顾客]，大多只会听一遍。所以：\n1. 不要用缩写、括号、表情符号和网址——读出来会很别扭或听不懂；\n2. 控制在 [200] 字以内，大约一分钟能播完；\n3. 最重要的信息（[活动内容、截止时间]）放在开头，并在结尾再重复一次。\n如果原文里有其他不适合朗读的写法，也一并改掉，并告诉我改了哪些。\n\n原文：[粘贴通知]",
+        "why": [
+          "说明「会被语音朗读」，AI 就能自己推出表情符号、网址等同样不适合的写法，而不只是照搬三条禁令",
+          "交代听众「只听一遍」，AI 才知道要把重点前置并重复",
+          "给出字数背后的原因（约一分钟），AI 在取舍内容时有了依据",
+          "要求列出改动，方便你核对它对规则的理解是否正确"
+        ],
+        "practice": "找一条你最近写给 AI 的「不要……」要求，在后面补一句「因为……」，对比两次输出的差别。"
+      }
+    },
+    {
+      "id": "2026-10-23-decision-model-controllers",
+      "category": "research",
+      "title": "论文：专用决策模型指挥 Agent，成本升 19%、通过率不变",
+      "summary": "论文 Good Judgment, Bad Advice 在 Terminal-Bench 2.1 上做了预先登记的对照实验：基于 Claude Sonnet 5.5 的终端 Agent 循环保持不变，只在「是否结束、是否验证、是否换方法」等固定决策点更换控制器，比较无控制器、确定性规则、小模型 Claude Haiku 5.5、专用决策模型 Jev 1.13 和模仿 Jev 选择频率的安慰剂。",
+      "key_points": [
+        "21 个保留任务、315 次试验中，Jev 让每次尝试成本提高 19%（几何均值比 1.19，95% 置信区间 1.02–1.36），通过率均为 73.0%",
+        "离线评估中 Jev 判断「该结束」的 AUROC 为 0.78，高于规则的 0.62 和小模型的 0.6",
+        "但 Jev 校准偏差明显：平均完成概率为 0.50，而实际 87% 的 run 已通过，因此触发了不必要的验证；没有任何控制器选择过放弃",
+        "作者结论：有用的判断信号并没有转化为有用的干预；代码已在 GitHub 公开"
+      ],
+      "why_it_matters": "给 Agent 加「裁判」或「监督者」之前，除了看它判断得准不准，还要看概率是否校准、它触发的动作是否真的改善结果，否则只会多花钱。",
+      "sources": [
+        {
+          "title": "Good Judgment, Bad Advice: Decision-Model Controllers Raise Agent Cost Without Improving Success",
+          "url": "https://huggingface.co/papers/2610.24649",
+          "kind": "primary",
+          "publisher": "Hugging Face Papers"
+        },
+        {
+          "title": "namanvats/decision-model-controllers",
+          "url": "https://github.com/namanvats/decision-model-controllers",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "evaluation",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know",
+      "experiment_id": "2026-10-23-controller-calibration",
+      "figure": {
+        "type": "bars",
+        "title": "Jev 离线排序最准，却没带来更高通过率",
+        "series": [
+          "「该结束」判断 AUROC"
+        ],
+        "rows": [
+          {
+            "label": "Jev 1.13",
+            "values": [
+              0.78
+            ]
+          },
+          {
+            "label": "确定性规则",
+            "values": [
+              0.62
+            ]
+          },
+          {
+            "label": "小模型",
+            "values": [
+              0.6
+            ]
+          }
+        ],
+        "caption": "数据来自论文摘要页（arXiv:2610.24649），为离线评估结果"
+      }
+    },
+    {
+      "id": "2026-10-23-more-memory-worse-agents",
+      "category": "research",
+      "title": "论文：Agent 记住的「经验规则」可能让错误自我复制",
+      "summary": "印第安纳大学的论文 More Memory, Worse Agents 研究 Agent 的外部记忆设计：除了保存原始轨迹和结果，是否还应长期保存从中归纳出的规则、总结和技能。作者认为错误的抽象会在检索复用中扩散，并塑造新的轨迹、再归纳出重复同样错误的新抽象，称之为「错误复制」。",
+      "key_points": [
+        "提出 Anti-Persistence 设计：只保存轨迹和结果，按需临时生成针对当前任务的指导，用完即丢",
+        "由一个参考历史结果的自适应选择器决定是否以及如何生成指导",
+        "作者报告在多个基准和基座模型上，该设计在对比的记忆方案中留出集总体成功率最高、平均 LLM 调用成本最低；摘要未给出具体数字",
+        "结论：积累经验和持久保存对经验的解读应作为两个独立的设计选择"
+      ],
+      "why_it_matters": "给 Agent 加「自我总结的经验库」或自动生成技能时，要考虑错误规则被反复强化的风险，可以保留原始记录、定期重建而不是只追加。",
+      "sources": [
+        {
+          "title": "More Memory, Worse Agents: Error Reproduction and Anti-Persistence in LLM Agents",
+          "url": "https://arxiv.org/abs/2610.27406",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-19"
+        }
+      ],
+      "tags": [
+        "agent",
+        "context-engineering",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    }
+  ],
+  "experiments": [
+    "2026-10-23-controller-calibration",
+    "2026-10-23-cost-weighted-vocab"
+  ]
+}

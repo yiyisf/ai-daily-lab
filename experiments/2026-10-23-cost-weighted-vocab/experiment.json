@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-23-cost-weighted-vocab",
+  "title": "按成本而非频次挑选宏 token",
+  "goal": "受 Dharma-AI 的 VocabX 文章启发，在模拟的作文评分请求上比较两种新增宏 token 的挑法：按省下的 token 数（频次）挑，还是按省下的钱（输出 token 单价为输入的 7.4 倍）挑，观察在不同预算下的 token 减少、加权成本减少和回复长度。",
+  "related_item": "2026-10-23-vocabx-vocabulary-specialization",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 120,
+  "expected": "按频次挑选省下的 token 更多，但按成本挑选省下的加权成本更多、回复更短；预算越紧差距越大",
+  "tags": ["inference", "fine-tuning"]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-23-controller-calibration",
+  "title": "排序好不等于建议好：Agent 控制器的校准偏差",
+  "goal": "受论文 Good Judgment, Bad Advice 启发，用模拟数据演示：一个离线排序（AUROC）更好的「是否已完成」控制器，如果概率整体偏低，按固定阈值行动会触发大量不必要的验证、推高成本而不改变通过率；用少量带标签的 run 做保序校准即可大幅缓解。",
+  "related_item": "2026-10-23-decision-model-controllers",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "控制器 A 的 AUROC 高于 B，但不必要验证比例和每次尝试成本都更高；校准后 A 的不必要验证减少一半以上",
+  "tags": ["agent", "evaluation"]
+}
