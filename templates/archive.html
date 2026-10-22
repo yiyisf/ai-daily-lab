@@ -50,7 +50,7 @@
   <ol class="archive">
     {% for i in issues %}
     <li>
-      <a class="date" href="{{ root }}daily/{{ i.date }}.html">{{ i.short }}<small>{{ i.weekday }} · {{ i.count }} 条{% if i.exp_count %} · {{ i.exp_count }} 个实验{% endif %}</small></a>
+      <a class="date" href="{{ root }}daily/{{ i.date }}.html">{% if i.cover %}<span class="archive-cover">{{ i.cover }}</span>{% endif %}{{ i.short }}<small>{{ i.weekday }} · {{ i.count }} 条{% if i.exp_count %} · {{ i.exp_count }} 个实验{% endif %}</small></a>
       <div>
         <p>{{ i.editor_note }}</p>
         {% if i.tldr %}<ol>{% for t in i.tldr %}<li><a href="{{ root }}item/{{ t.item_id }}.html">{{ t.text }}</a></li>{% endfor %}</ol>{% endif %}

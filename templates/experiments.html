@@ -7,12 +7,25 @@
     <h1>可验证实验</h1>
     <p>每个实验都由 GitHub Actions 在干净环境中实际执行，状态和输出来自真实运行结果。失败的实验同样保留，帮大家少踩坑。</p>
   </div>
+  {% set total = exps | length %}
+  {% if total %}
+  <section class="panel exp-overview" aria-label="实验概览">
+    <div class="exp-ov-bar" role="img" aria-label="已验证 {{ overview.passed }}，部分可用 {{ overview.partial }}，复现失败 {{ overview.failed }}，待执行 {{ overview.pending }}">
+      {% for k in ['passed', 'partial', 'failed', 'pending'] %}{% if overview[k] %}<span class="seg-{{ k }}" style="flex:{{ overview[k] }}"></span>{% endif %}{% endfor %}
+    </div>
+    <dl class="exp-ov-stats">
+      {% for k in ['passed', 'partial', 'failed', 'pending'] %}<div><dt><i class="seg-{{ k }}"></i>{{ status_label[k] }}</dt><dd>{{ overview[k] }}</dd></div>{% endfor %}
+      {% if checks[1] %}<div><dt>自动检查</dt><dd>{{ checks[0] }}/{{ checks[1] }}<small>通过</small></dd></div>{% endif %}
+    </dl>
+  </section>
+  {% endif %}
   <div class="exp-grid">
     {% for e in exps %}
     <a class="exp-tile" href="{{ root }}experiments/{{ e.id }}.html">
       <span class="badge status-{{ e.status }}" style="align-self:flex-start">{{ status_label[e.status] }}</span>
       <strong>{{ e.title }}</strong>
-      <span class="sub">{{ e.id[:10] }} · {{ e.runtime | capitalize }}{% if e.result and e.result.duration_seconds is not none %} · 耗时 {{ e.result.duration_seconds | dur }}{% endif %}</span>
+      {% if e.viz and e.viz.result %}<span class="exp-tile-result">{{ e.viz.result }}</span>{% endif %}
+      <span class="sub">{% if e.viz and e.viz.total %}检查 {{ e.viz.passed }}/{{ e.viz.total }} · {% endif %}{{ e.id[:10] }} · {{ e.runtime | capitalize }}{% if e.result and e.result.duration_seconds is not none %} · 耗时 {{ e.result.duration_seconds | dur }}{% endif %}</span>
     </a>
     {% endfor %}
   </div>

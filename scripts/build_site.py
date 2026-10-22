@@ -43,6 +43,7 @@ from common import (  # noqa: E402
     week_range, weekly_files,
 )
 from weekly import week_issues, week_view, weekly_markdown  # noqa: E402
+from visuals import cover_svg, metric_figures, parse_output  # noqa: E402
 from figures import delta as fig_delta, figure_html, figure_markdown, fmt as fmt_num  # noqa: E402
 
 SOURCE_KINDS = {"primary": "原文", "secondary": "报道", "discussion": "讨论"}
@@ -190,6 +191,16 @@ def experiment_markdown(e: dict) -> str:
     if lines and lines[0].startswith("# "):
         lines = lines[1:]
     out += ["\n".join(lines).strip(), ""]
+    viz = e.get("viz")
+    if viz and (viz["result"] or viz["checks"] or viz["metrics"]):
+        out += ["## 结果一览", ""]
+        if viz["result"]:
+            out += [f"**结论**：{viz['result']}", ""]
+        if viz["checks"]:
+            out += [f"检查 {viz['passed']}/{viz['total']} 通过：", ""]
+            out += [f"- {'✅' if c['ok'] else '❌'} {c['text']}" for c in viz["checks"]] + [""]
+        if viz["metrics"]:
+            out += ["| 指标 | 实测值 |", "|---|---|"] + [f"| {m['label']} | {m['value']}{m['unit']} |" for m in viz["metrics"]] + [""]
     if res:
         out += ["## 实际运行输出", "", "```text", (res.get("stdout") or "（无输出）").rstrip(), "```", ""]
         if res.get("stderr"):
@@ -220,6 +231,9 @@ def experiment_view(exp_id: str) -> dict | None:
     if not e:
         return None
     e["status"] = experiment_status(e)
+    if e.get("result"):
+        e["viz"] = parse_output(e["result"].get("stdout", ""))
+        e["viz"]["figures"] = metric_figures(e["viz"]["metrics"])
     return e
 
 
@@ -444,6 +458,7 @@ def main() -> int:
 
         cat_counts = [{"key": c, "name": CATEGORIES[c], "count": len(its)} for c, its in groups]
         ctx = dict(common, issue=issue, date_cn=date_cn(d), groups=groups, exps=exps, exp_status=exp_status,
+                   cover=cover_svg(ordered, 148, link=True),
                    tldr=tldr, tldr_auto=tldr_auto, cat_counts=cat_counts, issue_no=idx + 1,
                    try_count=sum(1 for i in issue["items"] if i.get("actionability") == "try"),
                    top_count=sum(1 for i in issue["items"] if i["importance"] >= 4),
@@ -489,7 +504,7 @@ def main() -> int:
         manifest_entries.append({"date": d, "items": len(issue["items"]), "experiments": len(exps),
                                  "package": f"data/{d}.json", "sha256": sha256(pkg_path),
                                  "bytes": pkg_path.stat().st_size})
-        archive.append({"date": d, "short": date_cn(d, weekday=False), "weekday": "周" + WEEKDAYS[date.fromisoformat(d).weekday()],
+        archive.append({"date": d, "cover": cover_svg(ordered, 64, link=False), "short": date_cn(d, weekday=False), "weekday": "周" + WEEKDAYS[date.fromisoformat(d).weekday()],
                         "editor_note": issue["editor_note"], "tldr": issue.get("tldr"),
                         "top": tldr[0]["text"], "count": len(issue["items"]), "exp_count": len(exps)})
 
@@ -578,7 +593,10 @@ def main() -> int:
 
     all_exps.sort(key=lambda e: e["id"], reverse=True)
     (out / "experiments" / "index.html").write_text(
-        env.get_template("experiments.html").render(common, exps=all_exps, root="../", nav="experiments"),
+        env.get_template("experiments.html").render(
+            common, exps=all_exps, root="../", nav="experiments",
+            overview={k: sum(1 for e in all_exps if e["status"] == k) for k in ("passed", "partial", "failed", "pending")},
+            checks=(sum(e["viz"]["passed"] for e in all_exps if e.get("viz")), sum(e["viz"]["total"] for e in all_exps if e.get("viz")))),
         encoding="utf-8")
     for e in all_exps:
         readme = e.get("readme", "")

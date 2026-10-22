@@ -22,6 +22,24 @@
     </div>
   </div>
 
+  {% if e.viz and (e.viz.result or e.viz.checks or e.viz.figures) %}
+  <section class="viz" aria-label="结果一览">
+    {% if e.viz.result %}<div class="viz-result"><span class="viz-label">结论</span><p>{{ e.viz.result }}</p></div>{% endif %}
+    {% if e.viz.checks %}
+    <div class="viz-checks">
+      <div class="viz-checks-head">
+        <span class="viz-label">检查</span>
+        <span class="viz-meter" role="img" aria-label="{{ e.viz.passed }} / {{ e.viz.total }} 通过">{% for c in e.viz.checks %}<i class="{{ 'ok' if c.ok else 'bad' }}"></i>{% endfor %}</span>
+        <strong>{{ e.viz.passed }}/{{ e.viz.total }} 通过</strong>
+      </div>
+      <ul>{% for c in e.viz.checks %}<li class="{{ 'ok' if c.ok else 'bad' }}"><span aria-hidden="true">{{ '✓' if c.ok else '✗' }}</span>{{ c.text }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    {% for f in e.viz.figures %}{{ figure_html(f) }}{% endfor %}
+    <p class="viz-note">以上内容从实际运行输出中提取，完整输出见下方。</p>
+  </section>
+  {% endif %}
+
   <section class="exp-card" style="margin-top:28px">
     <div class="exp-card-foot" style="border-top:0">
       <code>{{ e.entry }}</code>

@@ -82,10 +82,12 @@
         <div class="exp-card-head">
           <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
             <span class="badge status-{{ exp.status }}">{{ status_label[exp.status] }}</span>
+            {% if exp.viz and exp.viz.total %}<span class="viz-pill {{ 'is-ok' if exp.viz.passed == exp.viz.total else 'is-bad' }}"><span class="viz-meter" aria-hidden="true">{% for c in exp.viz.checks %}<i class="{{ 'ok' if c.ok else 'bad' }}"></i>{% endfor %}</span>检查 {{ exp.viz.passed }}/{{ exp.viz.total }} 通过</span>{% endif %}
             <span class="muted" style="font-size:13px">{% if exp.result %}GitHub Actions 实际运行 · {{ exp.result.runtime_version or exp.runtime }}{% if exp.result.duration_seconds is not none %} · 耗时 {{ exp.result.duration_seconds | dur }}{% endif %}{% else %}等待 Actions 执行{% endif %}</span>
           </div>
           <div class="title">{{ exp.title }}</div>
           <p>{{ exp.goal }}</p>
+          {% if exp.viz and exp.viz.result %}<p class="viz-inline"><b>结论</b>{{ exp.viz.result }}</p>{% endif %}
         </div>
         {% if exp_output %}<pre class="terminal">{{ exp_output | safe }}</pre>{% endif %}
         <div class="exp-card-foot">
