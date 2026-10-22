@@ -540,6 +540,58 @@ dialog.share::backdrop { background: rgba(0, 0, 0, .45); }
 .share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
 .share-actions form { margin: 0; }
 
+/* ---------- issue cover (bubble cluster) ---------- */
+.cover { display: block; overflow: visible; }
+.cv { opacity: .9; }
+.cv-news { fill: var(--c-news); } .cv-opensource { fill: var(--c-opensource); } .cv-tools { fill: var(--c-tools); }
+.cv-kits { fill: var(--c-kits); } .cv-ideas { fill: var(--c-ideas); } .cv-practices { fill: var(--c-practices); }
+.cv-skills { fill: var(--c-skills); } .cv-research { fill: var(--c-research); }
+.cv-link .cv { transition: opacity var(--dur-1), stroke-width var(--dur-1); stroke: var(--bg); stroke-width: 0; }
+.cv-link:hover .cv, .cv-link:focus-visible .cv { opacity: 1; stroke-width: 1.6; }
+.issue-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: end; }
+.issue-cover { margin-bottom: -6px; }
+.archive-cover { display: block; margin-bottom: 8px; }
+.archive-cover .cover { width: 64px; height: 64px; }
+@media (max-width: 640px) {
+  .issue-head { grid-template-columns: minmax(0, 1fr) 84px; gap: 8px 12px; }
+  .issue-cover .cover { width: 84px; height: 84px; }
+  .issue-head .issue-kicker { grid-column: 1 / -1; }
+}
+
+/* ---------- experiment results (parsed from real output) ---------- */
+.viz { margin-top: 24px; display: flex; flex-direction: column; gap: 14px; }
+.viz .fig { margin: 0; }
+.viz-label { font-size: 12px; font-weight: 700; color: var(--ink-3); letter-spacing: .04em; }
+.viz-result { padding: 14px 18px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.viz-result p { margin: 4px 0 0; font-size: 15px; line-height: 1.7; color: var(--ink); overflow-wrap: anywhere; }
+.viz-checks { padding: 14px 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.viz-checks-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.viz-checks-head strong { font-size: 14px; }
+.viz-meter { display: inline-flex; gap: 3px; }
+.viz-meter i { width: 14px; height: 8px; border-radius: 2px; background: var(--ok-fg); }
+.viz-meter i.bad { background: var(--bad-fg); }
+.viz-checks ul { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.viz-checks li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; color: var(--ink-2); overflow-wrap: anywhere; }
+.viz-checks li.ok span { color: var(--ok-fg); font-weight: 700; }
+.viz-checks li.bad span { color: var(--bad-fg); font-weight: 700; }
+.viz-checks li.bad { color: var(--ink); }
+.viz-note { margin: 0; font-size: 12px; color: var(--ink-3); }
+.viz-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ok-fg); }
+.viz-pill.is-bad { color: var(--bad-fg); }
+.viz-pill .viz-meter i { width: 8px; height: 8px; }
+.viz-inline { margin: 6px 0 0 !important; font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.viz-inline b { margin-right: 8px; color: var(--accent-ink); }
+.exp-overview { margin: 24px 0 20px; }
+.exp-ov-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--surface-2); }
+.exp-ov-bar span, .exp-ov-stats i { display: block; }
+.seg-passed { background: var(--ok-fg); } .seg-partial { background: var(--warn-fg); } .seg-failed { background: var(--bad-fg); } .seg-pending { background: var(--line-strong); }
+.exp-ov-stats { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.exp-ov-stats dt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.exp-ov-stats dt i { width: 8px; height: 8px; border-radius: 2px; }
+.exp-ov-stats dd { margin: 2px 0 0; font-size: 22px; font-weight: 700; font-family: var(--font-serif); }
+.exp-ov-stats dd small { margin-left: 4px; font-size: 12px; font-weight: 400; font-family: var(--font-sans); color: var(--ink-3); }
+.exp-tile-result { font-size: 13px; color: var(--ink-2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+
 /* ---------- weekly report ---------- */
 .wk-note { margin: 12px 0 0; font-size: 14px; color: var(--ink-3); }
 .wk .actions { margin-top: 18px; }

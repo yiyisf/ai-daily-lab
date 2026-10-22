@@ -27,6 +27,8 @@
   </aside>
 
   <div class="content">
+    <div class="issue-head">
+    <div class="issue-head-text">
     <div class="issue-kicker">
       <span class="badge">AI 日报 · 第 {{ issue_no }} 期</span>
       <span>{{ issue['items'] | length }} 条</span>{% if exps %}<span aria-hidden="true">·</span><span>{{ exps | length }} 个实验</span>{% endif %}
@@ -35,6 +37,9 @@
       {% if next %}<a href="{{ root }}daily/{{ next }}.html">{{ next[5:] | replace('-', '月', 1) }}日 →</a>{% endif %}
     </div>
     <h1 class="issue-title">{{ date_cn }}</h1>
+    </div>
+    {% if cover %}<div class="issue-cover" title="本期封面：每个圆是一条内容，颜色表示栏目，越大越重要；点击跳到该条">{{ cover }}</div>{% endif %}
+    </div>
     <p class="lede">{{ issue.editor_note }}</p>
 
     <section class="panel tldr" aria-labelledby="tldr-title">
