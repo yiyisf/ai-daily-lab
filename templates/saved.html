@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon %}
-{% block title %}收藏夹 · AI Daily Lab{% endblock %}
+{% block title %}我的收藏与关注 · AI Daily Lab{% endblock %}
 {% block main %}
 <div class="wrap narrow">
   <div class="page-head">
-    <div class="issue-kicker"><span class="badge">收藏夹</span><span class="js-saved-summary">保存在本浏览器中</span></div>
-    <h1>我的收藏</h1>
+    <div class="issue-kicker"><span class="badge">我的</span><span class="js-saved-summary">保存在本浏览器中</span></div>
+    <h1>收藏、关注与练习</h1>
     <p>收藏只保存在当前浏览器里，换电脑或清理浏览器数据后会丢失。需要长期保存时，可以导出为 Markdown。</p>
     <div class="actions js-only">
       <button type="button" class="btn js-export-saved">{{ icon('markdown') }}导出为 Markdown</button>
@@ -15,5 +15,20 @@
   <noscript><p class="empty">收藏功能需要启用 JavaScript。</p></noscript>
   <div class="js-saved-list" data-categories='{{ categories | tojson }}'></div>
   <p class="empty js-saved-empty" hidden>还没有收藏。在日报或条目详情页点「收藏」，或在日报页选中条目后按 <span class="kbd">s</span>。</p>
+
+  <section class="mine js-only" aria-labelledby="mine-follow">
+    <h2 id="mine-follow" class="month-title">关注的标签</h2>
+    <div class="tag-cloud js-followed-tags"></div>
+    <p class="empty js-followed-empty" hidden>还没有关注标签。打开任意<a href="{{ root }}tags/index.html">标签页</a>，点「关注这个标签」。</p>
+  </section>
+
+  <section class="mine js-only" aria-labelledby="mine-practice">
+    <h2 id="mine-practice" class="month-title">AI 软技能练习<span class="muted js-practice-total"></span></h2>
+    <div class="practice-areas practice-areas-lg">
+      {% for k, name in skill_areas.items() %}<span class="practice-area" data-area="{{ k }}">{{ cat_icon(k, 20) }}<small>{{ name }}</small><b class="js-area-count" data-area="{{ k }}"></b></span>{% endfor %}
+    </div>
+    <ul class="practice-list js-practice-list"></ul>
+    <p class="empty js-practice-empty" hidden>还没有练习记录。在任意「AI 软技能」条目里试一试，然后点「我练过了」。</p>
+  </section>
 </div>
 {% endblock %}

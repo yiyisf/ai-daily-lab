@@ -151,6 +151,139 @@
     if (e.key === READ_KEY) { readSet = store.json(READ_KEY, []); $$('[data-id]').forEach(paintRead); }
   });
 
+  /* ---------- followed tags (per browser) ---------- */
+  var FOLLOW_KEY = 'follow', followHooks = [];
+  function follows() { var v = store.json(FOLLOW_KEY, []); return Array.isArray(v) ? v : []; }
+  function tagsOf(el) { return (el.dataset.tags || '').split(' ').filter(Boolean); }
+  function followHit(el, f) { f = f || follows(); return tagsOf(el).some(function (t) { return f.indexOf(t) !== -1; }); }
+  function toggleFollow(t) {
+    var f = follows(), i = f.indexOf(t), on = i === -1;
+    if (on) f.push(t); else f.splice(i, 1);
+    store.setJson(FOLLOW_KEY, f);
+    paintFollow();
+    toast(on ? '已关注 #' + t + '，日报里相关条目会高亮' : '已取消关注 #' + t);
+  }
+  function paintFollow() {
+    var f = follows();
+    $$('.js-follow').forEach(function (b) {
+      var on = f.indexOf(b.dataset.tag) !== -1;
+      b.setAttribute('aria-pressed', String(on));
+      var l = $('.js-follow-label', b); if (l) l.textContent = on ? '已关注' : '关注这个标签';
+    });
+    $$('.tag-link').forEach(function (el) {
+      var t = el.dataset.tag || (el.textContent || '').trim().replace(/^#/, '');
+      el.classList.toggle('is-follow', f.indexOf(t) !== -1);
+    });
+    $$('.item[data-tags], .js-detail[data-tags]').forEach(function (el) { el.classList.toggle('is-followed', followHit(el, f)); });
+    $$('.js-followed-tags').forEach(function (box) {
+      box.innerHTML = f.map(function (t) {
+        return '<span class="chip chip-follow"><a href="' + ROOT + 'tags/' + encodeURIComponent(t) + '.html">#' + esc(t) + '</a>' +
+          '<button type="button" class="js-unfollow" data-tag="' + esc(t) + '" aria-label="取消关注 #' + esc(t) + '">×</button></span>';
+      }).join('');
+    });
+    $$('.js-followed-panel').forEach(function (p) { p.hidden = f.length === 0; });
+    $$('.js-followed-empty').forEach(function (p) { p.hidden = f.length !== 0; });
+    followHooks.forEach(function (fn) { fn(f); });
+  }
+  doc.addEventListener('click', function (ev) {
+    var b = ev.target.closest('.js-follow, .js-unfollow');
+    if (b) toggleFollow(b.dataset.tag);
+  });
+  window.addEventListener('storage', function (e) { if (e.key === FOLLOW_KEY) paintFollow(); });
+
+  /* ---------- AI 软技能练习记录 (per browser) ---------- */
+  var PRACTICE_KEY = 'practiced';
+  function practiced() { var v = store.json(PRACTICE_KEY, {}); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
+  function paintPractice() {
+    var map = practiced(), ids = Object.keys(map), byArea = {};
+    ids.forEach(function (id) { var a = map[id].a; byArea[a] = (byArea[a] || 0) + 1; });
+    var covered = Object.keys(byArea).length;
+    $$('.practice-area').forEach(function (el) { el.classList.toggle('is-practiced', !!byArea[el.dataset.area]); });
+    $$('.js-area-count').forEach(function (el) { var n = byArea[el.dataset.area] || 0; el.textContent = n ? '×' + n : ''; });
+    var host = $('.js-detail');
+    $$('.js-practice').forEach(function (b) {
+      var on = !!(host && map[host.dataset.id]);
+      b.setAttribute('aria-pressed', String(on));
+      $('.js-practice-label', b).textContent = on ? '已练习' : '我练过了';
+    });
+    $$('.js-practice-sum').forEach(function (el) {
+      el.textContent = ids.length ? '累计练习 ' + ids.length + ' 次，覆盖 ' + covered + ' / 7 个方向' : '练完点一下，记录会保存在本浏览器里';
+    });
+    $$('.js-practice-total').forEach(function (el) { el.textContent = ids.length ? ids.length + ' 次 · 覆盖 ' + covered + ' / 7 个方向' : ''; });
+    var list = $('.js-practice-list');
+    if (list) {
+      var names = {};
+      $$('.practice-area[data-area]').forEach(function (el) { names[el.dataset.area] = ($('small', el) || {}).textContent; });
+      list.innerHTML = ids.sort(function (a, b) { return map[b].at - map[a].at; }).map(function (id) {
+        var r = map[id];
+        return '<li><span class="area-badge">' + esc(names[r.a] || r.a) + '</span><a href="' + ROOT + esc(r.h) + '">' + esc(r.t) + '</a>' +
+          '<span class="muted">' + new Date(r.at).toLocaleDateString('zh-CN') + '</span></li>';
+      }).join('');
+      var empty = $('.js-practice-empty'); if (empty) empty.hidden = ids.length > 0;
+    }
+  }
+  doc.addEventListener('click', function (ev) {
+    var b = ev.target.closest('.js-practice'), host = $('.js-detail');
+    if (!b || !host) return;
+    var map = practiced(), id = host.dataset.id, on = !map[id];
+    if (on) map[id] = { a: b.closest('[data-area]').dataset.area, t: host.dataset.title, h: 'item/' + id + '.html', at: Date.now() };
+    else delete map[id];
+    store.setJson(PRACTICE_KEY, map);
+    paintPractice();
+    if (on) { flash(b); toast('已记录练习'); } else toast('已取消练习记录');
+  });
+  window.addEventListener('storage', function (e) { if (e.key === PRACTICE_KEY) paintPractice(); });
+
+  /* ---------- weekly quiz ---------- */
+  $$('.js-quiz').forEach(function (qz) {
+    var QUIZ_KEY = 'quiz', week = qz.dataset.week, qs = $$('.quiz-q', qz);
+    var resultEl = $('.js-quiz-result', qz), resetBtn = $('.js-quiz-reset', qz);
+    qz.classList.add('is-live');
+    function answers() { var m = store.json(QUIZ_KEY, {}); return (m && m[week]) || {}; }
+    function save(a) { var m = store.json(QUIZ_KEY, {}); if (!m || typeof m !== 'object') m = {}; m[week] = a; store.setJson(QUIZ_KEY, m); }
+    function reveal(fs, choice) {
+      var ans = Number(fs.dataset.answer);
+      fs.classList.add('is-answered');
+      fs.classList.toggle('got-it', choice === ans);
+      $$('input', fs).forEach(function (i) {
+        var v = Number(i.value), lab = i.closest('.quiz-opt');
+        i.disabled = true;
+        if (v === choice) i.checked = true;
+        lab.classList.toggle('is-right', v === ans);
+        lab.classList.toggle('is-wrong', v === choice && v !== ans);
+      });
+      $('.quiz-ans', fs).open = true;
+    }
+    function score() {
+      var a = answers(), n = 0, right = 0;
+      qs.forEach(function (fs, i) { if (a[i] != null) { n++; if (a[i] === Number(fs.dataset.answer)) right++; } });
+      resultEl.textContent = n === qs.length ? '答对 ' + right + ' / ' + qs.length + (right === qs.length ? '，全对！' : '') : (n ? '已答 ' + n + ' / ' + qs.length : '');
+      resetBtn.hidden = n === 0;
+    }
+    var saved0 = answers();
+    qs.forEach(function (fs, i) { if (saved0[i] != null) reveal(fs, saved0[i]); });
+    score();
+    qz.addEventListener('change', function (ev) {
+      var fs = ev.target.closest('.quiz-q');
+      if (!fs || fs.classList.contains('is-answered')) return;
+      var i = qs.indexOf(fs), c = Number(ev.target.value), a = answers();
+      a[i] = c; save(a);
+      smooth(function () { reveal(fs, c); score(); });
+    });
+    resetBtn.addEventListener('click', function () {
+      save({});
+      qs.forEach(function (fs) {
+        fs.classList.remove('is-answered', 'got-it');
+        $$('input', fs).forEach(function (i) { i.disabled = false; i.checked = false; i.closest('.quiz-opt').classList.remove('is-right', 'is-wrong'); });
+        $('.quiz-ans', fs).open = false;
+      });
+      score();
+    });
+  });
+
+  paintFollow();
+  paintPractice();
+
   /* ---------- offline cache (service worker; https or localhost only) ---------- */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
     whenActive(function () {
@@ -775,7 +908,7 @@
   if (feed) {
     var items = $$('.item', feed);
     var groups = $$('.group', feed);
-    var state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, tag: '' };
+    var state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, onlyFollow: false, tag: '' };
 
     var movers = function () { return items.concat($$('.group-title', feed)); };
     var setDensity = function (d, quiet) {
@@ -796,6 +929,7 @@
       state.onlyTry = q.get('try') === '1';
       state.onlyTop = q.get('top') === '1';
       state.onlyUnread = q.get('unread') === '1';
+      state.onlyFollow = q.get('follow') === '1';
       state.tag = q.get('tag') || '';
     };
     var writeUrl = function () {
@@ -804,6 +938,7 @@
       if (state.onlyTry) q.set('try', '1');
       if (state.onlyTop) q.set('top', '1');
       if (state.onlyUnread) q.set('unread', '1');
+      if (state.onlyFollow) q.set('follow', '1');
       if (state.tag) q.set('tag', state.tag);
       var s = q.toString();
       history.replaceState(null, '', location.pathname + (s ? '?' + s : '') + location.hash);
@@ -820,7 +955,8 @@
       }
     };
     var apply = function () {
-      var shown = 0, unread = 0;
+      var shown = 0, unread = 0, fl = follows(), hits = 0;
+      if (!fl.length) state.onlyFollow = false;
       items.forEach(function (it) {
         var read = isRead(it.dataset.id);
         if (!read) unread++;
@@ -828,9 +964,11 @@
           (!state.onlyTry || it.dataset.act === 'try') &&
           (!state.onlyTop || Number(it.dataset.imp) >= 4) &&
           (!state.onlyUnread || !read) &&
+          (!state.onlyFollow || followHit(it, fl)) &&
           (!state.tag || (' ' + it.dataset.tags + ' ').indexOf(' ' + state.tag + ' ') !== -1);
         it.hidden = !ok;
         if (ok) shown++;
+        if (followHit(it, fl)) hits++;
       });
       groups.forEach(function (g) {
         var n = $$('.item:not([hidden])', g).length;
@@ -839,7 +977,10 @@
         if (c) c.textContent = n;
       });
       $$('.js-cats .cat-btn').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.cat === state.cat)); });
-      var boxes = { '.js-only-try': state.onlyTry, '.js-only-top': state.onlyTop, '.js-only-unread': state.onlyUnread };
+      var boxes = { '.js-only-try': state.onlyTry, '.js-only-top': state.onlyTop, '.js-only-unread': state.onlyUnread, '.js-only-follow': state.onlyFollow };
+      var ff = $('.js-follow-filter'); if (ff) ff.hidden = fl.length === 0;
+      var fc = $('.js-follow-count'); if (fc) fc.textContent = hits;
+      var fn = $('.js-follow-note'); if (fn) { fn.hidden = !hits || state.onlyFollow; fn.textContent = '关注的标签本期有 ' + hits + ' 条'; }
       Object.keys(boxes).forEach(function (sel) { var b = $(sel); if (b) b.checked = boxes[sel]; });
       var uc = $('.js-unread-count'); if (uc) uc.textContent = unread;
       var ns = $('.js-new-since');
@@ -856,18 +997,19 @@
     };
     var applySmooth = function () { smooth(apply, movers()); };
     $$('.js-cats .cat-btn').forEach(function (b) { b.addEventListener('click', function () { state.cat = b.dataset.cat; applySmooth(); }); });
-    [['.js-only-try', 'onlyTry'], ['.js-only-top', 'onlyTop'], ['.js-only-unread', 'onlyUnread']].forEach(function (p) {
+    [['.js-only-try', 'onlyTry'], ['.js-only-top', 'onlyTop'], ['.js-only-unread', 'onlyUnread'], ['.js-only-follow', 'onlyFollow']].forEach(function (p) {
       var b = $(p[0]); if (b) b.addEventListener('change', function () { state[p[1]] = b.checked; applySmooth(); });
     });
     doc.addEventListener('click', function (ev) {
       var t = ev.target.closest('.js-tag');
       if (t) { state.tag = state.tag === t.dataset.tag ? '' : t.dataset.tag; applySmooth(); return; }
       if (ev.target.closest('.js-clear-tag')) { state.tag = ''; applySmooth(); return; }
-      if (ev.target.closest('.js-reset')) { state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, tag: '' }; applySmooth(); }
+      if (ev.target.closest('.js-reset')) { state = { cat: 'all', onlyTry: false, onlyTop: false, onlyUnread: false, onlyFollow: false, tag: '' }; applySmooth(); }
     });
     window.addEventListener('storage', function (e) { if (e.key === READ_KEY) apply(); });
     readUrl();
     apply();
+    followHooks.push(function () { apply(); });
 
     var visibleItems = function () { return items.filter(function (it) { return !it.hidden; }); };
     var move = function (step) {

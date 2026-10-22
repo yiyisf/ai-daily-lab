@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import act_badge %}
+{% from "_macros.html" import act_badge, icon %}
 {% block title %}#{{ tag }} · AI Daily Lab{% endblock %}
 {% block description %}标签 #{{ tag }} 下的全部 {{ items | length }} 条内容{% endblock %}
 {% block main %}
@@ -8,6 +8,10 @@
   <div class="page-head" style="padding-top:12px">
     <h1 class="mono" style="font-family:var(--font-mono)">#{{ tag }}</h1>
     <p>共 {{ items | length }} 条，覆盖 {{ by_date | length }} 期。</p>
+    <div class="actions js-only">
+      <button type="button" class="btn js-follow" data-tag="{{ tag }}" aria-pressed="false">{{ icon('star') }}<span class="js-follow-label">关注这个标签</span></button>
+      <span class="muted js-follow-hint" style="font-size:13px">关注后，日报里带这个标签的条目会高亮，可一键只看关注。</span>
+    </div>
   </div>
 
   <section class="panel tag-trend" aria-label="每期条数">

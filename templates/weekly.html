@@ -117,6 +117,22 @@
     {% endif %}
   </div>
 
+  {% if v.quiz %}
+  <h2 class="wk-h">本周小测<small class="muted">{{ v.quiz | length }} 题，答案都在本周的条目里</small></h2>
+  <div class="quiz js-quiz" data-week="{{ v.week }}">
+    {% for q in v.quiz %}
+    <fieldset class="quiz-q" data-answer="{{ q.answer }}">
+      <legend><span class="quiz-n">{{ q.n }}</span>{{ q.question }}</legend>
+      <div class="quiz-opts">
+        {% for o in q.options %}<label class="quiz-opt"><input type="radio" name="quiz-{{ q.n }}" value="{{ loop.index0 }}"><span class="quiz-key">{{ 'ABCD'[loop.index0] }}</span><span>{{ o }}</span></label>{% endfor %}
+      </div>
+      <details class="quiz-ans"><summary>看答案</summary><p><b>答案 {{ 'ABCD'[q.answer] }}</b>{{ q.explanation }}<a href="{{ root }}item/{{ q.item.id }}.html">出自：{{ q.item.title }}</a></p></details>
+    </fieldset>
+    {% endfor %}
+    <div class="quiz-foot js-only"><strong class="js-quiz-result" aria-live="polite"></strong><span class="spacer"></span><button type="button" class="btn btn-sm js-quiz-reset" hidden>重新作答</button></div>
+  </div>
+  {% endif %}
+
   {% if v.watch_next %}
   <h2 class="wk-h">下周关注</h2>
   <ul class="wk-list wk-watch">

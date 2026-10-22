@@ -19,6 +19,7 @@
       <label class="check"><input type="checkbox" class="js-only-try">只看可动手<span class="count">{{ try_count }}</span></label>
       <label class="check"><input type="checkbox" class="js-only-top">只看重点<span class="count">{{ top_count }}</span></label>
       <label class="check"><input type="checkbox" class="js-only-unread">只看未读<span class="count js-unread-count"></span></label>
+      <label class="check js-follow-filter" hidden><input type="checkbox" class="js-only-follow">只看关注<span class="count js-follow-count"></span></label>
     </div>
     <div class="keys-block js-only">
       <div class="side-label">键盘</div>
@@ -66,6 +67,7 @@
       <span class="status js-status">显示 {{ issue['items'] | length }} 条</span>
       <span class="active-filter js-tag-filter" hidden><span class="js-tag-name"></span><button type="button" class="js-clear-tag" aria-label="清除标签筛选">×</button></span>
       <span class="spacer"></span>
+      <span class="status js-follow-note" hidden></span>
       <span class="status js-new-since" hidden></span>
     </div>
 

@@ -381,6 +381,19 @@ def validate_weekly(path: Path) -> Report:
         refs = [r for r in (known(i, "下周关注") for i in w["item_ids"]) if r]
         check_numbers(w["text"], refs, "下周关注")
     check_numbers(wk["title"] + " " + wk["lede"], list(idx.values()), "标题或导语")
+    quiz = wk.get("quiz", [])
+    if not quiz:
+        rep.warn("没有写本周小测（quiz），建议 3–5 题")
+    for n, q in enumerate(quiz, 1):
+        it = known(q["item_id"], f"小测第 {n} 题")
+        if q["answer"] >= len(q["options"]):
+            rep.err(f"小测第 {n} 题的 answer={q['answer']} 超出选项范围（共 {len(q['options'])} 个）")
+        if len(set(q["options"])) != len(q["options"]):
+            rep.err(f"小测第 {n} 题有重复选项")
+        if it and q["answer"] < len(q["options"]):
+            check_numbers(q["question"] + " " + q["options"][q["answer"]] + " " + q["explanation"], [it], f"小测第 {n} 题")
+    if len({q["item_id"] for q in quiz}) < len(quiz):
+        rep.warn("小测有多道题出自同一个条目，建议覆盖不同条目")
     return rep
 
 
