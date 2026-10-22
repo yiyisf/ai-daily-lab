@@ -29,11 +29,13 @@ from jsonschema import Draft202012Validator
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (  # noqa: E402
     CATEGORIES, CATEGORY_RANGE, CONTENT_DIR, EXPERIMENTS_DIR, ROOT, SCHEMA_DIR,
-    SKILL_AREAS, STRICT_FROM, TOTAL_RANGE, issue_files, load_json,
+    SKILL_AREAS, STRICT_FROM, TOTAL_RANGE, WEEK_RE, WEEKLY_DIR, issue_files, load_json, week_range, weekly_files,
 )
+from weekly import item_index, item_text, numbers, week_issues  # noqa: E402
 
 DAILY_SCHEMA = Draft202012Validator(load_json(SCHEMA_DIR / "daily.schema.json"))
 EXP_SCHEMA = Draft202012Validator(load_json(SCHEMA_DIR / "experiment.schema.json"))
+WEEKLY_SCHEMA = Draft202012Validator(load_json(SCHEMA_DIR / "weekly.schema.json"))
 UA = "Mozilla/5.0 (compatible; ai-daily-lab-linkcheck/1.0)"
 
 
@@ -303,12 +305,91 @@ def validate_issue(path: Path, check_links: bool) -> Report:
     return rep
 
 
+def validate_weekly(path: Path) -> Report:
+    rel = path.resolve().relative_to(ROOT) if path.resolve().is_relative_to(ROOT) else path
+    rep = Report(str(rel))
+    try:
+        wk = load_json(path)
+    except Exception as e:  # noqa: BLE001
+        rep.err(f"JSON 解析失败：{e}")
+        return rep
+    errs = sorted(WEEKLY_SCHEMA.iter_errors(wk), key=lambda e: list(e.path))
+    for e in errs:
+        loc = "/".join(str(x) for x in e.path) or "(根)"
+        rep.err(f"Schema `{loc}`：{e.message}")
+    if errs:
+        return rep
+    wid = wk["week"]
+    if path.stem != wid:
+        rep.err(f"文件名 `{path.name}` 与 week `{wid}` 不一致")
+    if path.parent.name != wid[:4]:
+        rep.err(f"文件应放在 `content/weekly/{wid[:4]}/` 目录下")
+    if not WEEK_RE.match(wid):
+        return rep
+    issues = [load_json(p) for p in issue_files()]
+    w_issues = week_issues(wid, issues)
+    a, b = week_range(wid)
+    if not w_issues:
+        rep.err(f"{a} 至 {b} 没有任何日报，无法生成周报")
+        return rep
+    idx = item_index(w_issues)
+    rep.info.append(f"{a} 至 {b}：{len(w_issues)} 期日报、{len(idx)} 条可引用")
+    if len(w_issues) < 5:
+        rep.warn(f"本周只有 {len(w_issues)} 期日报，建议在 editor_note 里说明")
+
+    def known(i: str, where: str) -> dict | None:
+        it = idx.get(i)
+        if not it:
+            rep.err(f"{where} 引用的 `{i}` 不是本周（{a} 至 {b}）日报里的条目")
+        return it
+
+    def check_numbers(text: str, refs: list[dict], where: str):
+        pool = " ".join(item_text(r) for r in refs)
+        for n in numbers(text):
+            if n not in pool:
+                rep.warn(f"{where} 中的数字「{n}」没有出现在所引条目里，请确认不是新事实")
+
+    seen_theme: dict[str, str] = {}
+    for n, t in enumerate(wk["themes"], 1):
+        refs = [r for r in (known(i, f"主线 {n}") for i in t["item_ids"]) if r]
+        if len(set(t["item_ids"])) != len(t["item_ids"]):
+            rep.err(f"主线 {n}「{t['title']}」里有重复条目")
+        if len({r["date"] for r in refs}) < 2 and len(refs) >= 2:
+            rep.warn(f"主线 {n}「{t['title']}」的条目都来自同一天，主线最好串起不同日期的内容")
+        for i in t["item_ids"]:
+            if i in seen_theme:
+                rep.warn(f"`{i}` 同时出现在主线「{seen_theme[i]}」和「{t['title']}」")
+            seen_theme[i] = t["title"]
+        check_numbers(t["title"] + " " + t["summary"], refs, f"主线 {n}")
+
+    pick_ids = [p["item_id"] for p in wk["picks"]]
+    if len(set(pick_ids)) != len(pick_ids):
+        rep.err("本周必读里有重复条目")
+    for p in wk["picks"]:
+        it = known(p["item_id"], "本周必读")
+        if it:
+            if it["importance"] <= 2:
+                rep.warn(f"必读 `{it['id']}` 的重要度只有 {it['importance']}，确认是否合适")
+            check_numbers(p["reason"], [it], f"必读 `{it['id']}` 的理由")
+    for p in wk.get("hands_on", []):
+        it = known(p["item_id"], "值得动手")
+        if it:
+            if it.get("actionability") != "try":
+                rep.err(f"值得动手 `{it['id']}` 的实用度是 {it.get('actionability') or '未填'}，只能选 try（可动手）的条目")
+            check_numbers(p["reason"], [it], f"值得动手 `{it['id']}` 的理由")
+    for w in wk.get("watch_next", []):
+        refs = [r for r in (known(i, "下周关注") for i in w["item_ids"]) if r]
+        check_numbers(w["text"], refs, "下周关注")
+    check_numbers(wk["title"] + " " + wk["lede"], list(idx.values()), "标题或导语")
+    return rep
+
+
 def changed_issue_files(ref: str) -> list[Path]:
     out = subprocess.run(
         ["git", "diff", "--name-only", "--diff-filter=AM", f"{ref}...HEAD"],
         cwd=ROOT, capture_output=True, text=True, check=True,
     ).stdout.split()
-    files = {ROOT / f for f in out if f.startswith("content/daily/") and f.endswith(".json")}
+    files = {ROOT / f for f in out if f.startswith(("content/daily/", "content/weekly/")) and f.endswith(".json")}
     # An experiment change alone should still validate its issue.
     for f in out:
         if f.startswith("experiments/"):
@@ -321,7 +402,7 @@ def changed_issue_files(ref: str) -> list[Path]:
 
 
 def render_markdown(reports: list[Report]) -> str:
-    lines = ["## 🔎 日报校验结果", ""]
+    lines = ["## 🔎 内容校验结果", ""]
     if not reports:
         lines.append("本次没有改动日报文件。")
     for r in reports:
@@ -346,7 +427,7 @@ def main() -> int:
     args = ap.parse_args()
 
     if args.all:
-        files = issue_files()
+        files = issue_files() + weekly_files()
     elif args.changed_since:
         files = changed_issue_files(args.changed_since)
     else:
@@ -354,7 +435,8 @@ def main() -> int:
     if not files and not (args.all or args.changed_since):
         ap.error("没有指定要校验的文件")
 
-    reports = [validate_issue(Path(f), args.check_links) for f in files]
+    reports = [validate_weekly(Path(f)) if WEEK_RE.match(Path(f).stem) else validate_issue(Path(f), args.check_links)
+               for f in files]
     md = render_markdown(reports)
     print(md)
     if args.report:

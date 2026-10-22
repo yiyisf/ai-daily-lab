@@ -7,6 +7,21 @@
     <h1>往期</h1>
   </div>
 
+  {% if weeklies %}
+  <section class="wk-archive" aria-labelledby="wk-title">
+    <h2 id="wk-title" class="month-title">周报<span class="muted">{{ weeklies | length }} 期 · 每周日晚发布</span></h2>
+    <div class="wk-cards">
+      {% for w in weeklies %}
+      <a class="wk-card" href="{{ root }}weekly/{{ w.week }}.html">
+        <span class="wk-card-kicker">{{ w.label }} · {{ w.range }}</span>
+        <strong>{{ w.title }}</strong>
+        <span class="muted">{{ w.stats.issues }} 期 · {{ w.stats['items'] }} 条{% if w.stats.exps %} · {{ w.stats.exps }} 个实验{% endif %}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
   {% for m in months %}
   <section class="month" aria-labelledby="m-{{ m.key }}">
     <h2 id="m-{{ m.key }}" class="month-title">{{ m.label }}<span class="muted">{{ m.issue_count }} 期 · {{ m.item_count }} 条</span></h2>

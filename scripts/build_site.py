@@ -23,7 +23,7 @@ import re
 import shutil
 import sys
 from collections import Counter
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from xml.sax.saxutils import escape
@@ -39,8 +39,10 @@ from pygments.util import ClassNotFound
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (  # noqa: E402
     CATEGORIES, CATEGORY_COLORS, CATEGORY_ORDER, EXPERIMENTS_DIR, ICONS, KIT_KINDS, ROOT, SKILL_AREAS,
-    STATUS_LABEL, experiment_status, icon_svg, issue_files, load_experiment, load_issue,
+    STATUS_LABEL, experiment_status, icon_svg, issue_files, load_experiment, load_issue, load_json, week_id,
+    week_range, weekly_files,
 )
+from weekly import week_issues, week_view, weekly_markdown  # noqa: E402
 from figures import delta as fig_delta, figure_html, figure_markdown, fmt as fmt_num  # noqa: E402
 
 SOURCE_KINDS = {"primary": "原文", "secondary": "报道", "discussion": "讨论"}
@@ -253,9 +255,17 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def atom_feed(issues: list[dict], site_url: str, now: str) -> str:
+def atom_feed(issues: list[dict], site_url: str, now: str, weeklies: list[dict] | None = None) -> str:
     base = site_url or ""
     entries = []
+    for v in (weeklies or [])[:8]:
+        url = f"{base}weekly/{v['week']}.html"
+        end = week_range(v["week"])[1]
+        entries.append(
+            f"<entry><title>AI 周报 {escape(v['label'])}：{escape(v['title'])}</title><link href=\"{escape(url)}\"/>"
+            f"<id>{escape(url)}</id><updated>{end}T21:00:00+08:00</updated>"
+            f"<summary>{escape(v['lede'])}</summary></entry>"
+        )
     for i in issues[:30]:
         url = f"{base}daily/{i['date']}.html"
         entries.append(
@@ -325,6 +335,13 @@ def day_share(issue: dict, issue_no: int, ordered: list[dict], tldr: list[dict],
             "path": f"daily/{d}.html", "file": f"ai-daily-{d}"}
 
 
+def week_share(v: dict) -> dict:
+    return {"kind": "week", "label": v["label"], "range": v["range"], "title": v["title"],
+            "themes": [t["title"] for t in v["themes"]], "stats": v["stats"],
+            "days": [[[x["cat"], x["imp"]] for x in d["dots"]] for d in v["days"]],
+            "colors": CATEGORY_COLORS, "path": f"weekly/{v['week']}.html", "file": f"ai-weekly-{v['week']}"}
+
+
 def item_share(it: dict, d: str) -> dict:
     cat = it["category"]
     data = {"kind": "item", "label": date_cn(d), "cat": cat, "cat_name": CATEGORIES[cat],
@@ -382,6 +399,18 @@ def main() -> int:
     paths = issue_files()
     issues = [load_issue(p) for p in paths]
     dates = [i["date"] for i in issues]
+    weeklies = sorted((load_json(p) for p in weekly_files()), key=lambda w: w["week"])
+    weekly_ids = [w["week"] for w in weeklies]
+
+    def weekly_for_day(d: str) -> dict | None:
+        """The weekly of this day's week, or (early in a week) last week's."""
+        own = week_id(d)
+        if own in weekly_ids:
+            return next(w for w in weeklies if w["week"] == own)
+        prev = week_id((date.fromisoformat(d) - timedelta(days=7)).isoformat())
+        if prev in weekly_ids and date.fromisoformat(d).weekday() <= 2:
+            return next(w for w in weeklies if w["week"] == prev)
+        return None
 
     # global item index (for related items)
     all_items = []
@@ -420,6 +449,7 @@ def main() -> int:
                    top_count=sum(1 for i in issue["items"] if i["importance"] >= 4),
                    recent_tags=recent_tags, tags_window=f"近 {len(window)} 期",
                    share=day_share(issue, idx + 1, ordered, tldr, tldr_auto, cat_counts, len(exps)),
+                   weekly_link=weekly_for_day(d),
                    prev=dates[idx - 1] if idx > 0 else None,
                    next=dates[idx + 1] if idx + 1 < len(dates) else None)
         (out / "daily" / f"{d}.html").write_text(tpl_day.render(ctx, root="../", nav="archive"), encoding="utf-8")
@@ -463,13 +493,39 @@ def main() -> int:
                         "editor_note": issue["editor_note"], "tldr": issue.get("tldr"),
                         "top": tldr[0]["text"], "count": len(issue["items"]), "exp_count": len(exps)})
 
+    # weekly reports
+    weekly_views = []
+    if weeklies:
+        (out / "weekly").mkdir()
+        (out / "data" / "weekly").mkdir()
+    tpl_week = env.get_template("weekly.html")
+    for n, wk in enumerate(weeklies):
+        a, _ = week_range(wk["week"])
+        prev_wid = week_id((date.fromisoformat(a) - timedelta(days=7)).isoformat())
+        v = week_view(wk, issues, experiment_view, week_issues(prev_wid, issues))
+        weekly_views.append(v)
+        (out / "weekly" / f"{wk['week']}.html").write_text(tpl_week.render(
+            common, v=v, share=week_share(v), root="../", nav="archive",
+            prev=weeklies[n - 1]["week"] if n > 0 else None,
+            next=weeklies[n + 1]["week"] if n + 1 < len(weeklies) else None), encoding="utf-8")
+        wmd = weekly_markdown(v, site_url)
+        y = wk["week"][:4]
+        wpkg = {"schema_version": 1, "week": wk["week"], "title": wk["title"],
+                "pages": [{"key": wk["week"], "path": [WIKI_ROOT, y, "周报", v["label"]], "title": f"AI 周报 {v['label']}",
+                           "markdown": wmd, "html": md_to_html(wmd)}], "weekly": wk}
+        wpath = out / "data" / "weekly" / f"{wk['week']}.json"
+        wpath.write_text(json.dumps(wpkg, ensure_ascii=False, indent=1), encoding="utf-8")
+        wk["_pkg"] = {"week": wk["week"], "title": wk["title"], "package": f"data/weekly/{wk['week']}.json",
+                      "sha256": sha256(wpath), "bytes": wpath.stat().st_size}
+    weekly_views.reverse()
+
     if not issues:
         (out / "index.html").write_text("<!doctype html><meta charset=utf-8><p>还没有日报。</p>", encoding="utf-8")
 
     by_day = {a["date"]: a for a in archive}
     archive.reverse()
     (out / "archive.html").write_text(
-        env.get_template("archive.html").render(common, issues=archive, months=calendar_months(by_day),
+        env.get_template("archive.html").render(common, issues=archive, months=calendar_months(by_day), weeklies=weekly_views,
                                                 total_items=len(all_items), root="", nav="archive"),
         encoding="utf-8")
 
@@ -538,9 +594,10 @@ def main() -> int:
 
     manifest = {"schema_version": 1, "generated_at": now.isoformat(timespec="seconds"), "site_url": site_url,
                 "wiki_root": WIKI_ROOT, "latest": dates[-1] if dates else None,
-                "issues": list(reversed(manifest_entries))}
+                "issues": list(reversed(manifest_entries)),
+                "weeklies": [w["_pkg"] for w in reversed(weeklies)]}
     (out / "data" / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
-    (out / "feed.xml").write_text(atom_feed(list(reversed(issues)), site_url, now.isoformat(timespec="seconds")),
+    (out / "feed.xml").write_text(atom_feed(list(reversed(issues)), site_url, now.isoformat(timespec="seconds"), weekly_views),
                                   encoding="utf-8")
     (out / ".nojekyll").write_text("")
     print(f"built {len(issues)} issue(s), {len(all_items)} item page(s), {len(all_exps)} experiment(s) → {out}")

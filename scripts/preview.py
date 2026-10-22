@@ -12,7 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_site import experiment_view, issue_markdown  # noqa: E402
 from validate import changed_issue_files  # noqa: E402
-from common import load_issue  # noqa: E402
+from common import WEEK_RE, issue_files, load_issue, load_json, week_id, week_range  # noqa: E402
+from weekly import week_issues, week_view, weekly_markdown  # noqa: E402
 
 MARKER = "<!-- ai-daily-preview -->"
 LIMIT = 60_000  # GitHub comment limit is 65,536 chars
@@ -30,8 +31,17 @@ def main() -> int:
         parts += [f"完整站点预览：下载 [site-preview 构建产物]({args.artifact_url})，解压后用浏览器打开 `index.html`。", ""]
     files = changed_issue_files(args.changed_since)
     if not files:
-        parts.append("本次没有改动日报文件。")
+        parts.append("本次没有改动日报或周报文件。")
     for f in files:
+        if WEEK_RE.match(f.stem):
+            from datetime import date, timedelta
+            wk = load_json(f)
+            issues = [load_issue(p) for p in issue_files()]
+            prev = week_id((date.fromisoformat(week_range(wk["week"])[0]) - timedelta(days=7)).isoformat())
+            v = week_view(wk, issues, experiment_view, week_issues(prev, issues))
+            md = "\n".join("#" + l if l.startswith("#") else l for l in weekly_markdown(v, "").splitlines())
+            parts += ["<details open>", f"<summary><b>周报 {wk['week']}</b>：{wk['title']}</summary>", "", md, "", "</details>", ""]
+            continue
         issue = load_issue(f)
         exps = [e for e in (experiment_view(x) for x in issue["experiments"]) if e]
         md = issue_markdown(issue, exps, "")
