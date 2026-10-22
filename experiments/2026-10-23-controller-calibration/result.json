@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-23-controller-calibration",
+  "ran_at": "2026-10-22T22:09:53+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.7,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "模拟 4000 个 run，真实完成比例 87.2%\nMETRIC: 控制器 A AUROC = 0.919\nMETRIC: 控制器 B AUROC = 0.710\nMETRIC: 控制器 A 平均完成概率 = 43.3 %\nMETRIC: 控制器 B 平均完成概率 = 84.4 %\nMETRIC: 控制器 A 不必要验证比例 = 52.1 %\nMETRIC: 控制器 B 不必要验证比例 = 4.4 %\nMETRIC: A 校准后不必要验证比例 = 3.1 %\nMETRIC: 控制器 A 每次尝试成本 = 1.232 倍\nMETRIC: 控制器 B 每次尝试成本 = 1.025 倍\nMETRIC: A 校准后每次尝试成本 = 1.040 倍\n[PASS] 控制器 A 的离线排序（AUROC）优于 B\n[PASS] 控制器 A 的平均完成概率明显低于真实完成比例（校准偏差）\n[PASS] 按同一阈值行动时，A 触发更多验证、成本更高\n[PASS] 两种控制器下通过率相同（验证不改变结果）\n[PASS] 少量标签做保序校准后，A 的不必要验证减少一半以上\nRESULT: A 排序更准（AUROC 0.92 vs 0.71），但因概率偏低让 52% 已完成的 run 被要求验证；校准后降到 3%\n",
+  "stderr": ""
+}

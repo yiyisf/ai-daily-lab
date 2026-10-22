@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-23-cost-weighted-vocab",
+  "ran_at": "2026-10-22T22:09:57+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.6,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 10.3,
+  "stdout": "语料：300 条请求，原始 31045 个 token，加权成本 80005，平均回复 25.5 token\nK= 4 按频次：token 减少 19.3%，加权成本减少 7.5%，平均回复 25.5 token；前 2 个宏 token ['you are a strict essay grader', '<M0> . read the essay and']\nK= 4 按成本：token 减少 11.1%，加权成本减少 31.9%，平均回复 14.0 token；前 2 个宏 token [', \" feedback \" : \"', '{ \" grade \" :']\nK= 8 按频次：token 减少 34.8%，加权成本减少 35.1%，平均回复 16.5 token；前 2 个宏 token ['you are a strict essay grader', '<M0> . read the essay and']\nK= 8 按成本：token 减少 14.3%，加权成本减少 41.2%，平均回复 10.7 token；前 2 个宏 token [', \" feedback \" : \"', '{ \" grade \" :']\nK=16 按频次：token 减少 42.0%，加权成本减少 53.5%，平均回复 10.0 token；前 2 个宏 token ['you are a strict essay grader', '<M0> . read the essay and']\nK=16 按成本：token 减少 40.1%，加权成本减少 55.3%，平均回复 9.0 token；前 2 个宏 token [', \" feedback \" : \"', '{ \" grade \" :']\nMETRIC: K=4 按频次 加权成本减少 = 7.5 %\nMETRIC: K=4 按成本 加权成本减少 = 31.9 %\nMETRIC: K=8 按频次 加权成本减少 = 35.1 %\nMETRIC: K=8 按成本 加权成本减少 = 41.2 %\nMETRIC: K=16 按频次 加权成本减少 = 53.5 %\nMETRIC: K=16 按成本 加权成本减少 = 55.3 %\nMETRIC: K=4 按频次 平均回复长度 = 25.5 token\nMETRIC: K=4 按成本 平均回复长度 = 14.0 token\nMETRIC: K=8 按频次 平均回复长度 = 16.5 token\nMETRIC: K=8 按成本 平均回复长度 = 10.7 token\nMETRIC: K=16 按频次 平均回复长度 = 10.0 token\nMETRIC: K=16 按成本 平均回复长度 = 9.0 token\n[PASS] K=4：按频次挑选省下的 token 总数不少于按成本挑选\n[PASS] K=4：按成本挑选省下的加权成本更多\n[PASS] K=8：按频次挑选省下的 token 总数不少于按成本挑选\n[PASS] K=8：按成本挑选省下的加权成本更多\n[PASS] K=16：按频次挑选省下的 token 总数不少于按成本挑选\n[PASS] K=16：按成本挑选省下的加权成本更多\n[PASS] 预算越紧，两种挑法的成本差距越大\nRESULT: 宏 token 预算为 4/8/16 时，按成本挑选比按频次多省 24.4/6.1/1.8 个百分点的加权成本\n",
+  "stderr": ""
+}
