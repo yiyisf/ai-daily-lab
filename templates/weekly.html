@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, act_badge %}
+{% block title %}AI 周报 {{ v.label }} · AI Daily Lab{% endblock %}
+{% block description %}{{ v.title }}：{{ v.lede }}{% endblock %}
+{% block main %}
+<div class="wrap narrow wk">
+  <div class="page-head">
+    <div class="issue-kicker">
+      <span class="badge">AI 周报 · {{ v.label }}</span>
+      <span>{{ v.range }}</span>
+      <span class="spacer"></span>
+      {% if prev %}<a href="{{ root }}weekly/{{ prev }}.html">← 上一周</a>{% endif %}
+      {% if next %}<a href="{{ root }}weekly/{{ next }}.html">下一周 →</a>{% endif %}
+    </div>
+    <h1 class="issue-title">{{ v.title }}</h1>
+    <p class="lede">{{ v.lede }}</p>
+    {% if v.editor_note %}<p class="wk-note">{{ v.editor_note }}</p>{% endif %}
+    <div class="actions js-only">
+      <button type="button" class="btn js-share-card">{{ icon('image') }}分享图</button>
+    </div>
+  </div>
+
+  <section class="panel wk-overview" aria-label="本周概览">
+    <dl class="wk-stats">
+      <div><dt>日报</dt><dd>{{ v.stats.issues }}<small>期</small></dd></div>
+      <div><dt>条目</dt><dd>{{ v.stats['items'] }}<small>条</small></dd></div>
+      <div><dt>可动手</dt><dd>{{ v.stats.try }}<small>条</small></dd></div>
+      <div><dt>实验</dt><dd>{{ v.stats.exps }}<small>个{% if v.stats.exps %}，已验证 {{ v.stats.passed }}{% endif %}</small></dd></div>
+    </dl>
+    <div class="wk-days" role="img" aria-label="本周每天的条目，每个圆点代表一条，颜色表示栏目，大小表示重要度">
+      {% for d in v.days %}
+      <div class="wk-day{% if not d.has %} is-empty{% endif %}">
+        <div class="wk-dots">
+          {% for x in d.dots %}<a class="wk-dot dot-{{ x.cat }} imp-{{ x.imp }}" href="{{ root }}item/{{ x.id }}.html" title="{{ x.title }}" tabindex="-1"></a>{% endfor %}
+        </div>
+        {% if d.has %}<a class="wk-day-label" href="{{ root }}daily/{{ d.date }}.html">{{ d.label }}<small>{{ d.day }} 日</small></a>
+        {% else %}<span class="wk-day-label">{{ d.label }}<small>{{ d.day }} 日</small></span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="wk-legend">
+      {% for c in v.cats %}<span><span class="dot dot-{{ c.key }}"></span>{{ c.name }} {{ c.count }}</span>{% endfor %}
+      <span class="muted">圆点越大越重要</span>
+    </div>
+  </section>
+
+  <h2 class="wk-h">本周主线</h2>
+  <div class="wk-themes">
+    {% for t in v.themes %}
+    <section class="wk-theme">
+      <div class="wk-theme-n">{{ loop.index }}</div>
+      <div>
+        <h3>{{ t.title }}</h3>
+        <p>{{ t.summary }}</p>
+        <ul class="wk-refs">
+          {% for it in t['items'] %}
+          <li><span class="cat-ic c-{{ it.category }}">{{ cat_icon(it.category, 14) }}</span><a href="{{ root }}item/{{ it.id }}.html">{{ it.title }}</a><span class="muted">{{ it.date[5:7] | int }}/{{ it.date[8:] | int }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+  <h2 class="wk-h">本周必读</h2>
+  <ol class="wk-picks">
+    {% for p in v.picks %}
+    <li>
+      <a href="{{ root }}item/{{ p.item.id }}.html">{{ p.item.title }}</a>
+      <p>{{ p.reason }}</p>
+      <span class="wk-meta"><span class="cat-ic c-{{ p.item.category }}">{{ cat_icon(p.item.category, 14) }}</span>{{ categories[p.item.category] }} · {{ date_cn(p.item.date) }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+
+  {% if v.hands_on %}
+  <h2 class="wk-h">值得动手</h2>
+  <ul class="wk-list">
+    {% for p in v.hands_on %}
+    <li>{{ act_badge(p.item, act_labels) }}<div><a href="{{ root }}item/{{ p.item.id }}.html">{{ p.item.title }}</a><p>{{ p.reason }}</p></div></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <div class="wk-grid">
+    {% if v.skills %}
+    <section class="panel">
+      <h2 class="panel-title">本周 AI 软技能<small>{{ v.skills | length }} 条</small></h2>
+      <ul class="wk-mini">
+        {% for it in v.skills %}<li><span class="area-badge">{{ cat_icon(it.skill.area, 14) }}{{ skill_areas[it.skill.area] }}</span><a href="{{ root }}item/{{ it.id }}.html">{{ it.title }}</a></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    {% if v.kits %}
+    <section class="panel">
+      <h2 class="panel-title">本周 Skill 精选<small>{{ v.kits | length }} 个</small></h2>
+      <ul class="wk-mini">
+        {% for it in v.kits %}<li><span class="kit-kind">{{ kit_kinds[it.kit.kind] }}</span><a href="{{ root }}item/{{ it.id }}.html">{{ it.kit.name }}{% if it.kit.version %} {{ it.kit.version }}{% endif %}</a><span class="muted">{{ it.title }}</span></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    {% if v.exps %}
+    <section class="panel">
+      <h2 class="panel-title">本周实验<small>GitHub Actions 实际运行</small></h2>
+      <ul class="wk-mini">
+        {% for e in v.exps %}<li><span class="badge status-{{ e.status }}">{{ status_label[e.status] }}</span><a href="{{ root }}experiments/{{ e.id }}.html">{{ e.title }}</a></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    {% if v.tags %}
+    <section class="panel">
+      <h2 class="panel-title">标签热度<small>{{ '与上周相比' if v.has_prev else '本周出现次数' }}</small></h2>
+      <div class="tag-cloud">
+        {% for t in v.tags %}<a class="chip" href="{{ root }}tags/{{ t.name }}.html">{{ t.name }} {{ t.count }}{% if t.new %}<span class="wk-up">新</span>{% elif t.delta > 0 %}<span class="wk-up">+{{ t.delta }}</span>{% endif %}</a>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  {% if v.watch_next %}
+  <h2 class="wk-h">下周关注</h2>
+  <ul class="wk-list wk-watch">
+    {% for w in v.watch_next %}
+    <li><span class="wk-eye" aria-hidden="true">→</span><div>{{ w.text }}<span class="wk-from">{% for it in w['items'] %}<a href="{{ root }}item/{{ it.id }}.html">{{ it.title }}</a>{% endfor %}</span></div></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p class="wk-foot muted">周报只整理本周已发布的日报条目，事实与数字以各条目的原始来源为准。</p>
+</div>
+{% endblock %}

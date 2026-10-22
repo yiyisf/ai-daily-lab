@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR = ROOT / "content" / "daily"
+WEEKLY_DIR = ROOT / "content" / "weekly"
 EXPERIMENTS_DIR = ROOT / "experiments"
 SCHEMA_DIR = ROOT / "schema"
 
@@ -116,6 +117,32 @@ def dump_json(data, path: Path) -> None:
 def issue_files() -> list[Path]:
     """All daily issue files, oldest first."""
     return sorted(CONTENT_DIR.glob("*/*.json"), key=lambda p: p.stem)
+
+
+def weekly_files() -> list[Path]:
+    """All weekly report files, oldest first."""
+    return sorted(WEEKLY_DIR.glob("*/*.json"), key=lambda p: p.stem)
+
+
+WEEK_RE = re.compile(r"^(\d{4})-W(\d{2})$")
+
+
+def week_id(d: str) -> str:
+    """ISO week id of a YYYY-MM-DD date, e.g. 2026-W43."""
+    from datetime import date as _date
+    y, w, _ = _date.fromisoformat(d).isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+def week_range(wid: str) -> tuple[str, str]:
+    """(monday, sunday) of an ISO week id, as YYYY-MM-DD."""
+    from datetime import date as _date
+    m = WEEK_RE.match(wid)
+    if not m:
+        raise ValueError(f"bad week id: {wid}")
+    y, w = int(m.group(1)), int(m.group(2))
+    mon = _date.fromisocalendar(y, w, 1)
+    return mon.isoformat(), _date.fromisocalendar(y, w, 7).isoformat()
 
 
 def load_issue(path: Path) -> dict:

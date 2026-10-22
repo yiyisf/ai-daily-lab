@@ -1,6 +1,6 @@
 name: 缺报检查
 
-# 北京时间 08:30 检查当天日报是否已生成（PR 或已合并），没有则开 issue 提醒。
+# 北京时间 08:30 检查当天日报是否已生成（PR 或已合并），没有则开 issue 提醒；周一还检查上周周报。
 on:
   schedule:
     - cron: "30 0 * * *"
@@ -22,6 +22,18 @@ jobs:
         run: |
           D=$(TZ=Asia/Shanghai date +%F)
           Y=${D:0:4}
+          # 周一顺带检查上周的周报
+          if [ "$(TZ=Asia/Shanghai date +%u)" = 1 ]; then
+            W=$(TZ=Asia/Shanghai date -d yesterday +%G-W%V)
+            if [ ! -f "content/weekly/${W:0:4}/$W.json" ] && \
+               [ "$(gh pr list --repo "${{ github.repository }}" --state all --head "weekly/$W" --json number --jq length)" = 0 ]; then
+              wt="⚠️ $W 周报未生成"
+              if [ "$(gh issue list --repo "${{ github.repository }}" --state open --search "$wt in:title" --json number --jq length)" = 0 ]; then
+                gh issue create --repo "${{ github.repository }}" --title "$wt" \
+                  --body "没有找到分支 \`weekly/$W\` 的 PR，也没有 \`content/weekly/${W:0:4}/$W.json\`。请检查周报定时任务的运行记录。"
+              fi
+            fi
+          fi
           if [ -f "content/daily/$Y/$D.json" ]; then
             echo "已合并：$D"; exit 0
           fi

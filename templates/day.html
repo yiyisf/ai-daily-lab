@@ -76,6 +76,13 @@
   </div>
 
   <aside class="rail" aria-label="今日概览">
+    {% if weekly_link %}
+    <a class="panel rail-weekly" href="{{ root }}weekly/{{ weekly_link.week }}.html">
+      <span class="badge">AI 周报</span>
+      <strong>{{ weekly_link.title }}</strong>
+      <span class="muted">{{ weekly_link.week[:4] }} 年第 {{ weekly_link.week[6:] | int }} 周 · 阅读周报 →</span>
+    </a>
+    {% endif %}
     {% if exps %}
     <section class="panel">
       <h2 class="panel-title">今日实验</h2>

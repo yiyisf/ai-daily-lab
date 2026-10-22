@@ -2,7 +2,7 @@
 
 本仓库每天由 Claude 定时任务生成一期 AI 日报，经 GitHub Actions 校验、人工审核合并后发布到 GitHub Pages，并同步到内网 wiki。
 
-**你（Claude）每次运行都是全新会话，本文件就是全部规则。** 按下面的流程完成当天的日报。
+**你（Claude）每次运行都是全新会话，本文件就是全部规则。** 按下面的流程完成当天的日报；如果任务要求生成周报，按第五节执行。
 
 ---
 
@@ -187,12 +187,38 @@ main.py           # 或 main.js / run.sh，入口在 experiment.json 的 entry �
 
 ---
 
-## 五、文件位置速查
+## 五、每周周报（仅在任务要求生成周报时执行）
+
+每周日晚由另一个定时任务生成，**不做日报流程**。周报只做编辑判断，统计、本周软技能、Skill 精选、实验和标签热度由构建脚本从当周日报自动生成，不用写。
+
+1. **确定周**：以北京时间当天所在的 ISO 周为准（周一到周日），记为 `WEEK`，如 `2026-W43`；可用 `python3 -c "import sys; sys.path.insert(0,'scripts'); from common import week_id; print(week_id('DATE'))"` 计算。
+2. **读取本周日报**：`content/daily/` 下日期落在本周的全部 JSON（`python3 -c "...from common import week_range; print(week_range('WEEK'))"` 给出起止日期）。
+3. **撰写** `content/weekly/YYYY/WEEK.json`，符合 `schema/weekly.schema.json`：
+   - `title`：本周一句话，说清这一周最值得记住的变化，不超过 36 字
+   - `lede`：2–4 句导语，串起本周主线
+   - `themes`（2–4 条主线）：把**不同日期**的相关条目串成一条线，`summary` 说清发生了什么、条目之间什么关系；每条至少 2 个 `item_ids`
+   - `picks`（3–5 条必读）：一般 AI 从业者本周最该读的条目，`reason` 一句话
+   - `hands_on`（0–4 条）：只能选 `actionability` 为 `try` 的条目，`reason` 写适合谁、动手做什么
+   - `watch_next`（0–3 条）：只写条目原文已公布的后续计划或待定事项，不做预测
+   - `editor_note`（可选）：缺期或内容偏少时说明
+4. **硬性规则**：
+   - **不搜集新内容、不加新来源、不写条目里没有的事实**；所有判断都基于本周已发布的条目
+   - 引用的 `item_id` 必须是本周日报里的条目
+   - 文中的数字必须能在所引条目里找到（校验会提醒）
+   - 不夸大、不写空洞评价；本节以外的写作规范（第三节）同样适用
+5. **自检**：`python3 scripts/validate.py content/weekly/YYYY/WEEK.json`，修到没有错误。
+6. **提交**：新建分支 `weekly/WEEK`，只提交这一个文件，开 PR，标题为 `AI 周报 WEEK`，描述写本周标题和主线。用 REST API 开 PR（同第一节第 8 步）。分支已存在时在原分支追加提交。
+
+---
+
+## 六、文件位置速查
 
 | 内容 | 路径 |
 |---|---|
 | 日报数据（唯一数据源） | `content/daily/YYYY/YYYY-MM-DD.json` |
 | 日报 Schema | `schema/daily.schema.json` |
+| 周报数据 | `content/weekly/YYYY/YYYY-Www.json` |
+| 周报 Schema | `schema/weekly.schema.json` |
 | 实验 | `experiments/YYYY-MM-DD-slug/` |
 | 实验 Schema | `schema/experiment.schema.json` |
 | 建议方向与标签 | `config/sources.yaml` |

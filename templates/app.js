@@ -655,6 +655,49 @@
     drawFooter(ctx, '阅读全文与原始来源', shareUrl(d.path));
   }
 
+  function drawWeek(ctx, d) {
+    drawHeader(ctx, 'AI 周报');
+    text(ctx, d.label + ' · ' + d.range, 80, 196, '600 26px ' + F_SANS, SHARE_ACCENT_INK);
+    ctx.font = '700 54px ' + F_SERIF;
+    var tl = wrap(ctx, d.title, 920, 3), y = 196 + 24;
+    tl.forEach(function (ln) { y += 72; text(ctx, ln, 80, y - 14, '700 54px ' + F_SERIF, SHARE_INK); });
+    // week strip: one column per day, dots stacked from the bottom
+    var maxRows = Math.min(8, Math.max(1, Math.max.apply(null, d.days.map(function (x) { return Math.ceil(x.length / 4); }))));
+    var panelY = y + 36, panelH = 128 + maxRows * 26;
+    ctx.fillStyle = '#FFFFFF'; rrect(ctx, 80, panelY, 920, panelH, 28); ctx.fill();
+    ctx.strokeStyle = SHARE_LINE; ctx.lineWidth = 2; ctx.stroke();
+    var colW = 848 / 7, base = panelY + panelH - 74, names = '一二三四五六日';
+    d.days.forEach(function (dots, i) {
+      var cx = 116 + colW * i + colW / 2, per = 4, cell = 26;
+      dots.slice(0, 32).forEach(function (dot, k) {   // rows of 4 from the bottom, like the page
+        var r = ({ 5: 12, 4: 10, 3: 8, 2: 6.5, 1: 5.5 })[dot[1]] || 7;
+        var row = Math.floor(k / per), col = k % per, inRow = Math.min(per, dots.length - row * per);
+        var x = cx + (col - (inRow - 1) / 2) * cell, y0 = base - 14 - row * cell;
+        ctx.fillStyle = d.colors[dot[0]] || SHARE_INK3; ctx.beginPath(); ctx.arc(x, y0, r, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = SHARE_LINE; ctx.fillRect(116 + colW * i + 8, base + 14, colW - 16, 2);
+      text(ctx, '周' + names[i], cx, base + 52, (dots.length ? '600' : '400') + ' 22px ' + F_SANS, dots.length ? SHARE_INK2 : '#A8A29E', 'center');
+    });
+    var st = d.stats;
+    text(ctx, st.issues + ' 期日报 · ' + st.items + ' 条 · 可动手 ' + st.try + ' 条' + (st.exps ? ' · 实验 ' + st.exps + ' 个' : ''),
+         80, panelY + panelH + 52, '400 24px ' + F_SANS, SHARE_INK3);
+    var top = panelY + panelH + 100;
+    for (var size = 32; size >= 26; size -= 2) {
+      ctx.font = '500 ' + size + 'px ' + F_SANS;
+      var lh = Math.round(size * 1.45), blocks = d.themes.map(function (t) { return wrap(ctx, t, 852, 2); });
+      var h = 26 + 26 + blocks.reduce(function (a, b) { return a + b.length * lh + 20; }, 0);
+      if (top + h <= FOOT_TOP || size === 26) break;
+    }
+    text(ctx, '本周主线', 80, top + 26, '700 26px ' + F_SANS, SHARE_ACCENT_INK);
+    var yy = top + 26 + 26;
+    blocks.forEach(function (lines, i) {
+      text(ctx, String(i + 1), 80, yy + lh * 0.8, '700 40px ' + F_SERIF, SHARE_ACCENT);
+      lines.forEach(function (ln, j) { text(ctx, ln, 140, yy + lh * 0.75 + j * lh, '500 ' + size + 'px ' + F_SANS, SHARE_INK); });
+      yy += lines.length * lh + 20;
+    });
+    drawFooter(ctx, '完整周报与本周日报', shareUrl(d.path));
+  }
+
   function renderShare(d) {
     var sample = JSON.stringify(d) + 'AI Daily Lab 第期条个实验圆点越大越重要完整内容与配套实验阅读全文与原始来源较差更好的描述0123456789…';
     var fonts = [['700 60px "Noto Serif SC"', sample], ['700 32px Inter', sample], ['500 34px "Noto Sans SC"', sample],
@@ -665,7 +708,7 @@
       var ctx = c.getContext('2d');
       ctx.fillStyle = SHARE_BG; ctx.fillRect(0, 0, 1080, 1350);
       ctx.textBaseline = 'alphabetic';
-      if (d.kind === 'day') drawDay(ctx, d); else drawItem(ctx, d, r[1]);
+      if (d.kind === 'day') drawDay(ctx, d); else if (d.kind === 'week') drawWeek(ctx, d); else drawItem(ctx, d, r[1]);
       return new Promise(function (resolve, reject) { c.toBlob(function (b) { b ? resolve(b) : reject(new Error('toBlob')); }, 'image/png'); });
     });
   }
