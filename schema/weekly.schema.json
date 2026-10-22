@@ -161,6 +161,57 @@
       "minLength": 0,
       "maxLength": 200,
       "description": "可选：本周有缺期、内容偏少等情况时说明"
+    },
+    "quiz": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "description": "每周小测：3–5 道单选题，每题出自本周一个条目，答案必须是该条目原文写明的事实",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "question",
+          "options",
+          "answer",
+          "explanation",
+          "item_id"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 80,
+            "description": "题干，一句话"
+          },
+          "options": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          },
+          "answer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "正确选项的下标，从 0 开始"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 120,
+            "description": "为什么是这个答案，引用条目里的事实"
+          },
+          "item_id": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}-[a-z0-9-]+$"
+          }
+        }
+      }
     }
   }
 }

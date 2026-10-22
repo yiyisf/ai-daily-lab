@@ -592,6 +592,70 @@ dialog.share::backdrop { background: rgba(0, 0, 0, .45); }
 .exp-ov-stats dd small { margin-left: 4px; font-size: 12px; font-weight: 400; font-family: var(--font-sans); color: var(--ink-3); }
 .exp-tile-result { font-size: 13px; color: var(--ink-2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 
+/* ---------- followed tags, practice log, weekly quiz ---------- */
+.tag-link.is-follow { color: var(--accent-ink); font-weight: 600; }
+.tag-link.is-follow::after { content: "★"; margin-left: 2px; font-size: .85em; }
+.item.is-followed { box-shadow: inset 3px 0 0 var(--accent); padding-left: 14px; }
+.item.is-followed.is-focused { box-shadow: 0 0 0 1px var(--accent-line), inset 3px 0 0 var(--accent); }
+.btn.js-follow[aria-pressed="true"] { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
+.btn.js-follow[aria-pressed="true"] svg { fill: currentColor; }
+.followed { margin-bottom: 20px; }
+.followed .tag-cloud { margin-top: 12px; }
+.chip-follow { display: inline-flex; align-items: center; gap: 2px; padding-right: 4px; }
+.chip-follow a { color: inherit; }
+.chip-follow button { border: 0; background: none; color: var(--ink-3); font-size: 15px; line-height: 1; padding: 2px 6px; border-radius: 999px; }
+.chip-follow button:hover { color: var(--bad-fg); background: var(--surface-2); }
+.mine { margin-top: 48px; }
+.mine .tag-cloud { margin-top: 12px; }
+.mine .month-title .muted { margin-left: 10px; font-size: 13px; font-weight: 400; }
+
+.practice { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.btn.js-practice[aria-pressed="true"] { border-color: color-mix(in srgb, var(--try-fg) 35%, transparent); background: var(--try-bg); color: var(--try-fg); }
+.practice-areas { display: flex; flex-wrap: wrap; gap: 6px; }
+.practice-area { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px;
+  color: var(--ink-3); background: var(--surface-2); border: 1px solid transparent; opacity: .55; }
+.practice-area small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.practice-area.is-current { border-color: var(--line-strong); opacity: .85; }
+.practice-area.is-practiced { opacity: 1; color: var(--c-skills); background: color-mix(in srgb, var(--c-skills) 12%, var(--surface)); }
+.practice-sum { font-size: 13px; color: var(--ink-3); }
+.practice-areas-lg { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 8px; }
+.practice-areas-lg .practice-area { width: auto; height: auto; padding: 12px; justify-content: flex-start; gap: 8px; opacity: .6; border-radius: 12px; position: static; }
+.practice-areas-lg .practice-area small { position: static; width: auto; height: auto; overflow: visible; clip: auto; font-size: 13px; color: var(--ink-2); }
+.practice-areas-lg .practice-area b { margin-left: auto; font-size: 12px; }
+.practice-areas-lg .practice-area.is-practiced { opacity: 1; }
+.practice-list { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.practice-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.practice-list a { color: var(--ink); }
+.practice-list .muted { font-size: 12px; }
+
+.wk-h small { margin-left: 10px; font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.quiz { display: flex; flex-direction: column; gap: 14px; }
+.quiz-q { margin: 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); min-width: 0; }
+.quiz-q legend { float: left; width: 100%; padding: 0; margin-bottom: 12px; display: flex; gap: 10px; font-weight: 600; line-height: 1.6; }
+.quiz-q legend + * { clear: both; }
+.quiz-n { flex: none; font-family: var(--font-serif); font-size: 20px; line-height: 1.3; color: var(--accent); }
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 14px; }
+.quiz-opt:hover { border-color: var(--line-strong); background: var(--surface-2); }
+.quiz-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.quiz-opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.quiz-key { flex: none; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--ink-3); background: var(--surface-2); }
+.quiz-q.is-answered .quiz-opt { cursor: default; }
+.quiz-q.is-answered .quiz-opt:hover { background: none; border-color: var(--line); }
+.quiz-opt.is-right, .quiz-q.is-answered .quiz-opt.is-right:hover { border-color: color-mix(in srgb, var(--try-fg) 45%, transparent); background: var(--try-bg); }
+.quiz-opt.is-right .quiz-key { background: var(--try-fg); color: var(--surface); }
+.quiz-opt.is-wrong, .quiz-q.is-answered .quiz-opt.is-wrong:hover { border-color: var(--bad-line); background: var(--bad-tint); }
+.quiz-opt.is-wrong .quiz-key { background: var(--bad-fg); color: var(--surface); }
+.quiz-ans { margin-top: 10px; font-size: 14px; }
+.quiz-ans summary { cursor: pointer; color: var(--ink-3); font-size: 13px; }
+.quiz-ans p { margin: 8px 0 0; color: var(--ink-2); line-height: 1.7; }
+.quiz-ans b { margin-right: 8px; color: var(--ink); }
+.quiz-ans a { display: block; margin-top: 4px; font-size: 13px; }
+.quiz.is-live .quiz-ans summary { display: none; }
+.quiz.is-live .quiz-ans:not([open]) { display: none; }
+.quiz-foot { display: flex; align-items: center; gap: 12px; min-height: 32px; }
+
 /* ---------- weekly report ---------- */
 .wk-note { margin: 12px 0 0; font-size: 14px; color: var(--ink-3); }
 .wk .actions { margin-top: 18px; }

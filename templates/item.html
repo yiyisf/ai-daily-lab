@@ -9,13 +9,13 @@
     <a href="{{ root }}daily/{{ date }}.html#{{ it.id }}">{{ categories[it.category] }}</a>
   </nav>
   <div class="detail">
-    <article data-id="{{ it.id }}" data-cat="{{ it.category }}" data-date="{{ date }}" data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html" class="js-detail">
+    <article data-id="{{ it.id }}" data-cat="{{ it.category }}" data-date="{{ date }}" data-title="{{ it.title }}" data-brief="{{ it.brief }}" data-href="{{ root }}item/{{ it.id }}.html" data-tags="{{ it.tags | join(' ') }}" class="js-detail">
       <div class="detail-meta">
         <span class="detail-cat"><span class="cat-ic c-{{ it.category }}">{{ cat_icon(it.category, 16) }}</span>{{ categories[it.category] }}</span>
         {{ act_badge(it, act_labels) }}
         {% if it.importance >= 4 %}<span class="top-mark">重点</span>{% endif %}
         <span>{{ date_cn }}</span>
-        <span class="tags">{% for t in it.tags %}<a class="tag-link" href="{{ root }}tags/{{ t }}.html">#{{ t }}</a>{% endfor %}</span>
+        <span class="tags">{% for t in it.tags %}<a class="tag-link" data-tag="{{ t }}" href="{{ root }}tags/{{ t }}.html">#{{ t }}</a>{% endfor %}</span>
       </div>
       <h1>{{ it.title }}</h1>
       <div class="actions js-only">
@@ -64,6 +64,13 @@
         </div>
         <ul class="contrast-why">{% for w in it.skill.why %}<li>{{ w }}</li>{% endfor %}</ul>
         {% if it.skill.practice %}<p class="contrast-practice"><b>今天就试试</b>{{ it.skill.practice }}</p>{% endif %}
+        <div class="practice js-only" data-area="{{ it.skill.area }}">
+          <button type="button" class="btn js-practice" aria-pressed="false">{{ icon('check') }}<span class="js-practice-label">我练过了</span></button>
+          <div class="practice-areas" aria-label="七个方向的练习进度">
+            {% for k, name in skill_areas.items() %}<span class="practice-area{% if k == it.skill.area %} is-current{% endif %}" data-area="{{ k }}" title="{{ name }}">{{ cat_icon(k, 16) }}<small>{{ name }}</small></span>{% endfor %}
+          </div>
+          <span class="practice-sum js-practice-sum"></span>
+        </div>
         <p class="contrast-note">示例由编辑根据下方来源中的原则撰写。</p>
       </section>
       {% endif %}

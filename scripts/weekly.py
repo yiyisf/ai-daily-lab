@@ -92,6 +92,7 @@ def week_view(weekly: dict, issues: list[dict], exp_view, prev_issues: list[dict
         "picks": [dict(p, item=ref(p["item_id"])) for p in weekly["picks"] if ref(p["item_id"])],
         "hands_on": [dict(p, item=ref(p["item_id"])) for p in weekly.get("hands_on", []) if ref(p["item_id"])],
         "watch_next": [dict(w, items=[ref(i) for i in w["item_ids"] if ref(i)]) for w in weekly.get("watch_next", [])],
+        "quiz": [dict(q, item=ref(q["item_id"]), n=n) for n, q in enumerate(weekly.get("quiz", []), 1) if ref(q["item_id"])],
         "skills": sorted((it for it in items if it.get("skill")), key=lambda x: x["date"]),
         "kits": sorted((it for it in items if it.get("kit")), key=lambda x: x["date"]),
         "exps": exps,
@@ -126,6 +127,13 @@ def weekly_markdown(v: dict, site_url: str) -> str:
     if v["tags"]:
         out += ["## 标签热度", "", " · ".join(f"`{t['name']}` {t['count']}" + (f"（+{t['delta']}）" if t["delta"] > 0 else "")
                                               for t in v["tags"]), ""]
+    if v["quiz"]:
+        out += ["## 本周小测", ""]
+        for q in v["quiz"]:
+            out += [f"**{q['n']}. {q['question']}**", ""] + [f"- {'ABCD'[i]}. {o}" for i, o in enumerate(q["options"])] + [""]
+        out += ["<details><summary>答案</summary>", ""]
+        out += [f"{q['n']}. {'ABCD'[q['answer']]}：{q['explanation']}（出自「{q['item']['title']}」）" for q in v["quiz"]]
+        out += ["", "</details>", ""]
     if v["watch_next"]:
         out += ["## 下周关注", ""] + [f"- {w['text']}" for w in v["watch_next"]] + [""]
     if site_url:
