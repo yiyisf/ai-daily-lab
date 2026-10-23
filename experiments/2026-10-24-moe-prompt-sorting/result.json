@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-24-moe-prompt-sorting",
+  "ran_at": "2026-10-23T22:10:36+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.8,
+  "stdout": "设定：768 条提示词、6 个领域、批大小 32\nMETRIC: 随机批 每步触达专家数 (128 专家) = 101.1 个\nMETRIC: 按领域排序 每步触达专家数 (128 专家) = 74.0 个\nMETRIC: 少读专家比例 (128 专家) = 26.8 %\nMETRIC: 少读专家比例 (32 专家) = 15.0 %\nMETRIC: 单领域前 1/4 专家所占路由比例 = 78.4 %\n[PASS] 按领域排序后，每步触达的不同专家数少于随机打乱\n[PASS] 128 专家配置下少读专家比例超过 5%\n[PASS] 粗粒度 MoE（32 专家）的节省比例小于细粒度（128 专家）\n[PASS] 单领域内前 1/4 专家所占路由比例高于均匀路由的 25%\nRESULT: 模拟中按领域排序让每步读取的专家从 101.1 个降到 74.0 个（少 26.8%），专家越少的 MoE 节省越小（15.0%）\n",
+  "stderr": ""
+}

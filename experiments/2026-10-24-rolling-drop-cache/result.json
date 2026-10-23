@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-24-rolling-drop-cache",
+  "ran_at": "2026-10-23T22:10:39+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "设定：60 轮工具调用，摘要阈值 40000 token，滚动保留最近 4 个工具返回\nMETRIC: full 峰值活跃缓存 = 177.5 千token\nMETRIC: summarize 峰值活跃缓存 = 41.5 千token\nMETRIC: rolling_drop 峰值活跃缓存 = 38.3 千token\nMETRIC: summarize 额外重新预填充 = 20.0 千token\nMETRIC: rolling_drop 额外重新预填充 = 0.0 千token\nMETRIC: summarize 触发次数 = 4 次\n[PASS] 滚动丢弃的峰值活跃缓存小于保留全部历史\n[PASS] 滚动丢弃不需要任何重新预填充\n[PASS] 摘要策略在阈值触发后需要重新预填充\n[PASS] 同一消息序列经不同操作顺序得到不同的缓存状态（历史依赖）\nRESULT: 模拟中滚动丢弃把峰值缓存从 177.5 降到 38.3 千token 且无需重新预填充，摘要触发 4 次、额外预填充 20.0 千token\n",
+  "stderr": ""
+}
