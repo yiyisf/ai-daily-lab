@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-24-rolling-drop-cache",
+  "title": "改写前缀还是管理缓存：Agent 上下文压缩的预填充成本",
+  "goal": "受论文 Cache Engineering for Agents 启发，用模拟的 60 轮工具调用演示：摘要式上下文压缩会改写前缀、触发重新预填充，而直接丢弃旧工具返回的 KV 缓存可以控制活跃缓存又不必重新预填充；并演示同一消息序列在不同缓存操作顺序下状态不同。",
+  "related_item": "2026-10-24-cache-engineering-agents",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "滚动丢弃的峰值活跃缓存远小于保留全部历史，且额外重新预填充为 0；摘要策略在阈值触发后需要重新预填充",
+  "tags": ["agent", "context-engineering", "inference"]
+}
