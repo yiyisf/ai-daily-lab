@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-24-moe-prompt-sorting",
+  "title": "给 MoE 批推理排个序：按领域分组能少读多少专家",
+  "goal": "受 Hugging Face 文章 Sort your prompts 启发，用模拟路由演示：MoE 每个解码步要读取批内所有请求用到的专家，把同领域提示词排在同一批，能减少每步触达的不同专家数；专家数越少的粗粒度 MoE，节省越小。",
+  "related_item": "2026-10-24-sort-prompts-moe",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "按领域排序后每步触达的专家数少于随机打乱；32 专家配置的节省比例小于 128 专家配置",
+  "tags": ["inference", "llm"]
+}
