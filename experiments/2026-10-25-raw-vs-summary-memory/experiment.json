@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-25-raw-vs-summary-memory",
+  "title": "保留原文 vs 写入时摘要：Agent 记忆的证据覆盖率",
+  "goal": "受论文 Naive RAG Is Stronger Than We Thought 启发，用构造的对话历史演示：写入时做摘要的记忆会丢掉「旧值」「原因」等证据，而对原始消息做检索能保住证据，代价是上下文更长。",
+  "related_item": "2026-10-25-naive-rag-memory",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "覆盖式摘要在旧值和原因问题上覆盖率为 0；Raw-RAG top-8 总体覆盖率高于带历史的摘要，且上下文更长",
+  "tags": ["rag", "agent", "context-engineering"]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-25-jeffreys-task-filter",
+  "title": "先探测、再筛题：用 Jeffreys 后验给 RL 训练任务估难度",
+  "goal": "受 ThinkingBox 训练博客启发，用模拟数据演示：训练前探测每个任务的成功率、用 Jeffreys 后验分桶并去掉过难和过易的任务，能显著减少 GRPO 中奖励全相同、没有学习信号的组。",
+  "related_item": "2026-10-25-thinkingbox-rl-training",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "筛选后零方差组比例低于筛选前；Jeffreys 后验均值不出现 0 或 1；被丢掉的任务多数确实过难或过易",
+  "tags": ["fine-tuning", "agent", "evaluation"]
+}

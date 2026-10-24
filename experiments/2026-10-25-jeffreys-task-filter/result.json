@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-25-jeffreys-task-filter",
+  "ran_at": "2026-10-24T22:09:16+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "分桶结果： {'drop-hard': 172, 'hard': 124, 'medium': 37, 'easy': 138, 'drop-easy': 129}\nMETRIC: 保留任务比例 = 49.8 %\nMETRIC: 筛选前零方差组比例 = 48.9 %\nMETRIC: 筛选后零方差组比例 = 19.1 %\nMETRIC: 被丢任务中真实落在两端的比例 = 88.4 %\nMETRIC: 最大似然估计为 0 或 1 的任务比例 = 50.2 %\n[PASS] 筛选后零方差（无学习信号）组的比例低于筛选前\n[PASS] Jeffreys 后验均值不会给出 0 或 1 这样的极端估计\n[PASS] 筛选只去掉两端，保留了相当一部分任务\n[PASS] 被丢掉的任务多数确实是过难或过易的\nRESULT: 模拟中按 Jeffreys 后验筛题后，零方差组从 48.9% 降到 19.1%，保留 49.8% 的任务\n",
+  "stderr": ""
+}

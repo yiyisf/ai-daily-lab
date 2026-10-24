@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-25-raw-vs-summary-memory",
+  "ran_at": "2026-10-24T22:09:19+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "历史消息 111 条，属性修改 42 次，问题 46 个\nMETRIC: 覆盖式摘要 总体证据覆盖率 = 58.7 %\nMETRIC: 带历史摘要 总体证据覆盖率 = 82.6 %\nMETRIC: Raw-RAG top-3 总体证据覆盖率 = 89.1 %\nMETRIC: Raw-RAG top-8 总体证据覆盖率 = 100.0 %\nMETRIC: 覆盖式摘要 previous 类覆盖率 = 0.0 %\nMETRIC: Raw-RAG top-8 previous 类覆盖率 = 100.0 %\nMETRIC: 覆盖式摘要 reason 类覆盖率 = 0.0 %\nMETRIC: Raw-RAG top-8 reason 类覆盖率 = 100.0 %\nMETRIC: Raw-RAG top-8 平均上下文长度 = 62 词\nMETRIC: 覆盖式摘要平均上下文长度 = 4 词\n[PASS] 覆盖式摘要能覆盖全部「当前值」问题\n[PASS] 覆盖式摘要写入时丢了旧值，「上一次的值」问题全部缺证据\n[PASS] 带历史的摘要仍不记录原因，「修改原因」问题全部缺证据\n[PASS] Raw-RAG top-8 的总体证据覆盖率高于带历史的摘要\n[PASS] 检索条数从 3 增加到 8，覆盖率不下降\nRESULT: 构造数据中，Raw-RAG top-8 证据覆盖率 100.0%，覆盖式摘要 58.7%——摘要省上下文，但写入时没留的信息事后无法找回\n",
+  "stderr": ""
+}
