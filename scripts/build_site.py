@@ -100,6 +100,14 @@ def issue_markdown(issue: dict, exps: list[dict], site_url: str) -> str:
         out += ["**今日三件事**", ""]
         out += [f"{i}. {t['text']}" for i, t in enumerate(issue["tldr"], 1)]
         out.append("")
+    titles = {it["id"]: it["title"] for it in issue["items"]}
+    hands_on = [h for h in issue.get("hands_on", []) if h["item_id"] in titles]
+    if hands_on:
+        out += ["**今天可以试**", ""]
+        for h in hands_on:
+            out.append(f"- **{titles[h['item_id']]}**：{h['reason']}")
+            out += [f"  {i}. {s}" for i, s in enumerate(h["steps"], 1)]
+        out.append("")
     by_cat = group_items(issue["items"])
     out.append("**目录**：" + " · ".join(f"{CATEGORIES[c]}（{len(v)}）" for c, v in by_cat))
     out.append("")
@@ -451,6 +459,9 @@ def main() -> int:
             top = sorted(issue["items"], key=lambda i: -i["importance"])[:3]
             tldr = [{"text": i["title"], "item_id": i["id"]} for i in top]
 
+        by_id = {i["id"]: i for i in issue["items"]}
+        hands_on = [dict(h, item=by_id[h["item_id"]]) for h in issue.get("hands_on", []) if h["item_id"] in by_id]
+
         window = issues[max(0, idx - TAG_WINDOW + 1): idx + 1]
         counter = Counter(t for iss in window for it in iss["items"] for t in it["tags"])
         today_tags = {t for it in issue["items"] for t in it["tags"]}
@@ -459,7 +470,7 @@ def main() -> int:
         cat_counts = [{"key": c, "name": CATEGORIES[c], "count": len(its)} for c, its in groups]
         ctx = dict(common, issue=issue, date_cn=date_cn(d), groups=groups, exps=exps, exp_status=exp_status,
                    cover=cover_svg(ordered, 148, link=True),
-                   tldr=tldr, tldr_auto=tldr_auto, cat_counts=cat_counts, issue_no=idx + 1,
+                   tldr=tldr, tldr_auto=tldr_auto, hands_on=hands_on, cat_counts=cat_counts, issue_no=idx + 1,
                    try_count=sum(1 for i in issue["items"] if i.get("actionability") == "try"),
                    top_count=sum(1 for i in issue["items"] if i["importance"] >= 4),
                    recent_tags=recent_tags, tags_window=f"近 {len(window)} 期",
@@ -498,7 +509,8 @@ def main() -> int:
                           "status": e["status"]})
         clean_items = [{k: v for k, v in it.items() if k not in ("date", "brief")} for it in issue["items"]]
         package = {"schema_version": 1, "date": d, "editor_note": issue["editor_note"],
-                   "tldr": issue.get("tldr", []), "pages": pages, "items": clean_items}
+                   "tldr": issue.get("tldr", []), "hands_on": issue.get("hands_on", []),
+                   "pages": pages, "items": clean_items}
         pkg_path = out / "data" / f"{d}.json"
         pkg_path.write_text(json.dumps(package, ensure_ascii=False, indent=1), encoding="utf-8")
         manifest_entries.append({"date": d, "items": len(issue["items"]), "experiments": len(exps),

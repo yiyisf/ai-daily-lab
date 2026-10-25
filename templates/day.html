@@ -58,6 +58,27 @@
       </ol>
     </section>
 
+    {% if hands_on %}
+    <section class="panel hands-on" aria-labelledby="hands-on-title">
+      <div class="tldr-head">
+        <h2 id="hands-on-title">今天可以试</h2>
+        <span class="muted" style="font-size:13px">挑出来能直接动手验证的</span>
+      </div>
+      <ol>
+        {% for h in hands_on %}
+        <li>
+          <span class="badge act-try">可动手</span>
+          <div>
+            <a class="hands-on-title" href="{{ root }}item/{{ h.item.id }}.html">{{ h.item.title }}</a>
+            <p class="hands-on-reason">{{ h.reason }}</p>
+            <ol class="hands-on-steps">{% for s in h.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endif %}
+
     <div class="toolbar js-only">
       <div class="seg" role="group" aria-label="信息密度">
         <button type="button" data-density="title" aria-pressed="false">标题</button>

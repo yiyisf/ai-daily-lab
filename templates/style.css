@@ -193,6 +193,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tldr li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: baseline; }
 .tldr .num { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
 .tldr a { font-size: 16px; line-height: 1.6; }
+.hands-on { margin-top: 16px; }
+.hands-on > ol { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; }
+.hands-on > ol > li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
+.hands-on > ol > li > .badge { margin-top: 3px; }
+.hands-on-title { font-size: 16px; font-weight: 600; line-height: 1.5; }
+.hands-on-reason { margin: 4px 0 0; color: var(--ink-2); line-height: 1.6; }
+.hands-on-steps { margin: 8px 0 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; line-height: 1.7; }
+@media (max-width: 560px) { .hands-on > ol > li { grid-template-columns: 1fr; gap: 6px; } .hands-on > ol > li > .badge { justify-self: start; } }
 
 /* ---------- toolbar ---------- */
 .toolbar { position: sticky; top: 64px; z-index: 10; margin-top: 28px; padding: 12px 0; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
