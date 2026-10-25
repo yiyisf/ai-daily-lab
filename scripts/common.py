@@ -77,6 +77,8 @@ def icon_svg(name: str, size: int = 18, color: str = "currentColor", cls: str = 
 
 # Issues from this date on must carry tldr / actionability / a skills item (older issues only warn).
 STRICT_FROM = "2026-10-21"
+# Issues from this date on should carry hands_on (今天可以试); missing it is a warning only.
+HANDS_ON_FROM = "2026-10-26"
 CATEGORY_ORDER = list(CATEGORIES)
 
 # Suggested ranges from CLAUDE.md; outside the range is a warning, not an error.

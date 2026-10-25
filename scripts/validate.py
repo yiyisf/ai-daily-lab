@@ -29,7 +29,7 @@ from jsonschema import Draft202012Validator
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (  # noqa: E402
     CATEGORIES, CATEGORY_RANGE, CONTENT_DIR, EXPERIMENTS_DIR, ROOT, SCHEMA_DIR,
-    SKILL_AREAS, STRICT_FROM, TOTAL_RANGE, WEEK_RE, WEEKLY_DIR, issue_files, load_json, week_range, weekly_files,
+    HANDS_ON_FROM, SKILL_AREAS, STRICT_FROM, TOTAL_RANGE, WEEK_RE, WEEKLY_DIR, issue_files, load_json, week_range, weekly_files,
 )
 from weekly import item_index, item_text, numbers, week_issues  # noqa: E402
 
@@ -205,6 +205,21 @@ def validate_issue(path: Path, check_links: bool) -> Report:
             rep.err("tldr 中有重复引用的条目")
         if len(tldr) < 3 and len(items) >= 3:
             rep.warn(f"tldr 只有 {len(tldr)} 句，建议 3 句")
+    # 今天可以试
+    by_id = {it["id"]: it for it in items}
+    hands_on = data.get("hands_on")
+    if not hands_on:
+        if d >= HANDS_ON_FROM:
+            rep.warn("缺少 hands_on（今天可以试）；当天确实没有能动手的条目时可以不写，但要在 editor_note 里说明")
+    else:
+        refs = [h["item_id"] for h in hands_on]
+        if len(set(refs)) != len(refs):
+            rep.err("hands_on 中有重复引用的条目")
+        for r in refs:
+            if r not in by_id:
+                rep.err(f"hands_on 引用的条目 `{r}` 不在当期条目中")
+            elif by_id[r].get("actionability") != "try":
+                rep.err(f"hands_on 引用的条目 `{r}` 的 actionability 不是 try，只能挑可动手的条目")
     missing_act = [it["id"] for it in items if "actionability" not in it]
     if missing_act:
         (rep.err if strict else rep.warn)(f"{len(missing_act)} 条缺少 actionability（实用度）：" + "、".join(f"`{i}`" for i in missing_act[:5])
