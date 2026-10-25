@@ -476,6 +476,7 @@ def main() -> int:
                    recent_tags=recent_tags, tags_window=f"近 {len(window)} 期",
                    share=day_share(issue, idx + 1, ordered, tldr, tldr_auto, cat_counts, len(exps)),
                    weekly_link=weekly_for_day(d),
+                   weekly_is_prev=bool(weekly_for_day(d)) and weekly_for_day(d)["week"] != week_id(d),
                    prev=dates[idx - 1] if idx > 0 else None,
                    next=dates[idx + 1] if idx + 1 < len(dates) else None)
         (out / "daily" / f"{d}.html").write_text(tpl_day.render(ctx, root="../", nav="archive"), encoding="utf-8")
@@ -522,8 +523,8 @@ def main() -> int:
 
     # weekly reports
     weekly_views = []
+    (out / "weekly").mkdir()
     if weeklies:
-        (out / "weekly").mkdir()
         (out / "data" / "weekly").mkdir()
     tpl_week = env.get_template("weekly.html")
     for n, wk in enumerate(weeklies):
@@ -532,7 +533,7 @@ def main() -> int:
         v = week_view(wk, issues, experiment_view, week_issues(prev_wid, issues))
         weekly_views.append(v)
         (out / "weekly" / f"{wk['week']}.html").write_text(tpl_week.render(
-            common, v=v, share=week_share(v), root="../", nav="archive",
+            common, v=v, share=week_share(v), root="../", nav="weekly",
             prev=weeklies[n - 1]["week"] if n > 0 else None,
             next=weeklies[n + 1]["week"] if n + 1 < len(weeklies) else None), encoding="utf-8")
         wmd = weekly_markdown(v, site_url)
@@ -545,6 +546,8 @@ def main() -> int:
         wk["_pkg"] = {"week": wk["week"], "title": wk["title"], "package": f"data/weekly/{wk['week']}.json",
                       "sha256": sha256(wpath), "bytes": wpath.stat().st_size}
     weekly_views.reverse()
+    (out / "weekly" / "index.html").write_text(env.get_template("weekly_index.html").render(
+        common, weeklies=weekly_views, root="../", nav="weekly"), encoding="utf-8")
 
     if not issues:
         (out / "index.html").write_text("<!doctype html><meta charset=utf-8><p>还没有日报。</p>", encoding="utf-8")

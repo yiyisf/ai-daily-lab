@@ -284,6 +284,18 @@
   paintFollow();
   paintPractice();
 
+  /* ---------- weekly banner dismiss ---------- */
+  $$('.js-wk-dismiss').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var box = b.closest('.js-wk-banner'), list = store.json('wk-dismissed', []);
+      if (!Array.isArray(list)) list = [];
+      if (list.indexOf(box.dataset.week) === -1) list.push(box.dataset.week);
+      store.setJson('wk-dismissed', list.slice(-20));
+      smooth(function () { box.hidden = true; });
+      toast('已隐藏这期周报提示，可在顶部「周报」里找到');
+    });
+  });
+
   /* ---------- offline cache (service worker; https or localhost only) ---------- */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
     whenActive(function () {

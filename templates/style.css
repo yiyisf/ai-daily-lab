@@ -664,6 +664,29 @@ dialog.share::backdrop { background: rgba(0, 0, 0, .45); }
 .quiz.is-live .quiz-ans:not([open]) { display: none; }
 .quiz-foot { display: flex; align-items: center; gap: 12px; min-height: 32px; }
 
+/* ---------- weekly banner & index ---------- */
+.wk-banner { position: relative; margin-bottom: 20px; border: 1px solid var(--accent-line); border-radius: var(--radius); background: var(--accent-soft); }
+.wk-banner-link { display: flex; align-items: center; gap: 12px; padding: 12px 44px 12px 16px; color: var(--ink); }
+.wk-banner-link:hover { color: var(--ink); }
+.wk-banner .badge { flex: none; background: var(--surface); color: var(--accent-ink); }
+.wk-banner-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; }
+.wk-banner-text strong { font-size: 15px; line-height: 1.5; }
+.wk-banner-text .muted { font-size: 12px; }
+.wk-banner-go { margin-left: auto; flex: none; font-size: 13px; font-weight: 600; color: var(--accent-ink); }
+.wk-banner-x { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: var(--ink-3); font-size: 18px; line-height: 1; }
+.wk-banner-x:hover { background: var(--surface); color: var(--ink); }
+@media (max-width: 640px) {
+  .wk-banner-link { flex-wrap: wrap; gap: 6px 10px; }
+  .wk-banner-go { display: none; }
+  .wk-banner-text { flex-basis: 100%; }
+}
+.wk-latest { display: flex; flex-direction: column; gap: 8px; margin-top: 24px; padding: 22px 24px; border: 1px solid var(--accent-line); border-radius: var(--radius); background: var(--surface); color: var(--ink); }
+.wk-latest:hover { color: var(--ink); box-shadow: var(--shadow); }
+.wk-latest-title { font-family: var(--font-serif); font-size: 26px; line-height: 1.35; }
+.wk-latest p { margin: 0; color: var(--ink-2); line-height: 1.8; }
+.wk-latest-themes { margin: 4px 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; color: var(--ink); font-weight: 500; }
+.wk-latest .muted { font-size: 13px; }
+
 /* ---------- weekly report ---------- */
 .wk-note { margin: 12px 0 0; font-size: 14px; color: var(--ink-3); }
 .wk .actions { margin-top: 18px; }
@@ -805,4 +828,10 @@ dialog.help .close { margin-top: 20px; }
   .brand { display: none; }
   .nav a { padding: 8px 6px; font-size: 14px; }
   .header-inner { gap: 4px; }
+}
+@media (max-width: 360px) {
+  .nav { gap: 0; }
+  .nav a { padding: 8px 4px; font-size: 13.5px; }
+  .icon-btn, .search-btn { width: 34px; height: 34px; }
+  .header-inner { gap: 3px; }
 }

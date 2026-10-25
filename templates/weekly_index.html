@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}周报 · AI Daily Lab{% endblock %}
+{% block description %}每周日晚发布：本周主线、必读、值得动手和小测{% endblock %}
+{% block main %}
+<div class="wrap narrow">
+  <div class="page-head">
+    <div class="issue-kicker"><span class="badge">周报</span><span>共 {{ weeklies | length }} 期 · 每周日晚发布</span></div>
+    <h1>AI 周报</h1>
+    <p>没空每天看日报，一周看一次就够：本周主线、必读、值得动手，再用几道小测检验一下。</p>
+  </div>
+  {% if weeklies %}
+  {% set w = weeklies[0] %}
+  <a class="wk-latest" href="{{ root }}weekly/{{ w.week }}.html">
+    <span class="wk-card-kicker">最新 · {{ w.label }} · {{ w.range }}</span>
+    <strong class="wk-latest-title">{{ w.title }}</strong>
+    <p>{{ w.lede }}</p>
+    <ol class="wk-latest-themes">{% for t in w.themes %}<li>{{ t.title }}</li>{% endfor %}</ol>
+    <span class="muted">{{ w.stats.issues }} 期日报 · {{ w.stats['items'] }} 条{% if w.quiz %} · {{ w.quiz | length }} 道小测{% endif %} · 阅读周报 →</span>
+  </a>
+  {% if weeklies | length > 1 %}
+  <h2 class="month-title" style="margin-top:40px">往期周报</h2>
+  <div class="wk-cards">
+    {% for w in weeklies[1:] %}
+    <a class="wk-card" href="{{ root }}weekly/{{ w.week }}.html">
+      <span class="wk-card-kicker">{{ w.label }} · {{ w.range }}</span>
+      <strong>{{ w.title }}</strong>
+      <span class="muted">{{ w.stats.issues }} 期 · {{ w.stats['items'] }} 条{% if w.stats.exps %} · {{ w.stats.exps }} 个实验{% endif %}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="empty">第一期周报会在周日晚发布。</p>
+  {% endif %}
+</div>
+{% endblock %}
