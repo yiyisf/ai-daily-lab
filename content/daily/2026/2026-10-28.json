@@ -1,0 +1,540 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-28",
+  "generated_at": "2026-10-28T06:30:00+08:00",
+  "editor_note": "本期运行环境只能访问 Anthropic、GitHub 等少数站点，OpenAI、Hugging Face、arXiv、Hacker News 和多数厂商博客都打不开，因此新闻、论文和理念栏目偏少，没有收录的内容不代表当天没有动态；要闻只有 1 条，理念与讨论栏目空缺，共 12 条。今天的重点是几个可直接上手的技能与规则文件：Cloudflare 的审计技能、四条原则的 CLAUDE.md，以及 Graphify 的本地知识图谱。配套实验用 mock 数据演示审计发现的校验规则，不是该技能的真实 schema。",
+  "tldr": [
+    {
+      "text": "Anthropic 公布与 6 家药企合作成果：CAR T 设计缩短约 70%，文书审查省 89% 时间",
+      "item_id": "2026-10-28-anthropic-drug-development"
+    },
+    {
+      "text": "Anthropic 实验：50 位分析师在 86% 的分析选择上与 Agent 的倾向一致",
+      "item_id": "2026-10-28-agents-judgment-calls"
+    },
+    {
+      "text": "Cloudflare 开源审计技能 security-audit：提出发现的 Agent 不能自己验证",
+      "item_id": "2026-10-28-cloudflare-security-audit-skill"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-10-28-karpathy-claude-md",
+      "reason": "在项目里加一份规则文件，约束 AI 乱改代码、乱加抽象，先在一个项目里试",
+      "steps": [
+        "新项目：照 README 用 `curl -o CLAUDE.md` 下载仓库里的 CLAUDE.md",
+        "已有 CLAUDE.md 的项目，改用 README 里的 `curl ... >> CLAUDE.md` 追加方式",
+        "让 Agent 做一个小改动，看它是否只改相关代码"
+      ]
+    },
+    {
+      "item_id": "2026-10-28-graphify",
+      "reason": "给 Agent 一张项目结构图，帮它了解已有组件和模块关系，可离线解析代码",
+      "steps": [
+        "运行 `uv tool install graphifyy`，再运行 `graphify install`",
+        "在编码 Agent 里运行 `/graphify .`",
+        "打开生成的 `GRAPH_REPORT.md`，核对关键模块关系是否符合你的认知"
+      ]
+    },
+    {
+      "item_id": "2026-10-28-skill-stop-conditions",
+      "reason": "批量改动前写明范围、检查点和停止条件，避免 Agent 一路改下去无人复核",
+      "steps": [
+        "拿一个批量改动任务，写明只改哪个目录",
+        "加上「先列清单等我确认」和每改几个文件跑一次测试",
+        "写明遇到什么情况必须停下来问你"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-10-28-findings-ledger-check"
+  ],
+  "items": [
+    {
+      "id": "2026-10-28-anthropic-drug-development",
+      "category": "news",
+      "title": "Anthropic 公布与 6 家药企的合作进展：CAR T 设计缩短约 70%",
+      "summary": "Anthropic 生命科学团队 10 月 27 日发布与 BigHat、Bristol Myers Squibb、Divergence Labs、Enveda、Generate Biomedicines、The Column Group 六家机构数月合作的早期成果，并已启动自己的药物发现项目。Generate 的科学家用 Claude Code 提出更短的基因设计，其中一个比原来短约 70%，实验室测试中免疫细胞产生的受体多约 10 倍。Enveda 用 Claude 审阅 1,061 页生产与注册文件，审查时间下降 89%。",
+      "key_points": [
+        "Enveda：Claude 找出人工审阅发现的全部 11 个问题，另标出 7 个人工漏掉的；审查时间从 25 小时以上降到不足 3 小时",
+        "BigHat：约 10 周测试约 1,010 个抗体片段变体，最好版本结合力提升超过 10 倍",
+        "Divergence Labs：约一个月生成约 35,000 个抗体设计，测试得到 3 个结合 IgE 的设计和 20 个能把 IgE 挤下来的设计",
+        "页面说明工作尚早、多为临床前，结果由合作方和 Anthropic 报告，没有独立验证"
+      ],
+      "why_it_matters": "属于行业动态，与自部署开源模型的开发工作没有直接关系；值得留意的是，它们大量依赖「Agent 加专用 Skill、由人把关」的工作方式，可作为其他行业落地思路的参考。",
+      "sources": [
+        {
+          "title": "Early progress on accelerating drug development with Claude",
+          "url": "https://www.anthropic.com/research/early-progress-drug-development",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "agent",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-28-graphify",
+      "category": "opensource",
+      "title": "Graphify：把代码库、文档和 PDF 变成可查询的知识图谱",
+      "summary": "Graphify 是一个以 `/graphify` 技能形式运行的开源工具，用 tree-sitter 在本地解析代码，生成带来源标注的知识图谱，输出 `graph.html`、`GRAPH_REPORT.md` 和 `graph.json`，并提供 `query`、`path`、`explain` 命令。README 称它用图遍历而非向量库，代码语料的 `graphify extract` 可完全离线运行；文档、PDF 和图片的语义抽取才需要调用模型。本周在 GitHub 趋势榜上新增约 7,183 颗星，总星数约 136.9k。",
+      "key_points": [
+        "每条边标为 EXTRACTED（源码中明确存在）或 INFERRED（由工具推断），便于区分事实与推断",
+        "语义抽取可用 Gemini、Claude、OpenAI、Ollama 或 Bedrock 等后端；设置 `GRAPHIFY_BACKEND=none` 可关闭模型后端",
+        "README 自报的评测是检索与问答类：ERPNext 关键事实覆盖率 82.0%，对比 grep/读文件基线的 70.8%；「省 80% token」的说法出现在其付费云服务宣传中，页面未给出基线和方法",
+        "注意：PyPI 包名是 `graphifyy`（两个 y），命令是 `graphify`；页面未显示发布版本和日期"
+      ],
+      "why_it_matters": "代码部分离线可跑，语义部分可接 Ollama，适合在自部署环境里给 Agent 一张项目结构图，缓解「不了解已有组件和规范」的问题；效果数据是作者自报，建议在自己的仓库上先对比再推广。",
+      "sources": [
+        {
+          "title": "Graphify-Labs/graphify README",
+          "url": "https://github.com/Graphify-Labs/graphify",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（本周）",
+          "url": "https://github.com/trending?since=weekly",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "context-engineering",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/Graphify-Labs/graphify"
+      }
+    },
+    {
+      "id": "2026-10-28-orca-worktrees",
+      "category": "opensource",
+      "title": "Orca：给每个编码 Agent 一个 git worktree 的开源桌面编排器",
+      "summary": "stablyai/orca 是 MIT 许可的桌面应用，用来并排运行多个编码 Agent：每个 Agent 使用独立的 git worktree，统一在一个界面里跟踪。README 称它兼容任何命令行 Agent，列出的包括 Claude Code、Codex、OpenCode、Pi、Goose 等。仓库约 108k 星，本周在趋势榜上新增约 9,241 颗星。",
+      "key_points": [
+        "可以把同一个提示词发给多个 Agent 并行跑，再对比结果",
+        "Design Mode 会把选中界面元素的 HTML、CSS 和截图发给 Agent",
+        "支持 SSH worktree、GitHub 与 Linear 视图，以及手机端监控和通知",
+        "安装：`brew install --cask stablyai/orca/orca`，或从 GitHub Releases 下载；页面未显示版本号和发布日期"
+      ],
+      "why_it_matters": "README 没有写对开源权重模型的专门支持，但既然「任何命令行 Agent 都能跑」，接 OpenCode 加自部署模型的团队可以用它做多方案并行对比；Design Mode 依赖把截图交给 Agent，没有视觉能力的模型用不上这一项。",
+      "sources": [
+        {
+          "title": "stablyai/orca README",
+          "url": "https://github.com/stablyai/orca",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（本周）",
+          "url": "https://github.com/trending?since=weekly",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "devtools",
+        "workflow"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/stablyai/orca",
+        "license": "MIT"
+      }
+    },
+    {
+      "id": "2026-10-28-openbot-agents",
+      "category": "opensource",
+      "title": "OpenBot：本地优先的常驻 Agent 桌面应用，默认完全放权",
+      "summary": "nightly-labs/openbot 是处于开发预览阶段的桌面应用，为每个 Agent 提供独立工作区和对话，支持消息队列、Agent 之间互发消息、可控制的内嵌浏览器和可选的 Computer Use。它能驱动 Codex、Claude、Grok、OpenCode、Gemini、Cursor CLI、Cline CLI，也支持自定义 OpenAI 兼容端点，并能识别本地的 Ollama 和 LM Studio。最新版本使用 PolyForm Noncommercial 1.0.0 许可，0.1.11 及更早版本为 Apache-2.0。",
+      "key_points": [
+        "README 明确写到：Agent 默认以 `danger-full-access` 和 `approvalPolicy: never` 运行，可免确认读写文件、执行命令和访问网络",
+        "商业使用需要另行取得许可；公司内使用前先确认许可条款",
+        "支持 Docker（`ghcr.io/nightly-labs/openbot:latest`，需配 seccomp profile）和无头服务器安装",
+        "页面未显示最新版本号和发布日期"
+      ],
+      "why_it_matters": "能接本地模型，但「默认免确认」和非商业许可两点都要先过评估；团队想试的话建议只在隔离环境里用，并先确认许可是否允许。",
+      "sources": [
+        {
+          "title": "nightly-labs/openbot README",
+          "url": "https://github.com/nightly-labs/openbot",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（今日）",
+          "url": "https://github.com/trending?since=daily",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "safety",
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "watch",
+      "repo": {
+        "url": "https://github.com/nightly-labs/openbot",
+        "license": "PolyForm Noncommercial 1.0.0"
+      }
+    },
+    {
+      "id": "2026-10-28-cindy-agent",
+      "category": "opensource",
+      "title": "Cindy：能在多种编码 Agent 之间切换的开源桌面与手机 Agent 应用",
+      "summary": "makecindy/cindy 以 Apache-2.0 开源，是 Electron 桌面端加 Expo 手机端的 pnpm monorepo，可以把 Claude Code、Codex 或 Pi 作为底层 Agent 并在会话中切换，支持带角色和技能的「伙伴」、定时任务，以及从 Slack、Telegram 接活，可通过 Skills、插件和 MCP 扩展。模型来源列有订阅、自带 API key、本地模型和官方托管服务。",
+      "key_points": [
+        "客户端默认连接官方云服务；「Skip Sign-In」模式可在本地运行 Agent，但依赖服务端的功能不可用",
+        "后端在另一个仓库，不在本仓库中",
+        "开发需要 Node.js 22.x、pnpm 10.x（暂不支持 v11）和 Git LFS",
+        "README 未点名具体的开源权重模型，也没有显示发布版本和日期"
+      ],
+      "why_it_matters": "默认依赖官方云服务，对内网自部署环境不太友好，目前更适合当作多 Agent 应用的设计参考，先关注，不急着上手。",
+      "sources": [
+        {
+          "title": "makecindy/cindy README",
+          "url": "https://github.com/makecindy/cindy",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（今日）",
+          "url": "https://github.com/trending?since=daily",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "watch",
+      "repo": {
+        "url": "https://github.com/makecindy/cindy",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "2026-10-28-ollama-0-40-12",
+      "category": "tools",
+      "title": "Ollama 0.40.12：新增 LFM3 小模型和 d1 决策模型 2B，修复 OpenCode v2 启动",
+      "summary": "Ollama 10 月 27 日发布 0.40.12，加入 Liquid AI 的 LFM3 系列：lfm3 是 1.7B 文本模型，上下文 256K，另有视觉、音频和全模态变体，可用 `ollama run lfm3` 运行。基于 LFM3 的 d1 2B 决策模型也同时加入，可用来回答 yes/no 类问题。这两个模型目前只在 Apple 硬件上运行，Linux 和 Windows 支持「即将推出」。",
+      "key_points": [
+        "d1 用法示例：`ollama run d1:2b \"...\" --ask \"Is this a billing issue?\"`",
+        "`ollama launch` 修复了与 OpenCode v2 的配合问题，并修复 Kimi CLI 只有工具调用的回合",
+        "Apple 芯片上 Gemma 4、Flint、Laguna 的提示词处理提速；MLX 上支持 DFlash2 草稿模型的投机解码",
+        "上一版 0.40.11 已介绍过语音生成与 d3 决策模型"
+      ],
+      "why_it_matters": "如果团队用 Ollama 加 OpenCode 做本地开发，这一版修复了启动问题；LFM3 和 d1 目前仅限 Apple 硬件，Linux 服务器用不上，等待后续平台支持。",
+      "sources": [
+        {
+          "title": "Ollama v0.40.12 release notes",
+          "url": "https://github.com/ollama/ollama/releases/tag/v0.40.12",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "inference",
+        "open-weights",
+        "devtools"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "follow_up_of": "2026-10-25-ollama-0-40-11"
+    },
+    {
+      "id": "2026-10-28-claude-code-2-1-312",
+      "category": "tools",
+      "title": "Claude Code 2.1.312：修复大 CLAUDE.md 被覆盖、Bash cd 后找不到技能",
+      "summary": "Claude Code 2.1.312 修复了几处与规则文件和技能相关的问题：Claude 只读到超大 CLAUDE.md、规则文件或被 @ 引入的文件开头就覆盖它的问题，现在 Write 会要求先读完或原地编辑；在 Bash 里 `cd` 进 git 仓库更深目录后，按目录和 `paths:` 生效的技能找不到的问题；一个命令名无效就导致所有命令都加载不出来的问题。此外网关 `oidc.user_id_claim` 可指定识别用户的 id_token 字段。",
+      "key_points": [
+        "2.1.311 起 `ultrathink` 在 Opus 5.5、Sonnet 5.5、Haiku 5.5 和 Fable 5.1 上按 xhigh 强度运行",
+        "提示词和 Agent 类 hook 每个会话最多同时运行 24 个，子 Agent 也计入",
+        "不再发送 `claude_code.safety_event` 这个 OpenTelemetry 事件",
+        "云端会话改进：例程可选择强度，环境设置页的启动脚本框带语法高亮"
+      ],
+      "why_it_matters": "Claude Code 本身依赖闭源模型，自部署团队用不上；但规则文件被误覆盖、技能路径失效这类问题在其他命令行 Agent 里也可能出现，可作为自查清单。",
+      "sources": [
+        {
+          "title": "Claude Code CHANGELOG",
+          "url": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "coding",
+        "devtools",
+        "agent-skills"
+      ],
+      "importance": 2,
+      "actionability": "know",
+      "follow_up_of": "2026-10-27-claude-code-2-1-311"
+    },
+    {
+      "id": "2026-10-28-cloudflare-security-audit-skill",
+      "category": "kits",
+      "title": "Cloudflare 开源 security-audit：发现者不能验证自己的审计技能",
+      "summary": "Cloudflare 的 security-audit-skill（MIT 许可，约 50.1k 星，本周新增约 16,593 星）把代码审计拆成侦察、覆盖导向的猎取、候选验证、结构化输出、独立记录验证和报告六个阶段，并称它启发了 Cloudflare 自己的漏洞发现系统。核心做法是：检查发现的 Agent 绝不是提出发现的那个，每个候选都由一个全新的验证者去尝试推翻。",
+      "key_points": [
+        "`confirmed` 必须有完整的源码追踪和有限的观察结果；证据不足的写成 `needs_validation`，且不给严重度",
+        "目标仓库的构建和测试要在能禁网、限资源的操作系统级沙箱里执行；没有沙箱时只记线索、不执行目标代码",
+        "默认输出到 `~/security-audit-skill/<repo-name>/run-<N>`，不会写进被审计的仓库",
+        "要求模型支持工具调用和并行子 Agent；页面没有写版本号和发布日期，仓库只有 14 次提交"
+      ],
+      "why_it_matters": "「提出者与验证者分离、结论必须带证据」的做法与模型无关，可借鉴到团队的代码审查 Agent 上；技能自身要求并行子 Agent，在自部署模型上效果需要自行验证，并务必先准备沙箱。",
+      "sources": [
+        {
+          "title": "cloudflare/security-audit-skill README",
+          "url": "https://github.com/cloudflare/security-audit-skill",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（本周）",
+          "url": "https://github.com/trending?since=weekly",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "safety",
+        "evaluation"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-10-28-findings-ledger-check",
+      "kit": {
+        "kind": "skill",
+        "name": "security-audit",
+        "repo": "https://github.com/cloudflare/security-audit-skill",
+        "license": "MIT",
+        "capabilities": [
+          "映射架构、信任边界和输入面，生成 architecture.md 与 coverage-ledger.json",
+          "按覆盖台账分派相互隔离的猎取 Agent，并用覆盖评审找遗漏",
+          "对每个候选发现由全新的验证 Agent 尝试推翻",
+          "生成 findings.json、REPORT.md 和 NEEDS-VALIDATION.md"
+        ],
+        "highlights": [
+          "提出者与验证者分离，确认结论需要完整源码追踪",
+          "零依赖的 Node.js 校验器检查 findings 和覆盖台账是否符合 schema",
+          "没有沙箱时不执行目标代码，只保留为待验证线索"
+        ],
+        "install": "npx skills add https://github.com/cloudflare/security-audit-skill --skill security-audit（加 --global 为用户级安装）"
+      }
+    },
+    {
+      "id": "2026-10-28-hallmark-design-skill",
+      "category": "kits",
+      "title": "Hallmark：用 50 套主题和浏览器检查让 AI 生成的页面不像 AI 做的",
+      "summary": "Together AI 的 Hallmark（MIT 许可，约 38.8k 星）是面向 Claude Code、Codex、Cursor 和 OpenCode 的前端设计技能：先读项目并索取素材，从 50 套主题中给出三个候选，先单独做首屏并评审，再用 `sloplint --render` 在八种宽度下检查页面，最后由全新上下文的子 Agent 评审。检查分三档：Floor 永不放行，Reflex 可附理由覆盖，Finish 不阻塞。",
+      "key_points": [
+        "命令：`/hallmark <prompt>`、`/hallmark redesign <path>`、`/hallmark audit <path>`；Codex 里用 `$hallmark`",
+        "静态检查只需 Node 18+；浏览器渲染检查还需 `npm i -g puppeteer-core` 和 Chrome",
+        "内置 755 张可商用的 Wikimedia Commons 图片，并要求在页面上署名",
+        "渲染检查依赖浏览器截图和子 Agent 评审；README 未写版本号，Releases 为空"
+      ],
+      "why_it_matters": "它的「静态规则检查加首屏单独评审」思路对「AI 不遵守项目已有组件库」有参考价值，但技能本身是为生成新页面设计，不会自动使用你们现有的组件库；没有视觉能力的模型无法完成截图类评审。",
+      "sources": [
+        {
+          "title": "Nutlope/hallmark README",
+          "url": "https://github.com/Nutlope/hallmark",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（今日）",
+          "url": "https://github.com/trending?since=daily",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "coding",
+        "devtools"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "kit": {
+        "kind": "skill",
+        "name": "hallmark",
+        "repo": "https://github.com/Nutlope/hallmark",
+        "license": "MIT",
+        "compatible": [
+          "Claude Code",
+          "Codex CLI",
+          "Cursor",
+          "OpenCode"
+        ],
+        "capabilities": [
+          "从 50 套主题中为页面选定风格，也可按提示词定制",
+          "对页面做静态与浏览器渲染检查（sloplint）",
+          "redesign 和 audit 命令分别用于改版和审查已有页面"
+        ],
+        "highlights": [
+          "检查分 Floor、Reflex、Finish 三档，只有 Floor 绝对不放行",
+          "首屏先单独构建并评审，再扩展到整页",
+          "最终由全新上下文的子 Agent 评审，避免自己评自己"
+        ],
+        "install": "npx skills add nutlope/hallmark -g（Claude Code 插件：/plugin marketplace add nutlope/hallmark，然后 /plugin install hallmark@hallmark）"
+      }
+    },
+    {
+      "id": "2026-10-28-karpathy-claude-md",
+      "category": "practices",
+      "title": "一份 CLAUDE.md 四条原则：先想清楚、保持简单、只改该改的、以可验证目标驱动",
+      "summary": "multica-ai/andrej-karpathy-skills（MIT 许可，约 225.4k 星，本周新增约 3,286 星）把 Andrej Karpathy 在 X 上对 LLM 编码常见毛病的观察，整理成一份 `CLAUDE.md`，也提供 Cursor 规则和插件版本。README 引述的毛病是：不核对就做错误假设、把代码写得过于复杂、改动自己不理解的代码。",
+      "key_points": [
+        "Think Before Coding：写明假设、说出歧义和取舍，不确定就先问，不要猜",
+        "Simplicity First：只写解决问题所需的最少代码，不加投机性功能和多余抽象",
+        "Surgical Changes：只改请求涉及的地方，无关的死代码只提示、不删除",
+        "Goal-Driven Execution：先定义可验证的成功标准（如测试），循环到通过为止"
+      ],
+      "why_it_matters": "这类规则写在 CLAUDE.md 或同类规则文件里，与具体模型无关，开源命令行 Agent 通常也能读；对应「AI 乱改代码」和「澄清需求问太多」两个问题，可以先在一个项目里试，注意「先问」要配合「最多问几个」的约束，免得澄清又变长。",
+      "sources": [
+        {
+          "title": "multica-ai/andrej-karpathy-skills README",
+          "url": "https://github.com/multica-ai/andrej-karpathy-skills",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "GitHub Trending（本周）",
+          "url": "https://github.com/trending?since=weekly",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "coding",
+        "prompting",
+        "context-engineering"
+      ],
+      "importance": 4,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-10-28-skill-stop-conditions",
+      "category": "skills",
+      "title": "把任务交给 Agent 时，先写明停止条件和哪些步骤要问你",
+      "summary": "Anthropic 的《Building effective agents》建议先找最简单的方案，复杂度只在需要时增加；Agent 适合需要灵活决策的场景。文中还提到，Agent 可以在检查点或遇到阻塞时暂停，等人给反馈，并应设置停止条件（如最大迭代次数）来保持控制，且自主程度越高，成本和错误累积的风险越大，要在沙箱里充分测试。把这些原则用在日常委派上，就是交代任务时同时说清停在哪、问谁。文章发表于 2024 年 12 月，作者也提示其中部分工具方面的内容已过时。",
+      "key_points": [
+        "文中原则：先从最简单的方案做起，简单方案不够时才增加复杂度",
+        "Agent 可在检查点或遇到阻塞时暂停，等待人工反馈",
+        "用最大迭代次数之类的停止条件保持控制，并先在沙箱里测试"
+      ],
+      "why_it_matters": "这是与模型无关的委派习惯，开源权重模型驱动的编码 Agent 同样适用；对「AI 一路改下去、改了一大堆没人看」的情况尤其有效。",
+      "sources": [
+        {
+          "title": "Building effective agents",
+          "url": "https://www.anthropic.com/engineering/building-effective-agents",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2024-12-19"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "agent",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "delegate",
+        "scenario": "让编码 Agent 把页面里自己写的按钮，批量换成公司组件库里的组件",
+        "bad": "把项目里所有自己写的按钮都换成组件库的，改完告诉我。",
+        "good": "请把 [目录] 下自己写的按钮换成组件库 [库名] 的 Button。\n范围：只改这个目录，不动其他目录和依赖版本。\n先做：列出要改的文件清单，等我确认后再动手。\n检查点：每改完 [5] 个文件，运行 [测试命令]，失败就停下并告诉我原因。\n停止条件：最多修改 [20] 个文件；遇到组件库里没有对应组件的情况，不要自己写，记下来问我。\n交付：给出改动文件列表和测试结果。",
+        "why": [
+          "「只改这个目录」划出范围，避免它顺手改别处",
+          "先列清单再动手，是让人在大动作之前有一次确认",
+          "每 N 个文件跑一次测试，是把检查点写进任务里",
+          "给出最大文件数和「遇到缺组件就问」，等于写明停止条件和不许自作主张的边界"
+        ],
+        "practice": "下次把任务交给 Agent 前，用一句话补上「改到什么程度就停、哪种情况先问我」。"
+      }
+    },
+    {
+      "id": "2026-10-28-agents-judgment-calls",
+      "category": "research",
+      "title": "Anthropic 实验：50 位分析师在 86% 的分析选择上跟随了 Agent 的倾向",
+      "summary": "Anthropic 招募 61 名懂因果推断的专业人士，用 Claude Code 里的 Agent 为一家虚构的农业合作社做是否扩大顾问项目的分析，11 人选择不用 Agent，其余 50 人进入主分析。每个 Agent 的系统提示被随机设定偏向四个两可决策中的某一个选项，同时要求它诚实、给出最强的论证、证据足够强时改变立场。结果分析师与 Agent 倾向一致的比例为 86%（随机约 50%）。",
+      "key_points": [
+        "四个决策的跟随比例：评价指标 92%，比较方法 82%，覆盖范围 81%，加权方式 90%",
+        "分析师在已有倾向的 38 个案例中，Agent 不同意时有 60% 改了主意，Agent 同意时只有 6%；作者称差距不精确，不能认定为因果",
+        "经验、专业程度、对 AI 的信任等都没能预测跟随程度；77% 的人在解释中重复 Agent 的论点，只有 15% 提到了 Agent",
+        "局限：只有一个任务、一个领域、一个模型，Agent 的倾向被刻意加强；没用 Agent 的对照组经验较少，不可直接比较"
+      ],
+      "why_it_matters": "这意味着「人来把关」不等于有独立判断。让 AI 澄清需求或给方案时，可以先写下自己的判断，再让它给出多个选项和各自的理由；论文提到的这类做法尚未在实验中验证。",
+      "sources": [
+        {
+          "title": "How AI agents shape experts' judgment calls",
+          "url": "https://www.anthropic.com/research/agents-judgment-calls",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "agent",
+        "research"
+      ],
+      "importance": 4,
+      "actionability": "know",
+      "figure": {
+        "type": "bars",
+        "title": "分析师在四个分析选择上都大比例跟随了 Agent 的倾向",
+        "series": [
+          "与 Agent 倾向一致的比例"
+        ],
+        "rows": [
+          {
+            "label": "评价指标",
+            "values": [
+              92
+            ]
+          },
+          {
+            "label": "加权方式",
+            "values": [
+              90
+            ]
+          },
+          {
+            "label": "比较方法",
+            "values": [
+              82
+            ]
+          },
+          {
+            "label": "覆盖范围",
+            "values": [
+              81
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自 Anthropic 研究报告，随机情况下约为 50%"
+      }
+    }
+  ]
+}
