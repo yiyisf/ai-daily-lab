@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-27-skill-bash-audit",
+  "title": "离线审查 SKILL.md：找出不受限 Bash 授权并给出收窄规则",
+  "goal": "参考 agent-skills-state-2026 的 10 月 26 日报告，用 8 个内置 mock 技能演示：解析前言、识别裸 Bash / Bash(*) 授权、找出没用上的授权、标记较高风险命令，并按正文命令给出 Bash(命令:*) 形式的收窄建议。",
+  "related_item": "2026-10-27-unscoped-bash-skills",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "全部 mock 技能的判定与人工标注一致；前言含未加引号冒号的技能被判为解析失败；收窄后的规则覆盖正文中的每条命令",
+  "tags": ["agent-skills", "safety", "devtools"]
+}

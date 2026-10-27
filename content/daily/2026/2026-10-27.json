@@ -1,0 +1,504 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-27",
+  "generated_at": "2026-10-27T21:30:00+08:00",
+  "editor_note": "今天 Anthropic 提交 S-1 进入上市流程，OpenAI 公开一篇声称推翻「指数时间假设」的模型生成手稿，等待独立专家审查。和团队更相关的是 OpenCode 2.2.0 的插件会话指令，以及一份公开 Skill 权限统计：近三成不受限 Bash 授权根本没用上，配套实验演示如何离线审查 SKILL.md。本期运行环境打不开 OpenAI、Hugging Face、arXiv 等多数站点，GPT-6.1 Terra、Cohere 关于 Qwen 模型的报告等因无法读到原文没有收录，论文与理念栏目空缺，共 11 条。",
+  "tldr": [
+    {
+      "text": "Anthropic 提交 S-1，拟以代码 ANT 在纳斯达克上市，股数与价格区间未定",
+      "item_id": "2026-10-27-anthropic-s1-ipo"
+    },
+    {
+      "text": "OpenCode 2.2.0 让插件按键注入会话指令，不改系统提示词、不破坏缓存",
+      "item_id": "2026-10-27-opencode-2-2"
+    },
+    {
+      "text": "申请不受限 Bash 的 3,715 个公开 Skill 中，29.9% 没写命令也不带脚本",
+      "item_id": "2026-10-27-unscoped-bash-skills"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-10-27-addyosmani-agent-skills",
+      "reason": "需求说不清、AI 不守前端规范时，可直接试 interview-me 和 frontend-ui-engineering 技能",
+      "steps": [
+        "运行 `npx skills add addyosmani/agent-skills --list` 查看可安装的技能",
+        "用 OpenCode 的话，把需要的技能复制到 `.opencode/skills/` 或 `~/.config/opencode/skills/`",
+        "在一个需求不清的任务里说「interview me」，观察 Agent 是否一次只问一个问题"
+      ]
+    },
+    {
+      "item_id": "2026-10-27-unscoped-bash-skills",
+      "reason": "装社区 Skill 前花几分钟收窄 Bash 权限，减少 Agent 免确认执行任意命令的风险",
+      "steps": [
+        "在已装技能的 SKILL.md 中查找 allowed-tools 里的裸 `Bash` 或 `Bash(*)`",
+        "没写命令也不带脚本的技能，从你的副本里删掉 Bash",
+        "其余改成只允许文中出现的命令，如 `Bash(git status:*)`，并固定所装包的版本"
+      ]
+    },
+    {
+      "item_id": "2026-10-27-skill-say-what-to-do",
+      "reason": "让 AI 把冗长的需求澄清改短时，用「要什么 + 样例」代替「不要什么」",
+      "steps": [
+        "找一段你觉得太长、没人会看完的 AI 输出",
+        "按示例写清读者、长度和结构，并附一段你认可的样例",
+        "对比改写前后的输出长度和可读性"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-10-27-anthropic-s1-ipo",
+      "category": "news",
+      "title": "Anthropic 向 SEC 提交 S-1，拟以代码 ANT 在纳斯达克上市",
+      "summary": "Anthropic 10 月 26 日宣布，已向美国证券交易委员会（SEC）提交 Form S-1 注册声明，拟首次公开发行 A 类普通股，计划在纳斯达克全球精选市场上市，股票代码为 \"ANT\"。发行股数和价格区间尚未确定，注册声明尚未生效。",
+      "key_points": [
+        "公告未披露发行股数、价格区间和募资规模，也没有包含 S-1 正文中的财务数据",
+        "注册声明生效前，相关证券不得出售；公告本身不构成出售要约",
+        "初步招股说明书可向 Goldman Sachs 和 Morgan Stanley 索取"
+      ],
+      "why_it_matters": "对使用自部署开源权重模型的团队没有直接影响；上市后闭源模型厂商的财务与风险披露会更透明，可作为了解行业商业状况的参考。",
+      "sources": [
+        {
+          "title": "Anthropic files S-1 with the SEC for proposed initial public offering",
+          "url": "https://www.anthropic.com/news/s1-sec",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-26"
+        }
+      ],
+      "tags": [
+        "policy"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-27-openai-math-eth-claim",
+      "category": "news",
+      "title": "OpenAI 公开模型生成的手稿，声称推翻「指数时间假设」",
+      "summary": "OpenAI 在 GitHub 仓库 openai/math 的 10 月 26 日更新中发布两篇由内部模型生成的手稿。一篇给出在亚指数时间、多项式空间内精确计数定宽 CNF 公式满足赋值的确定性算法，并称其 3-SAT 情形推翻了指数时间假设（ETH）；另一篇证明二维及以上空间维度中波动方程的 Sogge 局部光滑性。更新说明称两者都附有 Lean 形式化；由 Russell Impagliazzo、Ramamohan Paturi 和 Ryan Williams 领导的独立工作组将审查并解读 ETH 证明，材料应工作组要求立即公开。",
+      "key_points": [
+        "仓库共收录 721 篇手稿，分为 373 个系列，约 42% 的主要结论已在 Lean 中形式化",
+        "README 说明结果处于不同验证阶段，未形式化的结果可能存在问题",
+        "10 月 7 日的更新曾因一处符号错误撤回 3 篇手稿，另有 14 篇修复了证明或更正了表述",
+        "多数结果来自同一个固定流程，平均每个约耗费三小时 ChatGPT Pro 思考"
+      ],
+      "why_it_matters": "目前只是待审查的手稿，还没有专家结论，对日常研发没有直接影响；值得关注的是做法：模型产出结论，用 Lean 做机器检查，再把材料公开给外部专家审查。",
+      "sources": [
+        {
+          "title": "openai/math history.md (October 26, 2026)",
+          "url": "https://github.com/openai/math/blob/main/history.md",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-26"
+        },
+        {
+          "title": "openai/math README",
+          "url": "https://github.com/openai/math",
+          "kind": "primary",
+          "publisher": "OpenAI"
+        }
+      ],
+      "tags": [
+        "reasoning",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-27-claude-for-nonprofits",
+      "category": "news",
+      "title": "Anthropic 推出 Claude for Nonprofits 插件，打包技能与连接器",
+      "summary": "Anthropic 10 月 26 日发布 Claude for Nonprofits 插件，是与约 30 家非营利组织共同打造的一组 Skill 和连接器，Team 和 Enterprise 计划的非营利组织会自动安装、不另收费。插件覆盖营销、招聘与人事、理事会支持、筹款与资助申请等工作，还包含一个对照机构 AI 使用政策检查员工提问的技能。",
+      "key_points": [
+        "已有超过 25,000 家非营利组织使用 Claude，其中超过 75% 的席位少于 10 个",
+        "Team 计划最低人数降到 2 人；中低收入国家经认证的非营利组织标准 Team 席位为每人每月 3 美元",
+        "「组织地图」技能记录捐赠数据、资助文件、财务、政策等各类资料存放在哪里",
+        "Claude Corps 计划向至少 400 家美国非营利组织派驻 1,000 名早期职业研究员"
+      ],
+      "why_it_matters": "闭源产品，团队用不上；但它是「按行业打包 Skill + 连接器 + 政策检查」的一个样例，自建内部技能包时可以参考这种组织方式。",
+      "sources": [
+        {
+          "title": "Expanding Claude for Nonprofits",
+          "url": "https://claude.com/resources/articles/expanding-claude-for-nonprofits",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-26"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "workflow"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-27-opencode-2-2",
+      "category": "opensource",
+      "title": "OpenCode 2.2.0：插件可注入会话指令而不破坏提示词缓存",
+      "summary": "开源编码 Agent OpenCode 10 月 27 日发布 2.2.0。新版加入实验性的桌面插件（可创建、安装和分享），插件可通过 `ctx.session.instructions.entry.put/list/remove` 增删带键的会话指令：改动在下一步以小更新的形式加入，不修改系统提示词，因此不会让提示词缓存失效，条目在压缩和回退后仍然保留，也不会额外触发一轮模型调用。提示词缓存的 TTL 也可以按 provider 和模型分别配置。",
+      "key_points": [
+        "破坏性变更：`@opencode/ai` 根导出改为 Promise API，Effect API 移到 `@opencode/ai/effect`；官方 GitHub Action 不再发布",
+        "TUI 插件需要 OpenTUI 0.7，基于 0.6 的插件无法安装",
+        "压缩改为按 provider 返回的 token 数计算大小，会话历史从最近一次压缩处开始加载",
+        "修复了 Kimi 工具 schema 问题；`opencode run --format json` 的连接错误改为以 JSON 返回"
+      ],
+      "why_it_matters": "用 OpenCode 接自部署模型的团队，可以借「按键注入会话指令」把项目规范、组件库约定做成可开关的插件指令，又不破坏缓存；升级前先检查自定义插件是否依赖 OpenTUI 0.6 或旧的 `@opencode/ai` 导出。",
+      "sources": [
+        {
+          "title": "OpenCode v2.2.0 release notes",
+          "url": "https://github.com/anomalyco/opencode/releases/tag/v2.2.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "coding",
+        "devtools",
+        "context-engineering"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/anomalyco/opencode"
+      }
+    },
+    {
+      "id": "2026-10-27-jetbrains-thinkrail",
+      "category": "opensource",
+      "title": "JetBrains 开源 ThinkRail：围绕 pi 编码 Agent 的 IDE",
+      "summary": "JetBrains 孵化项目 ThinkRail 在 GitHub 开源（Apache 2.0），它在进程内运行 pi 编码 Agent，外面包一层 Web 界面，提供基于 git worktree 的隔离工作区、Monaco 编辑器、终端，以及锚定在文件和 diff 上的评审评论。项目目前处于 1.0 之前，仓库约 3.5k star。",
+      "key_points": [
+        "每个工作区是一个 git worktree，有独立分支，多个 Agent 可并行工作而不碰主检出；PR 合并或关闭后工作区自动归档",
+        "代码旁维护一组相互关联的 `SPEC.md`，Agent 通过 `spec_*` 工具读取和维护，让项目意图跨会话保留",
+        "原地读取已有的 Agent Skills，自带项目初始化、设计头脑风暴、发 PR 三个工作流；MCP 非只读调用前需要审批",
+        "可用 JetBrains AI 登录，或通过 pi 自己的认证接入任意 provider；README 未提及本地模型"
+      ],
+      "why_it_matters": "「SPEC.md 与代码同步维护、Skill 原地复用」是应对 AI 不遵守项目规范的一种可借鉴做法；能否接自部署模型 README 没有说明，需要先确认 pi 的 provider 配置再评估。",
+      "sources": [
+        {
+          "title": "JetBrains/thinkrail",
+          "url": "https://github.com/JetBrains/thinkrail",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "coding",
+        "agent",
+        "devtools"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "repo": {
+        "url": "https://github.com/JetBrains/thinkrail",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "2026-10-27-hob-local-desktop",
+      "category": "opensource",
+      "title": "Hob 开源：按本机硬件自动选择开源权重模型的桌面 AI 应用",
+      "summary": "Frigade 开源的桌面应用 Hob（MIT 许可）在 Mac、Windows 和 Linux 上本地运行 AI，可离线使用，数据留在本机。它会根据硬件挑选并配置合适的开源权重模型（README 举例 Gemma 和 gpt-oss），支持填写 PDF、处理文档和按项目组织工作。",
+      "key_points": [
+        "README 没有命令行安装步骤，直接提供 macOS arm64、Windows x64 和 Linux AppImage 的下载链接",
+        "仓库主题标注了 Electron、llama.cpp 和 MCP",
+        "项目尚早期：约 209 star，发布页没有显示版本号"
+      ],
+      "why_it_matters": "适合不写代码、又想在个人电脑上离线用 AI 处理文档的同事；模型规模受本机硬件限制，不能用来评估团队服务端模型的效果。",
+      "sources": [
+        {
+          "title": "FrigadeHQ/hob",
+          "url": "https://github.com/FrigadeHQ/hob",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "inference",
+        "low-code"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/FrigadeHQ/hob",
+        "license": "MIT"
+      }
+    },
+    {
+      "id": "2026-10-27-claude-code-2-1-311",
+      "category": "tools",
+      "title": "Claude Code 2.1.310–2.1.311：兼容网关拒绝参数时自动降级重试",
+      "summary": "Claude Code 10 月 23 日和 26 日发布 2.1.310 和 2.1.311。2.1.310 修复了部分网关和兼容服务器拒绝 `effort-2025-11-24` beta 值或对话中途 system 消息时请求失败的问题，现在会去掉它们重试；2.1.311 中，在交互终端输入 `ultrathink` 会让该轮以 xhigh 档推理力度运行，限通过 Anthropic API 使用的 Opus 5.5、Sonnet 5.5、Haiku 5.5 和 Fable 5.1。",
+      "key_points": [
+        "2.1.311 修复：标准上下文会话超过 200K token 时不再因「需要 1M 上下文额度」中止，改为压缩后继续",
+        "2.1.311 修复：子 Agent 无法使用在其启动后才连上的 MCP 服务器工具",
+        "2.1.311 修复：`SubagentStop` hook 对每个运行中的子 Agent 约每分钟触发两次，现改为结束时触发一次",
+        "2.1.310 在 Bedrock、Vertex 和 Foundry 上开放 Monitor 工具和插件监视器"
+      ],
+      "why_it_matters": "Claude Code 依赖闭源模型，团队直接用不上；「兼容服务拒绝某个参数时自动去掉重试」这类处理，自建 Agent 对接 OpenAI 兼容推理服务时可以借鉴。",
+      "sources": [
+        {
+          "title": "Claude Code changelog",
+          "url": "https://code.claude.com/docs/en/changelog",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-26"
+        }
+      ],
+      "tags": [
+        "coding",
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "know",
+      "follow_up_of": "2026-10-24-claude-code-2-1-309"
+    },
+    {
+      "id": "2026-10-27-addyosmani-agent-skills",
+      "category": "kits",
+      "title": "agent-skills：覆盖从需求到上线的 25 个工程技能",
+      "summary": "Addy Osmani 维护的 agent-skills（MIT 许可，约 111k star）收录 25 个工作流式技能，每个技能是一个带检查点和验证步骤的 `SKILL.md`，并用 `/spec`、`/plan`、`/build`、`/test`、`/review`、`/ship` 等 9 个斜杠命令对应开发流程。10 月 13 日发布的 0.6.13 修正了三个技能中写错的代码示例，并让 test-driven-development 在用户直接粘贴代码时也能触发。",
+      "key_points": [
+        "安装前可用 `npx skills add addyosmani/agent-skills --list` 查看技能列表",
+        "interview-me 会持续追问到约 95% 把握才停，适合需求不清时使用；0.6.11 起在意图确认后停止",
+        "README 的安装说明只列维护者实际跑过的宿主，OpenCode 需手动复制技能目录",
+        "部分技能会让 Agent 执行命令，安装前建议检查各技能的 allowed-tools（见今天的「方法与实践」条目）"
+      ],
+      "why_it_matters": "技能是纯 Markdown 流程，开源 CLI Agent 多数能读；其中 interview-me、spec-driven-development 对应「需求说不清」，frontend-ui-engineering 对应「不遵守组件库」，可以先挑这几个在项目里试。",
+      "sources": [
+        {
+          "title": "addyosmani/agent-skills README",
+          "url": "https://github.com/addyosmani/agent-skills",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Agent Skills 0.6.13",
+          "url": "https://github.com/addyosmani/agent-skills/releases/tag/0.6.13",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "coding",
+        "workflow"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "agent-skills",
+        "version": "0.6.13",
+        "repo": "https://github.com/addyosmani/agent-skills",
+        "license": "MIT",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "Gemini CLI",
+          "OpenCode",
+          "Cursor"
+        ],
+        "capabilities": [
+          "interview-me：一次只问一个问题，挖出用户真正想要的东西",
+          "spec-driven-development：写代码前先产出 PRD，覆盖目标、命令、项目结构、代码风格、测试和边界",
+          "frontend-ui-engineering：组件架构、设计系统、状态管理、响应式和 WCAG 2.1 AA 无障碍",
+          "code-review-and-quality：评审代码质量，0.6.12 起加入变异检查，发现测不出回归的测试"
+        ],
+        "highlights": [
+          "spec-driven-development 保存规格后停下等待批准，不会一路冲到实现（0.6.12）",
+          "自带校验器：检查 YAML 前言和引用链接，并限制 SKILL.md 不超过 500 行（0.6.11）",
+          "有触发评测：0.6.13 称 test-driven-development 从 6 次触发 0 次提升到 6 次全中，24 个相邻提示无误触发"
+        ],
+        "install": "npx skills add addyosmani/agent-skills（OpenCode：把技能复制到 .opencode/skills/ 或 ~/.config/opencode/skills/）",
+        "changes": [
+          "修正 shipping-and-launch、frontend-ui-engineering 和安全加固参考中写错的代码示例",
+          "test-driven-development 在用户直接粘贴代码时也能触发",
+          "documentation-and-adrs 增加文字审阅步骤",
+          "撤回 0.6.12 新增的 Oh My Pi 和 Dojo Workspace 宿主指南"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-huashu-design-3",
+      "category": "kits",
+      "title": "Huashu Design 3.0：一句话生成原型、幻灯片和动画的设计技能",
+      "summary": "开源设计技能 huashu-design（MIT 许可）10 月 17 日发布 v3.0.0，让编码 Agent 根据一句话描述产出可点击的 HTML 原型、HTML 幻灯片与可编辑 PPTX、MP4/GIF 动画和信息图。3.0 先从三种思路生成六个候选方向，再把最强的三个做成完整设计；风格库从 60 种扩充到 84 种，并新增检查破图、字号过小、对比度不足等客观问题的 `design_lint.py`。",
+      "key_points": [
+        "参考素材通过新增的 `ref_board.py` 截图采集；README 未说明对模型视觉能力的要求，在无视觉能力的模型上效果需自测",
+        "可选的云端功能（TTS、AI 视频评审）隔离在 `scripts/cloud/`，需要自备 API key",
+        "README 列出的局限：不能导出到 Figma 的分层可编辑文件，不支持复杂 3D、物理和粒子动画"
+      ],
+      "why_it_matters": "适合产品同事快速出原型或汇报材料；它面向生成新设计，并不解决「按现有组件库写代码」的问题，部分流程依赖截图，团队的无视觉模型能否用好需先评估。",
+      "sources": [
+        {
+          "title": "alchaincyf/huashu-design README",
+          "url": "https://github.com/alchaincyf/huashu-design",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "huashu-design releases",
+          "url": "https://github.com/alchaincyf/huashu-design/releases",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-17"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "low-code"
+      ],
+      "importance": 2,
+      "actionability": "watch",
+      "kit": {
+        "kind": "skill",
+        "name": "huashu-design",
+        "version": "3.0.0",
+        "repo": "https://github.com/alchaincyf/huashu-design",
+        "license": "MIT",
+        "compatible": [
+          "Claude Code",
+          "Cursor",
+          "Codex",
+          "OpenClaw",
+          "Hermes"
+        ],
+        "capabilities": [
+          "生成可点击的单文件 HTML 原型（带手机外框，用 Playwright 测试）",
+          "生成 HTML 幻灯片并导出可编辑 PPTX",
+          "制作时间线动画并导出 MP4 和 GIF",
+          "生成信息图（PDF/PNG/SVG）和五个维度的设计评审"
+        ],
+        "highlights": [
+          "品牌资产协议：从官方来源取色，而不是让模型猜",
+          "`design_lint.py` 做客观检查：破图、小字号、低对比度、控制台报错",
+          "本地设计台账记录已交付的样式避免重复，数据存在 `~/.huashu-design/`"
+        ],
+        "install": "npx skills add alchaincyf/huashu-design",
+        "changes": [
+          "方向选择改为三种思路六个候选，择优三个做完整设计",
+          "风格库从 60 种扩充到 84 种，新增 App 和中文/东亚风格",
+          "新增本地记忆，记住过去的反馈",
+          "SKILL.md 改为路由到各格式的分指南，修复 PPTX 导出丢字问题"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-27-unscoped-bash-skills",
+      "category": "practices",
+      "title": "统计 3,715 个公开 Skill：近三成不受限 Bash 授权根本没用上",
+      "summary": "公开 Agent Skill 调查项目 agent-skills-state-2026 在 10 月 26 日发布跟进报告，分析在 allowed-tools 里申请不受限 Bash（裸 `Bash` 或 `Bash(*)`，技能激活时可免确认执行任意命令）的技能实际做了什么。在 392 个仓库的 3,715 个技能中，29.9% 既没写 shell 命令也不带脚本；写了命令的 2,545 个技能里，55.7% 只用到三个或更少的不同命令；34.7% 记录或附带了至少一种较高风险行为。",
+      "key_points": [
+        "较高风险行为中最常见的是安装或拉取包（15.7%）、直接 HTTP 调用（14.4%）、递归删除或丢弃 git 改动（9.2%）、用 eval 执行拼接字符串（8.4%）、推送或发布（5.0%）",
+        "首期报告显示，2,621 个带技能的仓库中 15.5% 至少有一个技能申请了不受限 Bash",
+        "作者人工抽查 60 个技能，授权判定 60 个全对，风险行为标记 20 个中 17 个正确（85.0%）；规则在同一样本上调整过，数字可能偏乐观",
+        "建议：没有命令和脚本的技能直接删掉 Bash，其余改成只允许文中出现的命令，如 `Bash(git status:*)`，并固定所装包的版本、每次更新后重新审查"
+      ],
+      "why_it_matters": "团队引入社区 Skill 时，可以照这份清单检查 allowed-tools，把权限收窄到具体命令；这一做法与模型无关，自部署环境同样适用。注意报告只分析了页面和技能目录内的脚本，不代表 Agent 运行时实际执行的命令。",
+      "sources": [
+        {
+          "title": "Skills with unscoped Bash (October 2026 follow-up)",
+          "url": "https://github.com/alexar76/agent-skills-state-2026/blob/main/docs/skills-with-unscoped-bash.md",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-26"
+        },
+        {
+          "title": "State of public agent skills and MCP servers, October 2026",
+          "url": "https://github.com/alexar76/agent-skills-state-2026",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-13"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "safety",
+        "devtools"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-10-27-skill-bash-audit",
+      "figure": {
+        "type": "bars",
+        "title": "安装包和直接 HTTP 调用是技能里最常见的风险行为",
+        "series": [
+          "占申请不受限 Bash 技能的比例"
+        ],
+        "rows": [
+          {
+            "label": "安装或拉取包",
+            "values": [15.7]
+          },
+          {
+            "label": "直接 HTTP 调用",
+            "values": [14.4]
+          },
+          {
+            "label": "递归删除/丢弃 git 改动",
+            "values": [9.2]
+          },
+          {
+            "label": "eval 执行拼接字符串",
+            "values": [8.4]
+          },
+          {
+            "label": "推送或发布",
+            "values": [5.0]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自 agent-skills-state-2026 的 10 月 26 日跟进报告"
+      }
+    },
+    {
+      "id": "2026-10-27-skill-say-what-to-do",
+      "category": "skills",
+      "title": "AI 输出不合心意时，说清「要什么」并给个样例，别只说「不要」",
+      "summary": "Anthropic 的提示词最佳实践建议，引导输出格式时告诉模型要做什么，而不是不要做什么，例如把「回复里不要用 markdown」换成「回复由流畅的段落组成」。同一份指南还指出，示例是引导输出格式、语气和结构最可靠的方式之一，建议给 3–5 个，并用 `<example>` 标签与指令分开。反馈迭代时同样适用：与其说「太长了、别这样」，不如直接描述想要的样子。",
+      "key_points": [
+        "指南原例：用「你的回复应由流畅的散文段落组成」代替「不要在回复中使用 markdown」",
+        "提示词本身的格式会影响输出格式，去掉提示词里的 markdown 可以减少输出中的 markdown",
+        "示例要贴近实际场景、彼此有差异，避免模型学到不想要的模式"
+      ],
+      "why_it_matters": "这条原则不依赖具体模型，开源权重模型同样适用；对「AI 澄清需求时写得太长、没人看完」的问题，可以直接用这种写法约束输出。",
+      "sources": [
+        {
+          "title": "Prompting best practices",
+          "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "iterate",
+        "scenario": "AI 帮忙澄清需求后写了一大篇层层嵌套的列表文档，没人看完，你想让它改短",
+        "bad": "太长了，不要写这么多，也别用那么多列表。",
+        "good": "请重写成给开发同事看的需求确认，用不超过 [5] 句的连贯段落：第一句说要做什么，接着写 [2–3] 条验收标准，最后列出仍需我确认的问题，最多 [3] 个。格式参考下面的样例：\n<example>\n[一段你认可的简短需求确认]\n</example>",
+        "why": [
+          "把「不要写太多」换成读者、句数和结构，模型知道改成什么样才算完成",
+          "用段落代替「别用列表」，是在描述想要的形态而不是禁止某种形态",
+          "附一个样例，格式和语气比任何形容词都具体",
+          "限制待确认问题的数量，避免澄清环节本身又变得冗长"
+        ],
+        "practice": "找一次你回复过「不要……」的 AI 对话，改写成「请……」加一个样例，比较两次输出。"
+      }
+    }
+  ],
+  "experiments": [
+    "2026-10-27-skill-bash-audit"
+  ]
+}
