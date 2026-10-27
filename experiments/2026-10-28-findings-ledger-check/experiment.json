@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-28-findings-ledger-check",
+  "title": "离线校验审计发现记录：confirmed 须有证据且不能自己验证自己",
+  "goal": "参考 Cloudflare security-audit-skill README 描述的规则，用 mock 数据演示一个校验器：confirmed 必须有完整源码追踪和有限的观察结果，needs_validation 不得带严重度，验证者不能是发现者。",
+  "related_item": "2026-10-28-cloudflare-security-audit-skill",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 30,
+  "expected": "8 条 mock 记录的校验结论与人工标注一致，违规记录都被指出具体原因",
+  "tags": ["agent-skills", "safety", "evaluation"]
+}
