@@ -1,0 +1,17 @@
+{
+  "id": "2026-10-27-skill-bash-audit",
+  "ran_at": "2026-10-27T12:55:13+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.7,
+  "packages": [
+    "PyYAML==6.0.2"
+  ],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "\n== 审查结果 ==\n- scoped-git: 授权 scoped\n- unused-bash: 授权 unscoped；正文无命令且无脚本 → 建议从副本中删掉 Bash\n- formatter: 授权 unscoped；建议改为 Bash(npx prettier:*)；风险：install\n- release: 授权 unscoped；建议改为 Bash(git push:*), Bash(npm publish:*), Bash(npm run:*), Bash(rm:*)；风险：delete, publish\n- bootstrap: 授权 unscoped；建议改为 Bash(curl:*), Bash(sudo cp:*)；风险：http, pipe-shell, sudo\n- env-loader: 授权 unscoped；建议改为 Bash(cat:*), Bash(eval:*)；风险：credential, eval\n- bad-yaml: 前言 error，宿主可能读不到技能头部，先修前言\n- no-frontmatter: 前言 missing，宿主可能读不到技能头部，先修前言\n\n== 检查 ==\n[PASS] scoped-git: parse='ok', grant='scoped', risks=set()\n[PASS] unused-bash: parse='ok', grant='unscoped', unused=True, risks=set()\n[PASS] formatter: parse='ok', grant='unscoped', unused=False, risks={'install'}\n[PASS] release: parse='ok', grant='unscoped', unused=False, risks={'delete', 'publish'}\n[PASS] bootstrap: parse='ok', grant='unscoped', unused=False, risks={'sudo', 'pipe-shell', 'http'}\n[PASS] env-loader: parse='ok', grant='unscoped', unused=False, risks={'credential', 'eval'}\n[PASS] bad-yaml: parse='error'\n[PASS] no-frontmatter: parse='missing'\n[PASS] formatter: 收窄后的规则覆盖了正文中的全部命令\n[PASS] release: 收窄后的规则覆盖了正文中的全部命令\n[PASS] bootstrap: 收窄后的规则覆盖了正文中的全部命令\n[PASS] env-loader: 收窄后的规则覆盖了正文中的全部命令\n\nMETRIC: 技能总数 = 8 个\nMETRIC: 前言无法解析或缺失 = 2 个\nMETRIC: 不受限 Bash 授权 = 5 个\nMETRIC: 授权未用上 = 1 个\nMETRIC: 带较高风险命令 = 4 个\nMETRIC: 不受限授权中未用上的比例 = 20.0 %\nMETRIC: 用到的不同命令不超过 3 个的比例 = 75.0 %\nRESULT: 5 个不受限 Bash 授权中 1 个可直接删除，其余可按命令收窄\n",
+  "stderr": ""
+}
