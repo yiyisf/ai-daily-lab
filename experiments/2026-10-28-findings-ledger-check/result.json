@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-28-findings-ledger-check",
+  "ran_at": "2026-10-27T22:02:31+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "[PASS] F1 (confirmed): 违规=无\n[PASS] F2 (confirmed): 违规=['self-verified']\n[PASS] F3 (confirmed): 违规=['missing-trace']\n[PASS] F4 (confirmed): 违规=['missing-observation']\n[PASS] F5 (needs_validation): 违规=无\n[PASS] F6 (needs_validation): 违规=['severity-on-unvalidated']\n[PASS] F7 (needs_validation): 违规=['missing-unresolved-fact']\n[PASS] F8 (rejected): 违规=无\nMETRIC: 校验结论与标注一致 = 8 条\nMETRIC: 被标出违规的记录 = 5 条\nRESULT: 8 条 mock 记录全部判定正确，其中 5 条违规被指出具体原因\n",
+  "stderr": ""
+}
