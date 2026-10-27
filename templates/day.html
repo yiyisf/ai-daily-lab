@@ -28,6 +28,17 @@
   </aside>
 
   <div class="content">
+    {% if weekly_link %}
+    <div class="wk-banner js-wk-banner" data-week="{{ weekly_link.week }}">
+      <a class="wk-banner-link" href="{{ root }}weekly/{{ weekly_link.week }}.html">
+        <span class="badge">{{ '上周周报' if weekly_is_prev else '本周周报' }}</span>
+        <span class="wk-banner-text"><strong>{{ weekly_link.title }}</strong><span class="muted">{{ weekly_link.week[:4] }} 年第 {{ weekly_link.week[6:] | int }} 周{% if weekly_link.quiz %} · 含 {{ weekly_link.quiz | length }} 道小测{% endif %}</span></span>
+        <span class="wk-banner-go" aria-hidden="true">阅读 →</span>
+      </a>
+      <button type="button" class="wk-banner-x js-only js-wk-dismiss" aria-label="不再显示这期周报提示" title="不再显示">×</button>
+    </div>
+    <script>try{if((JSON.parse(localStorage.getItem('wk-dismissed')||'[]')).indexOf('{{ weekly_link.week }}')!==-1)document.currentScript.previousElementSibling.hidden=true;}catch(e){}</script>
+    {% endif %}
     <div class="issue-head">
     <div class="issue-head-text">
     <div class="issue-kicker">
@@ -104,13 +115,6 @@
   </div>
 
   <aside class="rail" aria-label="今日概览">
-    {% if weekly_link %}
-    <a class="panel rail-weekly" href="{{ root }}weekly/{{ weekly_link.week }}.html">
-      <span class="badge">AI 周报</span>
-      <strong>{{ weekly_link.title }}</strong>
-      <span class="muted">{{ weekly_link.week[:4] }} 年第 {{ weekly_link.week[6:] | int }} 周 · 阅读周报 →</span>
-    </a>
-    {% endif %}
     {% if exps %}
     <section class="panel">
       <h2 class="panel-title">今日实验</h2>

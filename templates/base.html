@@ -42,6 +42,7 @@ addEventListener('pagereveal',function(e){
     <nav class="nav" aria-label="主导航">
       <a href="{{ root }}index.html" {% if nav == 'today' %}aria-current="page"{% endif %}>今日</a>
       <a href="{{ root }}archive.html" {% if nav == 'archive' %}aria-current="page"{% endif %}>往期</a>
+      <a href="{{ root }}weekly/index.html" {% if nav == 'weekly' %}aria-current="page"{% endif %}>周报</a>
       <a href="{{ root }}tags/index.html" {% if nav == 'tags' %}aria-current="page"{% endif %}>标签</a>
       <a href="{{ root }}experiments/index.html" {% if nav == 'experiments' %}aria-current="page"{% endif %}>实验室</a>
     </nav>
