@@ -24,7 +24,7 @@
 
 ## 一、每日流程
 
-1. **确定日期**：以北京时间（Asia/Shanghai）当天日期为准，记为 `DATE`（如 `2026-10-20`）。
+1. **确定日期**：以 UTC+8 时间当天日期为准（可用 `TZ=Asia/Singapore date +%F` 获取），记为 `DATE`（如 `2026-10-20`）。
 2. **读取近况，用于去重**：
    - 读取 `content/daily/` 下最近 7 期的 JSON，记下已报道的主题与链接。
    - 读取 `config/sources.yaml`，了解建议关注的方向。
@@ -215,7 +215,7 @@ main.py           # 或 main.js / run.sh，入口在 experiment.json 的 entry �
 
 每周日晚由另一个定时任务生成，**不做日报流程**。周报只做编辑判断，统计、本周软技能、Skill 精选、实验和标签热度由构建脚本从当周日报自动生成，不用写。
 
-1. **确定周**：以北京时间当天所在的 ISO 周为准（周一到周日），记为 `WEEK`，如 `2026-W43`；可用 `python3 -c "import sys; sys.path.insert(0,'scripts'); from common import week_id; print(week_id('DATE'))"` 计算。
+1. **确定周**：以 UTC+8 时间当天所在的 ISO 周为准（周一到周日），记为 `WEEK`，如 `2026-W43`；可用 `python3 -c "import sys; sys.path.insert(0,'scripts'); from common import week_id; print(week_id('DATE'))"` 计算。
 2. **读取本周日报**：`content/daily/` 下日期落在本周的全部 JSON（`python3 -c "...from common import week_range; print(week_range('WEEK'))"` 给出起止日期）。
 3. **撰写** `content/weekly/YYYY/WEEK.json`，符合 `schema/weekly.schema.json`：
    - `title`：本周一句话，说清这一周最值得记住的变化，不超过 36 字
