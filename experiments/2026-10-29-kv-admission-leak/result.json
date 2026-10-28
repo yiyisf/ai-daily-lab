@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-29-kv-admission-leak",
+  "ran_at": "2026-10-28T22:07:12+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "请求数 400，其中长度超过小池子但未超过上下文长度的 27 个\nMETRIC: 泄露响应数（小池子 + 原始引擎） = 27 个\nMETRIC: 泄露响应数（小池子 + 引擎修复） = 0 个\nMETRIC: 泄露响应数（大池子 + 原始引擎） = 0 个\nMETRIC: 泄露响应数（大池子 + 引擎修复） = 0 个\nMETRIC: 只看状态码的测试报警数 = 0 个\nMETRIC: canary 测试报警数 = 27 个\n[PASS] 池子小于上下文长度且引擎只查 finished 时，会出现返回 200 但带着别人数据的响应\n[PASS] 泄露的响应全部是 HTTP 200，只看状态码发现不了\n[PASS] 只看状态码的测试全部通过（这正是问题所在）\n[PASS] canary 测试能找出每一条泄露的响应\n[PASS] 引擎在入口按 rejected 拦截后，不再泄露\n[PASS] 池子不小于上下文长度时，拒绝路径根本走不到\n[PASS] 启动时检查「KV 池容量 ≥ 上下文长度」能提前发现小池子配置\nRESULT: 玩具模型中泄露只发生在「池子小于上下文 + 引擎只查 finished」的组合，状态码测试全过而 canary 测试全部抓到\n",
+  "stderr": ""
+}
