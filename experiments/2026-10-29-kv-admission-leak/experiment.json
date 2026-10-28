@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-29-kv-admission-leak",
+  "title": "玩具模型复现：被拒绝的超长请求进入 decode 导致跨请求泄露",
+  "goal": "按 Cloudflare 复盘描述的机制，用纯 Python 模拟 KV 池小于上下文长度、入口只检查 finished 时的泄露，并对比引擎修复、扩大 KV 池和 canary 检测三种手段的效果。",
+  "related_item": "2026-10-29-cloudflare-sglang-kv-leak",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 30,
+  "expected": "只有「小池子 + 原始引擎」组合出现泄露，泄露响应都是 HTTP 200，只看状态码的测试发现不了，canary 测试全部抓到",
+  "tags": ["inference", "safety", "infra"]
+}
