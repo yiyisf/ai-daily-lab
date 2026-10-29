@@ -1,0 +1,15 @@
+{
+  "id": "2026-10-30-effort-escalation",
+  "ran_at": "2026-10-29T22:08:41+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 2.7,
+  "stdout": "任务数: 240（规模 [6, 10, 14, 18] 各 60 题）\nMETRIC: 固定 low 档正确率 = 15.8 %\nMETRIC: 固定 medium 档正确率 = 36.7 %\nMETRIC: 固定 high 档正确率 = 61.2 %\nMETRIC: 升档策略正确率 = 60.8 %\nMETRIC: 固定 high 档平均成本 = 4096 次采样\nMETRIC: 升档策略平均成本 = 3162 次采样\nMETRIC: 升档相对固定 high 节省成本 = 22.8 %\nMETRIC: 三档都能做对的简单题占比 = 14.6 %\n升档策略最终停在各档的题数: {'low': 44, 'medium': 39, 'high': 63}\n低档做对、固定 high 档却没做对的题数: 1\n[PASS] 验证器只放行满足约束的答案\n[PASS] 升档策略正确率比固定 high 档低不超过 2 个百分点\n[PASS] 升档策略总成本低于固定 high 档\n[PASS] 存在三档都能做对的简单题（这些题上高档纯属多花钱）\n[PASS] 有题目在最低档就通过验证，无需升档\nRESULT: 先低档、验证失败再升档，正确率 60.8% 对比固定 high 档 61.2%，成本节省 22.8%\n",
+  "stderr": ""
+}
