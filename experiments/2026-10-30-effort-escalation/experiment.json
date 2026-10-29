@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-30-effort-escalation",
+  "title": "玩具模拟：固定最高推理强度 vs 验证失败才升档",
+  "goal": "用随机搜索求解子集和问题模拟三档「推理强度」，在有验证器的前提下，对比固定用最高档和「先低档、验证失败再升档」两种策略的正确率与成本，直观感受论文提出的升档策略为什么省钱。",
+  "related_item": "2026-10-30-reasoning-effort-economics",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "升档策略的正确率与固定最高档接近，总成本更低；有一部分题在最低档就能通过验证",
+  "tags": ["reasoning", "agent", "evaluation"]
+}
