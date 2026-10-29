@@ -1,0 +1,638 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-30",
+  "generated_at": "2026-10-30T06:03:12+08:00",
+  "editor_note": "今天的头条是 Mistral 正式开放 1T 参数的 Large 4 权重，1M 上下文，但需要整机 8 卡，更现实的自部署选择是 Apache 2.0 的 Nanbeige4.3-33B。论文《该选哪档推理强度》给出「先低档、验证失败再升档」的省钱策略，配套实验做了玩具模拟。安全方面，五款 AI 编程工具的内置浏览器被曝存在越权问题。GitHub 开源了按团队设计系统生成原型的 Replica，跟「AI 不用现有组件库」这个问题直接相关。共 16 条。",
+  "tldr": [
+    {
+      "text": "Mistral 开放 Large 4 权重：约 1T 参数、每 token 激活约 49B，1M 上下文",
+      "item_id": "2026-10-30-mistral-large-4-open-weights"
+    },
+    {
+      "text": "论文：最高推理强度在简单题上最多贵 42 倍，先低档、验证失败再升档更划算",
+      "item_id": "2026-10-30-reasoning-effort-economics"
+    },
+    {
+      "text": "Forever Security：Cursor、Codex、VS Code 等五款工具的内置浏览器都能被网页越权利用",
+      "item_id": "2026-10-30-embrace-embedded-browsers"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-10-30-nanbeige-4-3-33b",
+      "reason": "33B、Apache 2.0、512K 上下文，适合在 4 卡机器上评测能否替换现有的编码 Agent 模型",
+      "steps": [
+        "从 Hugging Face 下载 `Nanbeige/Nanbeige4.3-33B` 权重",
+        "按模型卡用 `vllm serve` 启动，4 卡张量并行，解析器用 `qwen3` 和 `qwen3_coder`",
+        "Agent 与工具调用任务按模型卡设 temperature 1.0、top_p 0.95"
+      ]
+    },
+    {
+      "item_id": "2026-10-30-reasoning-effort-economics",
+      "reason": "自部署模型有思考档位时，用「先低档再升档」替代全局最高档，省算力也省等待时间",
+      "steps": [
+        "给一类有测试或校验的任务，先用最低推理档位跑",
+        "用测试或校验结果判断是否失败，只有失败才换高一档重跑",
+        "对比全程最高档的通过率和耗时，决定默认档位"
+      ]
+    },
+    {
+      "item_id": "2026-10-30-beautiful-rust",
+      "reason": "给 Agent 一份带检查清单和评测的语言规范技能，可借鉴来写自己项目的规范技能",
+      "steps": [
+        "运行 `git clone https://github.com/morganlinton/BeautifulRust`",
+        "运行 `claude --plugin-dir ./BeautifulRust` 单次试用，不必安装",
+        "参照仓库 `evals/` 的写法，为自己团队的规范技能设计几条可检查的断言"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-10-30-mistral-large-4-open-weights",
+      "category": "news",
+      "title": "Mistral 开放 Large 4 权重：1T 参数 MoE，1M 上下文",
+      "summary": "Mistral 在 Hugging Face 发布 Mistral-Large-4-1T-A52B 权重，这是一个约 1T 参数、指令与推理混合的 MoE 模型，每 token 激活约 49B（含嵌入和输出层约 52B），上下文 1M。相比本月早些时候的预览版，正式版在 Terminal-Bench 4.0 上从 28% 提升到 41%，B3 Agent 安全基准的攻击抵抗率从 93.3% 提升到 97.1%。许可证为修改版 MIT 的 Mistral Ecosystem Open-Weight License，可商用和微调，但提供模型即服务需另购商业许可。",
+      "key_points": [
+        "架构为 128 个路由专家、每 token 激活 4 个，外加 1 个共享专家；支持图像输入",
+        "模型卡给出 vLLM 和 SGLang 的官方镜像与启动命令，示例为单节点 8 卡张量并行，另提供面向 Blackwell 的 NVFP4 量化版本",
+        "Artificial Analysis 编码 Agent 指数 48%，与 GLM-5.3 基本持平，每个任务平均少用 47% 的 token",
+        "推理档位分 low、medium、high 三档，默认 high；API 定价每百万 token 输入 0.70 美元、输出 2.10 美元"
+      ],
+      "why_it_matters": "权重可下载、许可证允许内部商用，但 1T 参数需要整机 8 卡级别的算力，多数团队短期内跑不起来；Mistral 表示会以它为基础推出更小的专用模型，可以关注。",
+      "sources": [
+        {
+          "title": "Mistral Large 4 is now open-weight",
+          "url": "https://mistral.ai/news/mistral-large-4-oss/",
+          "kind": "primary",
+          "publisher": "Mistral AI"
+        },
+        {
+          "title": "mistralai/Mistral-Large-4-1T-A52B",
+          "url": "https://huggingface.co/mistralai/Mistral-Large-4-1T-A52B",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        },
+        {
+          "title": "Mistral releases open weights for its 1 trillion-parameter Large 4 model",
+          "url": "https://thenextweb.com/news/mistral-large-4-open-weights-release",
+          "kind": "secondary",
+          "publisher": "The Next Web",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "We're releasing the weights of Mistral Large 4",
+          "url": "https://news.ycombinator.com/item?id=50289418",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["open-weights", "llm", "inference"],
+      "importance": 5,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "正式版在编码与 Agent 安全基准上都高于预览版",
+        "series": ["预览版", "正式版"],
+        "rows": [
+          {"label": "Terminal-Bench 4.0", "values": [28, 41]},
+          {"label": "B3 攻击抵抗率", "values": [93.3, 97.1]}
+        ],
+        "unit": "%",
+        "caption": "数据来自 Mistral 发布文章，为官方自报分数"
+      }
+    },
+    {
+      "id": "2026-10-30-embrace-embedded-browsers",
+      "category": "news",
+      "title": "研究披露五款 AI 编程工具的内置浏览器可被网页越权利用",
+      "summary": "Forever Security 10 月 29 日发布研究，把这类问题称为 EMBRACE：为了让 AI 预览本地项目或读取页面，Cursor、GitHub Copilot、Codex、VS Code 和 Claude Desktop 的内置浏览器都放松了某条浏览器安全规则。结果包括网页诱导 Agent 执行命令、伪造地址栏，以及本地 HTML 文件读取整个磁盘上的文件。攻击只需要用户点一下助手生成的链接。",
+      "key_points": [
+        "Cursor：恶意页面向输入框注入隐藏指令，沙箱拦下命令后 Agent 取消拦截重试，`npm install` 的 preinstall 脚本以完整权限运行；已于 10 月 1 日修复",
+        "GitHub Copilot：应用只检查 URL 格式，页面可以让地址栏显示 github.com/login；已在 1.1.29 修复",
+        "Claude Desktop 和 VS Code 只在顶层页面检查项目目录范围，Web Worker 可以绕过；Codex 没有目录限制",
+        "截至发布时 Codex 与 VS Code 仍未修复；Anthropic 和微软以 Workspace Trust 为由拒绝了 Forever 的报告，Anthropic 接受了 Noma Security 的类似报告"
+      ],
+      "why_it_matters": "团队用的开源命令行 Agent 不在名单里，但只要用了这些 IDE 或桌面端的内置预览，就不要随手打开不可信项目里的本地 HTML，也不要放开自动执行命令。",
+      "sources": [
+        {
+          "title": "EMBRACE: hacking 5 AI assistants through their embedded browsers",
+          "url": "https://forever.security/blog/embrace-hacking-5-ai-assistants-embedded-browsers-technical",
+          "kind": "primary",
+          "publisher": "Forever Security",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "AI assistants' built-in browsers open doors to attackers",
+          "url": "https://www.helpnetsecurity.com/2026/10/29/research-ai-assistant-browser-vulnerabilities/",
+          "kind": "secondary",
+          "publisher": "Help Net Security",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": ["safety", "coding", "devtools"],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-30-anthropic-exploit-chains",
+      "category": "news",
+      "title": "Anthropic：未发布的内部模型构建出五条可用的漏洞利用链",
+      "summary": "Anthropic 10 月 27 日发文，称一个未公开的内部研究模型构建了针对 Chrome、Safari、Android、Windows 和 Linux 的五条漏洞利用链，所有漏洞都已先报告给厂商并修复。其中 Chrome 156 修复了 62 个 CVE，全部为严重或高危；Linux 链可通过多路径 TCP 远程拿到 root。每条链都从人的初始提示开始，文章未说明模型和人各完成了多少。",
+      "key_points": [
+        "Linux 利用约 48 分钟泄露内核指针绕过 KASLR，再约 5 分钟执行命令",
+        "Safari 链不执行代码，而是绕过同源策略读取其他站点的 cookie 和会话数据",
+        "披露政策：厂商有 90 天修补期，之后再等 45 天才讨论公告以外的细节",
+        "The Hacker News 指出，两条链关联的 CVE 记录描述与 Anthropic 的说法不完全对应"
+      ],
+      "why_it_matters": "对防守方的建议是在 PR 阶段就做安全扫描、多种扫描器互补，这些做法与模型无关，可以用自部署模型配合现有扫描工具落地。",
+      "sources": [
+        {
+          "title": "Discovering vulnerabilities with Claude",
+          "url": "https://www.anthropic.com/research/discovering-vulnerabilities-with-claude",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-27"
+        },
+        {
+          "title": "Anthropic's unreleased AI model chains exploits",
+          "url": "https://thehackernews.com/2026/10/anthropics-unreleased-ai-model-chains.html",
+          "kind": "secondary",
+          "publisher": "The Hacker News",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": ["safety", "llm"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-30-octoverse-2026",
+      "category": "news",
+      "title": "GitHub Octoverse 2026：超四成 PR 由 Agent 起草初稿",
+      "summary": "GitHub 10 月 28 日发布 Octoverse 2026，统计周期为 2025 年 10 月到 2026 年 9 月。截至 9 月，超过 40% 的 PR 以 Agent 的初稿开始，3 月时这一比例为 17%；全年合并 PR 13 亿个，增长超过三倍。有 Agent 配置文件的 2026 年新仓库，平均提交数是没有的 8 倍。",
+      "key_points": [
+        "约 87% 的 Agent 起草 PR 改动多个文件，未检测到 Agent 参与的为 79%",
+        "增长最快的社区仓库包括 llama.cpp、vLLM、SGLang",
+        "Copilot 月活用户中 55% 使用 Agent 功能；9 月选模型的用户里 61% 用了不止一个模型",
+        "GitHub 说明 Agent 检测只能识别出一部分，数字是下限"
+      ],
+      "why_it_matters": "自部署推理栈（llama.cpp、vLLM、SGLang）的社区热度在增长；「有 Agent 配置文件的仓库更活跃」是相关性数据，不代表加了规则文件就能提效，但说明规则文件已经很普遍。",
+      "sources": [
+        {
+          "title": "Octoverse: commits and pushes reach new highs in 2026 as developers build with agents",
+          "url": "https://github.blog/news-insights/octoverse/octoverse-commits-pushes-reach-new-highs-in-2026-as-developers-build-with-agents/",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "GitHub Octoverse 2026",
+          "url": "https://simonwillison.net/2026/Oct/28/github-octoverse-2026/",
+          "kind": "secondary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": ["coding", "agent"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-30-nanbeige-4-3-33b",
+      "category": "opensource",
+      "title": "Nanbeige4.3-33B 开放：Apache 2.0，512K 上下文，主打编码 Agent",
+      "summary": "Nanbeige 在 Hugging Face 发布 Nanbeige4.3-33B，是该系列的旗舰「教师模型」，面向复杂编码和办公类 Agent 任务，后续计划蒸馏出 3B 等小模型。模型 33B 参数、BF16 权重，上下文 524,288 token，许可证 Apache 2.0。模型卡自报 SWE-Bench Pro 60.3、Terminal-Bench 2.1 80.9，对比 Qwen3.8-27B、Gemma4-31B 等同级模型多数领先，但在 SWE-Bench Pro 上略低于 Qwen3.8-27B 的 61.7。",
+      "key_points": [
+        "模型卡给出 vLLM 与 SGLang 启动命令，示例为 4 卡张量并行，推理与工具调用解析器沿用 qwen3 / qwen3_coder",
+        "Agent 与工具调用任务推荐 temperature 1.0、top_p 0.95，最多生成 65,536 token",
+        "同时在 GPQA Diamond 上得 89.5，低于 Gemma4-31B 的 91.3"
+      ],
+      "why_it_matters": "33B 规模和 Apache 2.0 许可证对自部署友好，可直接接入现有 vLLM/SGLang 服务做编码 Agent 评测；分数为官方自报，换模型前应在自己的任务上验证。",
+      "sources": [
+        {
+          "title": "Nanbeige/Nanbeige4.3-33B",
+          "url": "https://huggingface.co/Nanbeige/Nanbeige4.3-33B",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": ["open-weights", "coding", "agent"],
+      "importance": 5,
+      "actionability": "try",
+      "repo": {
+        "url": "https://huggingface.co/Nanbeige/Nanbeige4.3-33B",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "2026-10-30-github-replica",
+      "category": "opensource",
+      "title": "GitHub 开源 Replica：按团队设计系统生成可交互原型",
+      "summary": "GitHub Design 与 Microsoft CoreAI Design 开源了 AI 原型工具 Replica，MIT 许可证。它让设计、产品和开发用自然语言描述需求，基于团队已有的组件、模式和文档生成可交互原型，这些指引由设计师创建和审定。工具包括生成本地原型项目的 Starter（自带 Agent 技能）、Copilot 画布扩展、可选的自托管 Replica Hub 和构建用的 GitHub Action。",
+      "key_points": [
+        "文档中的画布工作流依赖 GitHub Copilot 应用，模型可用 GitHub 托管模型或自带模型服务（公开预览）",
+        "自托管 Hub 会记录发布与评审活动 90 天，README 提醒自托管不等于数据不出组织",
+        "README 强调原型不决定上线内容，团队仍要决定做什么、怎么做"
+      ],
+      "why_it_matters": "思路和「AI 不用现有组件库」的问题直接相关：先把设计系统和规则放进原型仓库，再让 AI 在其中生成；目前依赖 Copilot 应用，能否接入开源命令行 Agent 还需要评估。",
+      "sources": [
+        {
+          "title": "Introducing Replica, an open-source AI prototyping tool",
+          "url": "https://github.blog/changelog/2026-10-28-introducing-replica-an-open-source-ai-prototyping-tool",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "github/replica",
+          "url": "https://github.com/github/replica",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": ["devtools", "low-code", "context-engineering"],
+      "importance": 4,
+      "actionability": "watch",
+      "repo": {
+        "url": "https://github.com/github/replica",
+        "license": "MIT"
+      }
+    },
+    {
+      "id": "2026-10-30-qwenputer",
+      "category": "opensource",
+      "title": "Qwenputer：把 RISC-V CPU 直接编译进 Qwen3.5-4B 的权重",
+      "summary": "开发者 Divyansh Agrawal 把一个 32 位 RV32IM RISC-V CPU 编译进 Qwen3.5-4B 的权重，用模型的 Gated DeltaNet 层当内存，不经过训练，在前向计算中执行 C 和 MicroPython 代码。Qwen 用原有的工具调用格式调用这个内置 CPU 做精确计算，但不依赖外部工具。大数除法测试正确率 97.5%，基座 Qwen 为 72.5%。",
+      "key_points": [
+        "CPU 占 11 层，放在 Qwen 原有 32 层之前；约 23 万个输出位置与参考机器对比零差异",
+        "普通文本输出与基座 Qwen 的 KL 散度为 6e-4，接近噪声水平",
+        "检查点 18.8 GB，约为基座的两倍，需要专门的 RvChat 驱动，还不能用普通 `generate()` 调用",
+        "代码 MIT 许可，权重 Apache 2.0；每条指令要解码几个 token，大计算要几秒"
+      ],
+      "why_it_matters": "这是展示「模型内部能做确定性计算」的实验项目，离实用还远；日常需要精确计算时，让 Agent 调用外部工具仍是更简单的做法。",
+      "sources": [
+        {
+          "title": "Qwenputer: a functioning, deterministic RISC-V CPU inside Qwen3.5",
+          "url": "https://divagr.com/blog/qwenputer",
+          "kind": "primary",
+          "publisher": "Divyansh Agrawal",
+          "published_at": "2026-10-22"
+        },
+        {
+          "title": "divagr18/qwenputer",
+          "url": "https://github.com/divagr18/qwenputer",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Qwenputer on Hacker News",
+          "url": "https://news.ycombinator.com/item?id=50282838",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["open-weights", "research", "reasoning"],
+      "importance": 2,
+      "actionability": "know",
+      "repo": {
+        "url": "https://github.com/divagr18/qwenputer",
+        "license": "MIT",
+        "language": "Python"
+      }
+    },
+    {
+      "id": "2026-10-30-copilot-fusion-local-models",
+      "category": "tools",
+      "title": "GitHub Copilot Fusion 实验性支持路由到本地模型",
+      "summary": "GitHub 10 月 28 日宣布，Copilot Fusion 以实验性预览的形式支持选择本地模型：Copilot CLI、Copilot 应用和 VS Code 可以接入本地 OpenAI 兼容服务上的模型，Fusion 在本地与云端模型之间自动选择。托管下载仅限 Windows，CLI 手动配置本地模型可在 Windows、macOS 和 Linux 上用。",
+      "key_points": [
+        "BYOK 步骤：在本地 OpenAI 兼容服务上部署模型，配置为本地模型提供方，开启实验性本地路由，在 Fusion 中选择 Standard",
+        "VS Code 中通过 `chat.copilot.localModel.enabled` 设置开启",
+        "本地推理不代表离线：路由决策仍在云端完成；本地模型的安全防护可能与云端模型不同"
+      ],
+      "why_it_matters": "说明主流商业编码工具开始接受「本地 OpenAI 兼容服务」这类自部署模型；但路由仍依赖云端，对数据不能出网的场景用不上，可先观望。",
+      "sources": [
+        {
+          "title": "GitHub Copilot Fusion now supports selection of local models",
+          "url": "https://github.blog/changelog/2026-10-28-github-copilot-fusion-now-supports-selection-of-local-models",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": ["devtools", "coding", "inference"],
+      "importance": 3,
+      "actionability": "watch",
+      "follow_up_of": "2026-10-29-copilot-fusion"
+    },
+    {
+      "id": "2026-10-30-gh-agentic-workflows-ga",
+      "category": "tools",
+      "title": "GitHub Agentic Workflows 正式可用：用 Markdown 写 CI Agent",
+      "summary": "GitHub Next 的开源项目 Agentic Workflows 正式可用，支持 Free、Team 和 Enterprise 计划。用户用自然语言 Markdown 文件描述自动化任务（如 issue 分诊、CI 失败分析、写测试），系统编译成标准 Actions YAML，在现有 runner 上运行。默认引擎是 Copilot CLI，也可以换成自己的编码 Agent。",
+      "key_points": [
+        "Agent 默认只读权限，在沙箱容器和 Agent Workflow Firewall 后运行，输出要经过 safe outputs 校验",
+        "有专门的威胁检测任务在变更生效前扫描所有提议的改动",
+        "支持自托管的 Actions Runner Controller（ARC）runner；`gh aw forecast` 可预估 AI 额度花费"
+      ],
+      "why_it_matters": "「只读默认 + 输出校验 + 变更前扫描」的设计可以借鉴到团队自己的 CI Agent 上；能否接自部署模型取决于所选引擎，需要按文档评估。",
+      "sources": [
+        {
+          "title": "GitHub Agentic Workflows generally available",
+          "url": "https://github.blog/changelog/2026-10-28-github-agentic-workflows-generally-available",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": ["agent", "workflow", "devtools"],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-30-beautiful-rust",
+      "category": "kits",
+      "title": "Beautiful Rust：带检查清单和评测的 Rust 规范技能",
+      "summary": "Beautiful Rust 是一个 Claude Code 插件，只含一个 `rust-best-practices` 技能，在任务涉及 Rust、Cargo、clippy 或 `.rs` 文件时自动加载。约 500 行的 SKILL.md 综合了 Google Rust 风格指南、Rust API Guidelines、Effective Rust 等五份资料，冲突处选定一种立场并说明理由。README 报告，三个评测任务里带技能时 30 条断言通过 29 条，不带时通过 24 条，每个任务约多用三分之一的 token。",
+      "key_points": [
+        "交付前检查清单要求格式化、`clippy -D warnings`、测试和文档",
+        "`references/` 为每份来源各写一份转述摘要，需要时再深入查阅",
+        "`evals/` 含库 API 设计、命令行应用、重构三类用例，每个都有提示、合格标准和断言",
+        "评测是计费的模型运行，结果为作者自报"
+      ],
+      "why_it_matters": "技能本身是纯 Markdown，与模型无关；更值得借鉴的是它的结构——规范、检查清单、带断言的评测——团队可以照着为自己的组件库和代码规范写技能，并量化效果。",
+      "sources": [
+        {
+          "title": "morganlinton/BeautifulRust",
+          "url": "https://github.com/morganlinton/BeautifulRust",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": ["agent-skills", "coding", "evaluation"],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "plugin",
+        "name": "beautiful-rust",
+        "repo": "https://github.com/morganlinton/BeautifulRust",
+        "license": "MIT",
+        "compatible": ["Claude Code", "claude.ai"],
+        "capabilities": [
+          "指导 Agent 写出符合习惯的 Rust：所有权、类型与 API 设计、错误处理、并发与 unsafe",
+          "交付前按清单运行 fmt、clippy、测试和文档检查",
+          "按需查阅五份来源的转述摘要"
+        ],
+        "highlights": [
+          "多份规范冲突时只给一种立场并写明理由，Agent 不用自己取舍",
+          "自带三个评测用例和断言，能量化有无技能的差别",
+          "支持项目级安装，协作者各装一次即可共享"
+        ],
+        "install": "claude plugin install beautiful-rust --marketplace morganlinton/BeautifulRust"
+      }
+    },
+    {
+      "id": "2026-10-30-ub-mode",
+      "category": "kits",
+      "title": "ub-mode：用复杂度、重复和变异测试约束 Agent 写代码",
+      "summary": "GitHub 用户 unclebob 发布的 ub-mode 是一个 Agent 技能，要求编码 Agent 每次改代码都按「先让它工作、再让它正确、最后养成习惯」三个阶段进行。技能强调 TDD、只做能解决问题的最小改动、修根因而不是加防护，并用量化门槛约束质量：每个函数 CRAP 分数低于 10，相似度 0.8 以上的重复要消除，用变异测试补覆盖、删死代码。",
+      "key_points": [
+        "配套工具 crapper、dryer、mutator、uml-viewer 分别计算 CRAP 分数、检测重复、做变异测试和可视化，但 SKILL.md 未给出链接和安装方式",
+        "实践阶段要求小步有序提交，每次写明为什么改、改了什么、如何证明",
+        "要求保持主线程上下文精简，批量工作交给别处、只保留摘要",
+        "仓库页面未标明许可证，仓库只有少量提交，引入前需确认授权"
+      ],
+      "why_it_matters": "技能只是一份 SKILL.md，与模型无关，复制到命令行 Agent 的技能目录即可用；用数字门槛代替「写好一点」，对约束 AI 代码质量有参考价值，但配套工具和许可证还不清楚。",
+      "sources": [
+        {
+          "title": "unclebob/ub-mode",
+          "url": "https://github.com/unclebob/ub-mode",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "ub-mode SKILL.md",
+          "url": "https://raw.githubusercontent.com/unclebob/ub-mode/master/SKILL.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": ["agent-skills", "coding"],
+      "importance": 3,
+      "actionability": "watch",
+      "kit": {
+        "kind": "skill",
+        "name": "ub-mode",
+        "repo": "https://github.com/unclebob/ub-mode",
+        "capabilities": [
+          "让 Agent 先写失败测试，再做最小改动通过测试",
+          "按 CRAP 分数、重复度和变异测试结果检查代码质量",
+          "要求复现 bug、修根因，按行为而不是实现细节写测试",
+          "规定小步提交和完整的操作日志"
+        ],
+        "highlights": [
+          "用可计算的门槛替代主观的「代码要整洁」",
+          "把「先能用、再正确」拆成先后阶段，减少一步到位的大改",
+          "明确要求删代码先于加代码"
+        ],
+        "install": "把 SKILL.md 复制到 Agent 的技能目录，保存为 ub-mode/SKILL.md（如 ~/.claude/skills/ub-mode/SKILL.md），然后调用 /ub-mode"
+      }
+    },
+    {
+      "id": "2026-10-30-fowler-llm-voice",
+      "category": "ideas",
+      "title": "Martin Fowler：别让 LLM 起草你的文章，读者一眼就能认出来",
+      "summary": "Martin Fowler 10 月 29 日在 bliki 发文，认为带有明显 LLM 特征的文字会让读者产生「恐怖谷」式的反感，而且这种反应先于分析，检测工具帮不上忙。他建议作者不要让 LLM 起草正文，用它列提纲尚可接受；在他的网站上，用了 AI 的作者应在致谢里说明怎么用的。文章也列出了他接受的例外和自己的不确定。",
+      "key_points": [
+        "支持方观点：人工编辑很难去掉 LLM 起草稿里的腔调，接受 LLM 的改写建议也有风险；写作即思考，交出写作可能也交出了理解",
+        "例外：贡献者 Jim Highsmith 因帕金森病借助 LLM 继续写作，Fowler 接受这种情况；写给流程而非给人看的报告也可以交给 LLM",
+        "反方事实：他知道有一篇完全由 LLM 起草的文章看不出 LLM 腔，但是经过大刊专业编辑重写",
+        "Fowler 也承认，自己觉得别扭的一些说法可能只是语言的代际变化"
+      ],
+      "why_it_matters": "团队里用 AI 写需求、周报的人很多，这篇提醒的是给人看的文字最好自己写主体、AI 只辅助；需要读者认真读的需求文档尤其如此。",
+      "sources": [
+        {
+          "title": "LLM Voice",
+          "url": "https://martinfowler.com/bliki/LLM-Voice.html",
+          "kind": "primary",
+          "publisher": "Martin Fowler",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "LLM Voice on Hacker News",
+          "url": "https://news.ycombinator.com/item?id=50290177",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["ai-collaboration", "prompting"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-30-supervisory-engineering",
+      "category": "practices",
+      "title": "Annie Vella：编码 Agent 时代，按工作类型选定「监督等级」",
+      "summary": "Annie Vella 10 月 23 日发文，借用人因研究里的「监督控制」概念，认为开发者的工作正从亲手写代码转向设定目标、监控进度和必要时介入。她把 Endsley 与 Kiris 的五级自动化模型套用到 AI 辅助开发上，从无 AI、决策支持、逐步审批、可否决到全自动。她建议团队为每类工作有意识地选定等级，并重新设计岗位和系统。",
+      "key_points": [
+        "为每类工作明确选定自动化等级，让人知道自己该做什么",
+        "设计能让人看清系统状态的信号，而不是靠更费力地审查",
+        "写清楚人在什么时候、以什么方式介入，以及要对什么负责",
+        "提醒：五级模型假设机器如实报告自己做了什么，而 AI Agent 未必如此，所以更需要监督"
+      ],
+      "why_it_matters": "不依赖具体模型，团队可以直接拿来讨论：哪些任务让 Agent 逐步审批、哪些可以放手只保留否决权，再据此配权限和检查点。",
+      "sources": [
+        {
+          "title": "Supervisory engineering work",
+          "url": "https://annievella.com/posts/supervisory-engineering-work/",
+          "kind": "primary",
+          "publisher": "Annie Vella",
+          "published_at": "2026-10-23"
+        },
+        {
+          "title": "Fragments: October 28",
+          "url": "https://martinfowler.com/fragments/2026-10-28.html",
+          "kind": "secondary",
+          "publisher": "Martin Fowler",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": ["agent", "ai-collaboration", "workflow"],
+      "importance": 3,
+      "actionability": "try",
+      "figure": {
+        "type": "steps",
+        "title": "AI 辅助开发的五级自动化",
+        "steps": [
+          {"label": "None", "sub": "人决定并执行，没有 AI"},
+          {"label": "Decision support", "sub": "系统给建议，人决定"},
+          {"label": "Consensual AI", "sub": "人审批后系统执行"},
+          {"label": "Monitored AI", "sub": "系统执行，人可否决"},
+          {"label": "Full automation", "sub": "系统独立决定并执行"}
+        ],
+        "caption": "Annie Vella 改编自 Endsley 与 Kiris（1995）的自动化等级模型"
+      }
+    },
+    {
+      "id": "2026-10-30-skill-trace-ai-stats",
+      "category": "skills",
+      "title": "AI 给出数字时，追到原始研究再用，多个 AI 说法一致不等于核实",
+      "summary": "Trakkr 10 月 28 日发布的研究向五个 AI 助手提出 200 个需要数字回答的问题，并沿引用链追溯了 1,285 个统计数字：只有 40% 能追到说法一致的原始研究，40% 停在无法核实的页面，11% 追不到任何来源。被引页面虽然 82% 确实包含这个数字，但只有 21% 是原始研究，其余多是转载和汇总。研究还发现，四个被五个助手都引用的数字，背后都没有研究支撑。",
+      "key_points": [
+        "AI 很少凭空编数字，问题在于引用的页面多是二手汇总，没有来源的数字会一再流传",
+        "建议沿引用越过博客和汇总文章，找到原始研究，并核对调查对象、样本量和时间",
+        "作者所在公司销售 AI 搜索监测服务，研究只在一天内用 API 提问，结果可作参考"
+      ],
+      "why_it_matters": "写方案、需求或汇报时常会让 AI 找数据支撑，这个习惯不需要写代码，人人都能用；对自部署模型配合检索的场景同样适用。",
+      "sources": [
+        {
+          "title": "Zombie stats: where the numbers AI quotes come from",
+          "url": "https://trakkr.ai/trakkr-research/zombie-stats",
+          "kind": "primary",
+          "publisher": "Trakkr",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "Zombie stats on Hacker News",
+          "url": "https://news.ycombinator.com/item?id=50290283",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["ai-collaboration", "evaluation"],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "review",
+        "scenario": "产品同学写立项材料，让 AI 找几条行业数据来支撑论点",
+        "bad": "帮我找几个能说明 [某趋势] 的数据，越权威越好，我要放进立项材料里。",
+        "good": "帮我找能说明 [某趋势] 的数据，要求：\n1. 每个数字给出原始研究或官方统计的链接，不要只给博客、新闻或汇总文章；找不到原始出处的单独列出，标「未核实」。\n2. 每个数字写明：谁做的调查、调查对象、样本量、时间。\n3. 如果不同来源的数字差别很大，把差异列出来，不要只挑一个。\n我会逐条打开链接核对后再用。",
+        "why": [
+          "要求原始出处，避开转载和汇总页面里的「无源数字」",
+          "写明调查对象、样本量和时间，方便判断这个数字能不能用在你的场景",
+          "让 AI 列出来源间的差异，而不是把多个页面一致当成已核实",
+          "最后一句说明人会核对，把采信的决定留在自己手里"
+        ],
+        "practice": "找一份最近用过 AI 提供数字的文档，挑一个数字，顺着链接追到原始研究，看看数字和背景是否一致。"
+      }
+    },
+    {
+      "id": "2026-10-30-reasoning-effort-economics",
+      "category": "research",
+      "title": "论文：推理强度开到最高常常白花钱，先低档、失败再升档更划算",
+      "summary": "论文《What Effort Level Should I Choose?》在四个基准上测量了闭源和开源权重模型不同推理强度的实际效果，覆盖单次推理和长程 Agent 任务。作者发现，更高强度整体准确率更高，但经常做错低档能做对的题；在各档都能做对的简单题上，最高档成本最多是最低档的 42 倍。他们提出的替代做法——从最低档开始，只在验证失败后升档——在所有模型和基准上追平或超过固定最高档，对多数闭源模型还更便宜。",
+      "key_points": [
+        "作者把推理强度比作「信任品」：用户事先无法判断额外计算是否必要，事后成功也看不出是否需要",
+        "高强度会改变 Agent 行为：更多自我验证和搜索，轨迹更长，结果却未必更好",
+        "代码与轨迹数据已公开在 GitHub 和 Hugging Face"
+      ],
+      "why_it_matters": "开源模型通常也有思考开关或档位，有测试、类型检查等验证手段的任务，可以在 Agent 外围系统里实现「先低档再升档」，节省自部署算力和等待时间。",
+      "sources": [
+        {
+          "title": "What Effort Level Should I Choose? On the Economics of Reasoning Effort in LLM Agents",
+          "url": "https://arxiv.org/abs/2610.34491",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-25"
+        },
+        {
+          "title": "Paper page on Hugging Face",
+          "url": "https://huggingface.co/papers/2610.34491",
+          "kind": "secondary",
+          "publisher": "Hugging Face"
+        },
+        {
+          "title": "KaiserWhoLearns/ReasoningEffortLLM",
+          "url": "https://github.com/KaiserWhoLearns/ReasoningEffortLLM",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": ["reasoning", "agent", "evaluation"],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-10-30-effort-escalation",
+      "figure": {
+        "type": "steps",
+        "title": "从最低档开始，验证失败才升档",
+        "steps": [
+          {"label": "最低档", "sub": "先用最低推理强度完成任务"},
+          {"label": "验证", "sub": "检查结果是否通过"},
+          {"label": "升档", "sub": "只有验证失败才提高强度"}
+        ],
+        "loop": "失败就升一档再试",
+        "caption": "据论文描述的升档策略绘制"
+      }
+    },
+    {
+      "id": "2026-10-30-tao-agent-scheduling",
+      "category": "research",
+      "title": "TAO：按工具结果何时就绪来调度 Agent 推理，延迟最多降 26.8%",
+      "summary": "论文提出 TAO，一个面向 Agent 服务的工具感知调度框架。作者指出，Agent 会话在 GPU 推理和 CPU 上的外部工具调用之间交替，现有系统不看工具结果是否就绪，准入和放置也靠启发式规则。TAO 综合工具结果的就绪时间、各节点随时间衰减的缓存收益和 token 占用给会话打分，再用动态规划在容量约束下选择和放置会话。",
+      "key_points": [
+        "在 12 组模型、负载和并发设置下，相比各指标最好的基线：延迟最多降 26.8%，首 token 时间最多降 36.3%，解码吞吐最多升 29.5%",
+        "论文 26 页，暂未看到开源代码"
+      ],
+      "why_it_matters": "自部署推理服务同时承载很多编码 Agent 会话时，「工具还没返回的会话先别占 GPU」这个思路值得关注；目前只有论文，没有可直接用的实现。",
+      "sources": [
+        {
+          "title": "TAO: Tool-Aware Joint Scheduling for LLM-Based Agentic Serving",
+          "url": "https://arxiv.org/abs/2610.37230",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-27"
+        },
+        {
+          "title": "Paper page on Hugging Face",
+          "url": "https://huggingface.co/papers/2610.37230",
+          "kind": "secondary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": ["inference", "agent", "infra"],
+      "importance": 2,
+      "actionability": "know"
+    }
+  ],
+  "experiments": ["2026-10-30-effort-escalation"]
+}
