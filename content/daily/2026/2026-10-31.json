@@ -1,0 +1,707 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-31",
+  "generated_at": "2026-10-31T06:08:10+08:00",
+  "editor_note": "今天最要紧的是安全：Cursor 扩展市场出现植入 SSH 后门的假 Claude Code 扩展，用过的同事请按通告自查。Hugging Face 开源了在 Agent 执行前拦截越界工具调用的 safeagents，配套实验复现了它的第一道规则。研究方面，一篇论文发现同样的能力用 MCP 还是命令行暴露，Agent 行为差别明显；另一篇给「规则写多少条模型还能遵守」定了个刻度。OpenAI 当天的几篇官方文章无法打开，未收录。共 16 条。",
+  "tldr": [
+    {
+      "text": "Cursor 市场两个版本的 Claude Code 扩展被植入 SSH 后门，最多约 5,000 人受影响",
+      "item_id": "2026-10-31-claude-code-extension-backdoor"
+    },
+    {
+      "text": "Hugging Face 开源 safeagents，按未声明工具、陌生主机等规则在执行前拦截 Agent 调用",
+      "item_id": "2026-10-31-hf-safeagents"
+    },
+    {
+      "text": "论文：同一能力用 MCP 或命令行暴露，94.3% 的成对轨迹出现结构性分歧",
+      "item_id": "2026-10-31-mcp-vs-cli-mica"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-10-31-hf-safeagents",
+      "reason": "给命令行 Agent 加一道与模型无关的执行前检查，先只记录不拦截，看看 Agent 平时都在调什么",
+      "steps": [
+        "运行 README 中的安装脚本，安装 safeagents（会顺带安装 uv）",
+        "运行 `safeagents start <模型服务地址> --log-only` 启动代理",
+        "把 Agent 的 base URL 指向 `http://127.0.0.1:8787`，用 `safeagents inspect` 查看被标记的调用"
+      ]
+    },
+    {
+      "item_id": "2026-10-31-hf-cli-skill",
+      "reason": "让 Agent 少查帮助、少占上下文，也可借鉴「从 CLI 版本生成技能」的做法",
+      "steps": [
+        "升级 hf CLI 后运行 `hf skills add --global`",
+        "让 Agent 完成一个下载模型或清理缓存的任务，观察是否还调用 --help",
+        "升级 CLI 后运行 `hf update` 刷新技能"
+      ]
+    },
+    {
+      "item_id": "2026-10-31-mica-v0-5-decision-model",
+      "reason": "用本地 4B 决策模型代替大模型做是非、分类判断，验证能否用于需求是否需要追问之类的场景",
+      "steps": [
+        "按 README 克隆仓库，用 Docker 或 llama.cpp 方式启动服务",
+        "向 `/v1/systemone` 发送带 noul 或 choice 问题的请求",
+        "打乱选项顺序重复几次，并试试 abstain_threshold"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-10-31-claude-code-extension-backdoor",
+      "category": "news",
+      "title": "Cursor 扩展市场出现植入 SSH 后门的假 Claude Code 扩展",
+      "summary": "Cursor 10 月 29 日发布安全通告：其 VS Code 扩展市场中的 Anthropic.claude-code 2.1.312 和 2.1.313 两个版本被植入恶意代码，并非 Anthropic 开发，上架时间约为太平洋时间当天 2:27 至 13:35。恶意代码会收集主机信息发往攻击者服务器，尝试往 authorized_keys 写入攻击者的 SSH 公钥、开启反向 SSH 隧道，并通过 LaunchAgent 或计划任务驻留。据 The Hacker News 和 Help Net Security 报道，Cursor 称最多约 5,000 名用户受影响，将逐一联系。",
+      "key_points": [
+        "只影响 Windows 和 macOS 上从 Cursor 扩展市场安装的这两个版本；Cursor 称没有证据表明官方渠道和其他版本受影响",
+        "自查方法：在 ~/.ssh/authorized_keys 中搜索注释为 svc-telemetry 的公钥，找到即说明已中招",
+        "Cursor 提醒只卸载扩展可能不够，需要删除公钥和驻留项、轮换该机器上能访问的凭据，必要时重装系统",
+        "攻击者如何获得发布权限尚未公开；Anthropic 已向 Open VSX 和 VS Code Marketplace 发布 2.1.314"
+      ],
+      "why_it_matters": "命令行 Agent 和 IDE 扩展权限很高，开启自动更新时一次被投毒的版本就能直接拿到开发机。团队里用 Cursor 装过 Claude Code 扩展的同事应按通告自查；其他扩展市场也值得考虑关闭自动更新或做版本固定。",
+      "sources": [
+        {
+          "title": "Security notice — malicious version of Anthropic.claude-code (2.1.313) identified in the Cursor Extension Marketplace",
+          "url": "https://cursor.com/blog/claude-code-extension-security-notice",
+          "kind": "primary",
+          "publisher": "Cursor",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "Official Claude Code Extension on Cursor Marketplace Trojanized with Persistent SSH Backdoor",
+          "url": "https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html",
+          "kind": "secondary",
+          "publisher": "The Hacker News"
+        },
+        {
+          "title": "Claude Code extension poisoned with persistent SSH backdoor",
+          "url": "https://www.helpnetsecurity.com/2026/10/30/claude-code-extension-ssh-backdoor/",
+          "kind": "secondary",
+          "publisher": "Help Net Security",
+          "published_at": "2026-10-30"
+        }
+      ],
+      "tags": [
+        "safety",
+        "devtools",
+        "coding"
+      ],
+      "importance": 5,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-31-claude-enterprise-smart-reports",
+      "category": "news",
+      "title": "Claude Enterprise 推出团队用量报告与共享预算",
+      "summary": "Anthropic 10 月 28 日为 Claude Enterprise 正式上线三项管理功能：智能报告、应用内问卷和团队共享预算。智能报告抽样分析团队的对话记录，按工作流归类，列出产出、花费和卡点（如缺少连接器、工具调用失败），并建议把重复的工作流做成 Skill、给代码仓库补规则。TechCrunch 引用 Jellyfish 的数据称，年初以来企业在 AI 编码工具上的支出增长约 10 倍，已约占工程总成本的 2%。",
+      "key_points": [
+        "共享预算让一个团队共用月度额度，个人上限仍然有效，管理员在用到 50%、75%、95%、100% 时收到邮件提醒",
+        "Anthropic 声明报告用于了解采用情况和规划投入，不用于评价个人绩效或做人事决定",
+        "问卷默认问最有价值的工作、节省的时间和断供后最先受影响的事，结果可导出为表格"
+      ],
+      "why_it_matters": "功能只面向 Claude Enterprise，与自部署环境无关；但「从对话记录里找出该沉淀成 Skill 和规则的重复工作」这个思路，可以用在自己团队的 Agent 日志复盘上。",
+      "sources": [
+        {
+          "title": "Smart reports, surveys, and pooled budgets for Claude Enterprise",
+          "url": "https://claude.com/resources/articles/smart-reports-surveys-pooled-budgets",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "Anthropic just launched tools to show companies what their AI spending is buying",
+          "url": "https://techcrunch.com/2026/10/28/anthropic-just-launched-tools-to-show-companies-what-their-ai-spending-is-buying/",
+          "kind": "secondary",
+          "publisher": "TechCrunch",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "workflow"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-31-anthropic-ai-for-science",
+      "category": "news",
+      "title": "Anthropic 扩大 AI for Science 计划，新增 20 家科研合作方",
+      "summary": "Anthropic 10 月 28 日宣布扩大 2025 年 5 月启动的 AI for Science 计划，新增美国国家科学基金会、Simons 基金会、Wellcome Sanger 研究所、EMBL 等 20 家资助机构、研究所和项目，由它们向研究者分发或直接使用 Claude 额度，同时推出面向科研人员的折扣 Team 套餐。计划此前已支持数百个项目。",
+      "key_points": [
+        "合作方分三类：向研究者转发额度的资助机构、内部使用的研究所、直接获得额度的具体项目（如 gnomAD、FlyWire）",
+        "Allen Institute 在用多 Agent 团队分析其公开数据集",
+        "HHMI Janelia 参与制定 Model Hardware Standard，让 Agent 通过 MCP、命令行或代码操作实验仪器，目前为研究预览"
+      ],
+      "why_it_matters": "属于行业动态，对研发团队没有直接影响；Agent 操作物理设备时同时提供 MCP 和命令行两种入口，与今天 MCP 与 CLI 对比的论文可以对照着看。",
+      "sources": [
+        {
+          "title": "AI for Science expands to foundations, research institutions",
+          "url": "https://www.anthropic.com/news/ai-for-science-expands-foundations-research-institutions",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "Model Hardware Standard research preview",
+          "url": "https://www.anthropic.com/news/model-hardware-standard-research-preview",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "agent",
+        "mcp"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-31-hf-safeagents",
+      "category": "opensource",
+      "title": "Hugging Face 开源 safeagents：在 Agent 执行前拦下越界工具调用",
+      "summary": "safeagents 是 Hugging Face 10 月 29 日起密集更新的开源本地代理，放在 Agent 和模型服务之间，在 Agent 执行之前检查模型发出的每个工具调用，拦下的调用替换成一段文字说明。它支持 OpenAI Chat Completions 和 Anthropic Messages 两种接口，流式与非流式都可以，凡是能设置 base URL 的 Agent（Claude Code、OpenCode、Pi 等）都能接入。检查分三步：只看请求的规则、atif-scan 检测器、可选的判定模型。",
+      "key_points": [
+        "第一步拦截两类调用：用了请求里没声明的工具，或参数里出现对话中从没出现过的主机；模型自己之前说过的话不算",
+        "第二步用 atif-scan 识别读取 /proc/1/environ、curl --noproxy、Kubernetes 服务账号令牌等行为，默认 high 级别以上拦截",
+        "判定模型只看用户原话、调用和检测结果，看不到 Agent 的推理和工具结果；它只能加拦截不能解除，干净的调用不会送去判定",
+        "建议先用 --log-only 只记录不拦截；README 称每次扫描在 M 系列 Mac 上约 10 到 20 ms，许可证为 Apache 2.0"
+      ],
+      "why_it_matters": "与模型无关，接在自部署模型和命令行 Agent 之间即可用，给 Agent 放权时多一道可审计的关口；判定模型可选，没有也能用前两步规则。",
+      "sources": [
+        {
+          "title": "huggingface/safeagents",
+          "url": "https://github.com/huggingface/safeagents",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "safety",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-10-31-tool-call-scope-check",
+      "repo": {
+        "url": "https://github.com/huggingface/safeagents",
+        "license": "Apache-2.0",
+        "language": "Python"
+      },
+      "figure": {
+        "type": "steps",
+        "title": "每个工具调用依次经过三道检查，任何一道都可以拦下",
+        "steps": [
+          {
+            "label": "Request-only",
+            "sub": "未声明工具、陌生主机直接拦"
+          },
+          {
+            "label": "atif-scan",
+            "sub": "按检测器规则判定风险级别"
+          },
+          {
+            "label": "Decision model",
+            "sub": "可选，只裁决可疑调用"
+          }
+        ],
+        "caption": "结构来自 safeagents README"
+      }
+    },
+    {
+      "id": "2026-10-31-mica-v0-5-decision-model",
+      "category": "opensource",
+      "title": "Mica v0.5：4B 开源决策模型，不生成文字直接给出各选项概率",
+      "summary": "Mica 是基于 Qwen3.5-4B 微调的决策模型，Apache-2.0 许可。调用方传入材料、问题和允许的答案，它直接返回每个答案的概率，不生成任何 token，支持是非、多选和 2 到 255 级打分三类问题，输入最长 32,768 token。仓库提供 HTTP 服务，可在 NVIDIA 显卡上跑 INT8 运行时，也可以通过 llama.cpp 跑 GGUF 权重，支持 CUDA、Vulkan、ROCm 和 Metal。",
+      "key_points": [
+        "打乱选项顺序后，97.3% 的情况下仍选同一个答案；可设 abstain_threshold，不确定时标记出来而不是硬猜",
+        "README 自测 JDI 0.3 得分 58.8，JevBench Hard 答对 84/111，其他模型的成绩也是作者自己跑的",
+        "8 GB 显存的 RTX 3070、4060 可跑 INT8，最长输入 6k token；llama-server 本身不支持它的 /v1/systemone 接口，需要用仓库自带的服务"
+      ],
+      "why_it_matters": "很多 Agent 外围逻辑其实只要一个判断（要不要追问、工单该归哪组、改动风险高不高），用小决策模型代替生成式大模型更快更省，也更容易设阈值；适合在本地显卡上试。",
+      "sources": [
+        {
+          "title": "akivet/Mica",
+          "url": "https://github.com/akivet/Mica",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "sky7350/Mica-v0.5-4B",
+          "url": "https://huggingface.co/sky7350/Mica-v0.5-4B",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "inference",
+        "agent"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/akivet/Mica",
+        "license": "Apache-2.0",
+        "language": "Python"
+      }
+    },
+    {
+      "id": "2026-10-31-github-ai-app-code-scanning",
+      "category": "tools",
+      "title": "GitHub 代码扫描新增 AI 应用检测：提示注入与过度授权",
+      "summary": "GitHub 10 月 28 日推出 AI 应用代码扫描公开预览，在 Pull Request 上与 CodeQL 一起自动运行，找出不可信内容能流入一个可调用工具、数据或业务系统的模型的代码路径。检测的风险包括间接提示注入、敏感信息泄露和过度授权（Agent 拥有超出任务所需的能力、权限或自主度），告警附带修复建议。",
+      "key_points": [
+        "需要 GitHub Advanced Security 许可，目前只在 github.com 可用，GitHub Enterprise Server 暂不支持",
+        "需要在仓库同时开启代码扫描和 AI 应用扫描",
+        "告警显示在 PR 的 Conversation 或 Files changed 页，可在合并前修复"
+      ],
+      "why_it_matters": "团队自己开发的 Agent 应用同样面临提示注入和过度授权问题；这个功能依赖 github.com 和 GHAS，内部私有部署暂时用不上，但它列的三类风险可以直接拿来当代码评审清单。",
+      "sources": [
+        {
+          "title": "Code scanning for AI applications in public preview",
+          "url": "https://github.blog/changelog/2026-10-28-code-scanning-for-ai-applications-in-public-preview",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": [
+        "safety",
+        "devtools",
+        "agent"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-31-anydecisionmodel",
+      "category": "tools",
+      "title": "AnyDecisionModel：用模型概率回答是非与选择题的 Swift 库",
+      "summary": "Hugging Face 10 月 29 日介绍了 Mattt 开发的两个 Swift 包。AnyDecisionModel 不让模型生成文字再解析，而是直接读取模型对各个答案的概率，返回带概率和置信度的类型化结果，后端支持 MLX、Core AI、llama.cpp、Ollama 等六种。AnySpeechRecognizer 则与苹果 Speech API 接口一致，可以换用 Parakeet、Qwen3-ASR 等开源语音识别模型，并补上说话人分离。",
+      "key_points": [
+        "提供温度和是非偏置校准，以及轮换选项顺序来抵消顺序偏差",
+        "不启用 trait 时 AnyDecisionModel 没有第三方依赖，核心类型和 Ollama 后端可在 Linux 上构建",
+        "文章建议在自己的数据上检查错误率；测试目前只在 macOS 27 上做过"
+      ],
+      "why_it_matters": "主要面向苹果平台开发者，对多数团队是参考；「读概率而不是解析生成文本」的做法，在自部署的 llama.cpp 或 Ollama 上也能借鉴来做分类和路由判断。",
+      "sources": [
+        {
+          "title": "Introducing AnySpeechRecognizer and AnyDecisionModel",
+          "url": "https://huggingface.co/blog/anydecisionmodel",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": [
+        "inference",
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-31-hf-cli-skill",
+      "category": "kits",
+      "title": "hf-cli 技能：按本机 CLI 版本生成，开源模型调用轮次少约三分之一",
+      "summary": "Hugging Face 10 月 26 日介绍 hf CLI 新功能时，公布了配套的 hf-cli Agent 技能的测试结果：DeepSeek-V4.1-Flash 和 Kimi-K3 在 28 个 Hub 任务上，有无技能都能完成 99% 到 100%，但装上技能后平均少用约三分之一的轮次，几乎不再调用 --help。这个技能由本机安装的 CLI 版本生成，升级 CLI 后用 hf update 即可刷新，避免技能内容与工具实际用法不一致。",
+      "key_points": [
+        "官方结论是技能让 Agent 更快，而不是更准",
+        "全局安装适用于 Claude Code、Codex、Cursor、OpenCode，以及任何从 ~/.agents/skills 加载技能的 Agent",
+        "hf 每天提醒一次技能缺失或过期，设 HF_HUB_DISABLE_UPDATE_CHECK=1 可关闭",
+        "文章称某一天里约三分之一的 hf CLI 用户是 AI Agent，超过一半的 CLI 上传来自 Agent"
+      ],
+      "why_it_matters": "测试用的就是开源权重模型，结论对自部署环境直接适用；「从 CLI 版本自动生成技能、随版本刷新」的做法，也可以照搬到团队内部工具的技能上，减少 Agent 反复查帮助占用上下文。",
+      "sources": [
+        {
+          "title": "What's new in the hf CLI and huggingface_hub library",
+          "url": "https://huggingface.co/blog/huggingface/whats-new-in-the-hf-cli-and-huggingface-hub-librar",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-10-26"
+        },
+        {
+          "title": "Hugging Face CLI for AI Agents",
+          "url": "https://huggingface.co/docs/hub/agents-cli",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "devtools",
+        "open-weights"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "hf-cli",
+        "repo": "https://github.com/huggingface/skills",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "Cursor",
+          "OpenCode"
+        ],
+        "capabilities": [
+          "教 Agent 使用 hf CLI 下载、上传和管理 Hub 上的模型、数据集与缓存",
+          "覆盖 Jobs、Storage Buckets、Sandboxes 等新命令",
+          "支持全局安装或只装在当前项目"
+        ],
+        "highlights": [
+          "由本机 CLI 版本生成，升级后一条命令刷新，内容不会落后于工具",
+          "官方用两个开源模型做了有无技能的对比测试，并如实说明只提升速度",
+          "装在 ~/.agents/skills 下，多种 Agent 共用一份"
+        ],
+        "install": "hf skills add --global"
+      }
+    },
+    {
+      "id": "2026-10-31-security-guidance-plugin",
+      "category": "kits",
+      "title": "官方 security-guidance 插件：三层安全审查，可写团队专属规则",
+      "summary": "security-guidance 是 Anthropic 官方插件目录中的 Claude Code 安全审查插件，10 月 27 日更新到 2.0.17。它分三层：编辑文件时用正则对约 25 种危险写法即时提醒；每轮结束时把 diff 发给模型审查，高危问题反馈给 Agent 先修；git commit 时由一个能读取相关文件的审查 Agent 追踪跨文件数据流，找越权、鉴权绕过、跨文件 SSRF 等问题。",
+      "key_points": [
+        "可以在用户、项目、本地三处放 claude-security-guidance.md 写团队专属规则，合并后超过 8 KB 会截断",
+        "后两层需要 Claude 凭据并额外消耗 token；没有凭据时只运行正则提醒",
+        "审查会把 diff 和相关文件内容发送到模型端点，规则文件里不要写密钥",
+        "README 明确说明它是辅助工具，不能替代人工评审和 SAST/DAST"
+      ],
+      "why_it_matters": "后两层依赖 Claude 模型，自部署环境暂时用不上；但「即时规则提醒 + 每轮 diff 审查 + 提交时跨文件审查」的分层设计和项目级规则文件，适合借鉴到团队自己的 Hook 上。",
+      "sources": [
+        {
+          "title": "security-guidance README",
+          "url": "https://github.com/anthropics/claude-plugins-official/blob/main/plugins/security-guidance/README.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "security-guidance: bump version to 2.0.17",
+          "url": "https://github.com/anthropics/claude-plugins-official/commit/a29a80b5877bae49e3b058cc6dd86bda07bcf1cc",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "safety",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "kit": {
+        "kind": "plugin",
+        "name": "security-guidance",
+        "version": "2.0.17",
+        "repo": "https://github.com/anthropics/claude-plugins-official",
+        "compatible": [
+          "Claude Code"
+        ],
+        "capabilities": [
+          "Agent 编辑文件时提醒 yaml.load、pickle.load、innerHTML、硬编码密钥等危险写法",
+          "每轮结束后审查 diff，把高危问题反馈给 Agent 修复",
+          "提交代码时跨文件追踪数据流，发现越权和鉴权绕过",
+          "读取团队写的 claude-security-guidance.md 专属规则"
+        ],
+        "highlights": [
+          "三层由快到慢、由便宜到贵，各层可用环境变量单独关闭",
+          "规则文件分用户、项目、本地三级，项目规则可以随仓库提交",
+          "每次审查在日志里记录 token 用量和估算费用"
+        ],
+        "install": "/plugin install security-guidance@claude-plugins-official",
+        "changes": [
+          "2.0.17 为版本号更新，同期提交增加了审查轮次与耗时统计，以及 Windows 上的审查标记锁"
+        ]
+      }
+    },
+    {
+      "id": "2026-10-31-spawn-hourly-agent-shipping",
+      "category": "ideas",
+      "title": "让 Agent 每小时自动上线：游戏公司 Spawn 的做法能推广吗",
+      "summary": "Simon Willison 10 月 29 日转述了 Jacob Sansbury 关于游戏 Spawn 的文章：游戏主要由一群 Agent 自主开发，直接改线上代码、每小时发布，一小时没有发布就算 SEV-0 事故。Willison 称标题有标题党成分，但这是 Agent 工程前沿的一次有意思的探索；他本人的看法是这种方式在游戏里看起来行得通，但放到风险更高的软件上会让他意外。",
+      "key_points": [
+        "Sansbury 自述：token 月花费超过 300 万美元，约 60% 的工作由线上报错、Bug 报告、异常日志或功能需求触发",
+        "支撑这种节奏的是快速回滚（30 秒）、监控告警唤醒负责的 Agent，以及故意制造故障来演练恢复",
+        "Willison 认为游戏开发是测试编码 Agent 极限的好场景，前一天的文章也提到游戏风险低、Bug 代价小，但游戏社区对 AI 生成内容存在分歧",
+        "以上数字均为当事人自述，未经独立核实"
+      ],
+      "why_it_matters": "多数团队离「Agent 直接上线」很远，但它说明放权的前提是回滚和监控足够快；评估自己能给 Agent 多大自主度时，可以先看回滚要多久。",
+      "sources": [
+        {
+          "title": "How I Built the Most AI-Pilled Company in the World",
+          "url": "https://simonwillison.net/2026/Oct/29/how-i-built-the-most-ai-pilled-company-in-the-world/",
+          "kind": "primary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "The October inflection point for vibe game development",
+          "url": "https://simonwillison.net/2026/Oct/28/vibe-game-development/",
+          "kind": "primary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": [
+        "agent",
+        "coding",
+        "workflow"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-31-meta-jittesting",
+      "category": "practices",
+      "title": "Meta：为每个改动生成「即时测试」，上半年拦下 74 个严重隐私 Bug",
+      "summary": "Meta 工程博客 10 月 29 日介绍 JiTTesting 已进入生产：每晚用空闲算力挑出风险模型评为高风险的前一天改动，用大模型生成专门针对这次改动的测试。与模仿人工评审的 AI 代码审查不同，它产出的是能跑出行为差异的可执行测试。生成的「疑似发现」先由多个大模型组成的评审团和一个确定性的规则过滤器 RubFake 排序，再决定是否通知工程师。",
+      "key_points": [
+        "两种生成方式：把改动当作变异体，生成能区分新旧行为的测试；或先推断改动意图、列出风险，再针对风险生成测试",
+        "人「在环上」而不是「在环中」：工程师事先定好标准、按汇总结果调整策略，通常只需确认某个行为变化是否有意为之",
+        "589 名工程师参与，反馈的真阳性率为 60%；2026 年上半年在合并前拦下 74 个严重隐私 Bug，隐私类事故减少 20%",
+        "方法论文发表于 FSE 2026（arXiv:2601.22832）"
+      ],
+      "why_it_matters": "思路与模型无关：对测试同学来说，「只对高风险改动生成测试、用确定性规则加模型双重过滤误报、按汇总结果而不是逐条复核」可以直接用于设计团队的 AI 测试流程。",
+      "sources": [
+        {
+          "title": "Catching Bugs Before They Land: JiTTesting's Human-on-the-Loop Approach at Full Scale",
+          "url": "https://engineering.fb.com/2026/10/29/security/catching-bugs-before-they-land-jittestings-human-on-the-loop-approach-at-full-scale",
+          "kind": "primary",
+          "publisher": "Engineering at Meta",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "Just-in-Time Catching Test Generation at Meta",
+          "url": "https://arxiv.org/pdf/2601.22832",
+          "kind": "primary",
+          "publisher": "arXiv"
+        }
+      ],
+      "tags": [
+        "coding",
+        "evaluation",
+        "workflow"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "steps",
+        "title": "只对高风险改动生成测试，层层过滤后才找人确认",
+        "steps": [
+          {
+            "label": "Risk model",
+            "sub": "每晚挑出前一天的高风险改动"
+          },
+          {
+            "label": "Test generation",
+            "sub": "按改动或推断的意图生成测试"
+          },
+          {
+            "label": "Judges + RubFake",
+            "sub": "模型评审团与规则共同排序"
+          },
+          {
+            "label": "Human-on-the-loop",
+            "sub": "按排序决定是否通知工程师"
+          }
+        ],
+        "caption": "结构来自 Meta 工程博客"
+      }
+    },
+    {
+      "id": "2026-10-31-llm-router-benchmark",
+      "category": "practices",
+      "title": "路由器评测：7 个模型路由方案都没赢过「固定用一个便宜模型」",
+      "summary": "AutoBench 作者 10 月 26 日发布路由器评测：用 252 个开放式问题、20 个候选模型和 10 个评审模型的打分，检验 Not Diamond、OpenRouter Auto、Azure Model Router 等 7 个系统共 17 种设置是否真把问题路由给了合适的模型。结果是固定调用 GPT-5.6 Luna 得分 85.3%、每题 0.0043 美元，没有任何路由设置在质量和成本上同时超过它。",
+      "key_points": [
+        "17 种设置中有 5 种把至少 90% 的问题发给同一个模型，相当于带开关的固定选择",
+        "Azure Model Router 得分同为 85.3%，但每题 0.065 美元，约为 Luna 的十五倍；FrugalGPT 式级联得分 60.9%，低于随机挑选的 64.7%",
+        "跨厂商比较 59 对路由器，选中同一模型的比例中位数为 0",
+        "作者同时在推广自家路由服务，评测设计和结论宜结合原文自行判断"
+      ],
+      "why_it_matters": "自部署环境也常想按难度在大小模型间路由；这份评测提醒，上路由之前先拿「固定用一个够用的模型」做基线，路由器赢不了基线就不值得增加复杂度。",
+      "sources": [
+        {
+          "title": "Do LLM Routers Actually Route?",
+          "url": "https://huggingface.co/blog/PeterKruger/router-benchmark-2026-10",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-10-26"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "inference",
+        "llm"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-10-31-skill-curate-context",
+      "category": "skills",
+      "title": "给 AI 交代任务时，只给最相关的材料，别把整段聊天记录全贴进去",
+      "summary": "Anthropic 工程博客《Effective context engineering for AI agents》把模型的上下文视为有限资源：内容越多，模型对关键信息的把握反而越弱。文章的建议是找到「最小的一组高信号信息」，用几个有代表性的例子代替一长串规则，其余资料留下文件名或链接，需要时再查。这些原则不写代码也用得上。",
+      "key_points": [
+        "先给简短的说明，看到具体错误再补充，而不是一开始就写满规则",
+        "用清楚的标题分段，给参考文件起好名字，方便 AI 找到需要的部分",
+        "长对话变乱时，让 AI 先总结关键决定和未决问题，再带着总结开新对话"
+      ],
+      "why_it_matters": "团队用的自部署模型上下文有限，塞得越满越容易漏掉关键要求；这个习惯对开发、测试、产品都适用，也正好对应「AI 产出太长、没人看完」的问题。",
+      "sources": [
+        {
+          "title": "Effective context engineering for AI agents",
+          "url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "context-engineering",
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "context",
+        "scenario": "测试同学根据需求群里一周的讨论，让 AI 写登录模块的测试用例",
+        "bad": "（把群聊记录整段粘贴进来）根据上面的讨论，帮我把登录模块的测试用例都写出来。",
+        "good": "任务：为 [登录模块] 写测试用例，供 [下周回归测试] 使用。\n最终确定的需求（已从群聊整理）：\n1. [手机号 + 验证码登录，验证码 5 分钟有效]\n2. [连续输错 5 次锁定 30 分钟]\n已否决、不用测的方案：[第三方扫码登录]\n格式参照下面这条现有用例：\n[编号 | 前置条件 | 步骤 | 预期结果]\n先列出用例标题清单让我确认，再展开写；如果需求里有没说清的地方，单独列出来，不要自己补。",
+        "why": [
+          "只放整理后的最终需求，去掉被推翻的讨论，AI 不会把旧方案当成要求",
+          "写明否决的方案，避免 AI 从聊天记录里捡回来",
+          "用一条现有用例当格式样例，比描述一长串格式规则更省也更准",
+          "先出标题清单再展开，控制产出长度，也方便及早纠偏"
+        ],
+        "practice": "找一次你直接粘贴长聊天记录给 AI 的经历，试着先花 5 分钟整理出最终结论，再问一次，对比两次结果。"
+      }
+    },
+    {
+      "id": "2026-10-31-mcp-vs-cli-mica",
+      "category": "research",
+      "title": "论文：同样的能力用 MCP 还是命令行暴露，Agent 行为差别很大",
+      "summary": "这篇 10 月 25 日提交的论文提出 MICA 方法：从同一份动作定义同时生成 MCP 和命令行两种接口，解析后交给同一个运行时执行，从而只比较「接口呈现方式」的差异。在 6 个模型、3 个交互环境、2,004 组成对回合中，两种接口的任务成绩和交互成本差异明显，94.3% 的成对轨迹出现结构性分歧，早期差异会一路传递下去。",
+      "key_points": [
+        "差异体现在动作选择、失败模式和出错后的恢复方式上",
+        "控制状态的探针实验把差异归因于能力怎么展示、怎么执行、反馈怎么返回",
+        "作者提出 DART：保留已验证的语义选择，只修复与接口相关的写法，在 6 个设置中都提升了得分，最多 9.0 分",
+        "DART 在 3 个环境中都降低了 MCP 的 token 开销，每个任务最多少用 27.1k token"
+      ],
+      "why_it_matters": "团队在给命令行 Agent 接内部工具时常在 MCP 和 CLI 之间选；论文说明这不是纯工程偏好，接口格式本身会改变模型行为，值得在自己的模型上两种都测一下再定。",
+      "sources": [
+        {
+          "title": "Matched Capabilities, Different Behaviors: A Controlled Study of MCP and CLI Interfaces for Language Agents",
+          "url": "https://arxiv.org/abs/2610.34298",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-25"
+        }
+      ],
+      "tags": [
+        "mcp",
+        "agent",
+        "evaluation"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-31-instruction-capacity",
+      "category": "research",
+      "title": "论文：给指令负载定个刻度，GPT-4o mini 约能稳定遵守 37 条规则",
+      "summary": "这篇 10 月 26 日的论文想用「规则条数」给模型的指令遵循上限定一个带误差范围的刻度。实验让每条规则把文本中的一个无意义词替换成指定词，规则互相独立、答案可自动核对，再统计正确率如何随文本长度、词的位置、替换密度、规则数量和规则序号变化。作者在 GPT-4o mini 上跑了 2,958 次请求、642,430 次替换。",
+      "key_points": [
+        "要求 95% 的替换正确时，GPT-4o mini 的指令容量约为 37 到 38 条规则；在最高替换密度下约为 18 到 19 条",
+        "正确率随规则数量的对数线性下降，随规则在列表中的位置呈幂律变化",
+        "代码、数据和结果全部公开，目前只测了一个模型，规则是人工构造的替换任务"
+      ],
+      "why_it_matters": "规则文件、技能写得越长，模型越容易漏掉其中几条，这也是「AI 不遵守项目规范」的一个原因；论文给出了一种测量方法，可以照着在自部署模型上测一测规则文件写多少条合适。",
+      "sources": [
+        {
+          "title": "Instruction Capacity: Behavior and Degradation of Language Models under Controlled Load",
+          "url": "https://huggingface.co/papers/2610.36095",
+          "kind": "primary",
+          "publisher": "Hugging Face Papers"
+        },
+        {
+          "title": "kutomanovhennadii/instruction-capacity",
+          "url": "https://github.com/kutomanovhennadii/instruction-capacity",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "context-engineering",
+        "evaluation",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-10-31-ai2-novelty-judge",
+      "category": "research",
+      "title": "Ai2：让大模型判断研究想法是否新颖，改改提示词结论就翻转",
+      "summary": "Ai2 10 月 27 日发布研究：用 ICLR 2026 审稿意见构建新颖性评测集，测试 GPT-5.x 和 Claude 4.5/4.6 系列做「新颖性评审」是否可靠。结论是不可靠，评测设置的小改动就能翻转同一批想法的结论。例如把提示词简化后，GPT-5.4 在「人类想法 vs 生成想法」集上的准确率从 93.5% 降到 40.9%，低于随机，超过一半的成对结论发生变化。",
+      "key_points": [
+        "没有对所有模型都最好的提示词，对一个模型有帮助的写法可能伤害另一个",
+        "带实时 arXiv 检索、超高推理强度的 Agent 评审者 macro-F1 为 0.78，低于标准检索下 Claude Opus 4.6 的 0.89，每次判断成本约高 10 倍",
+        "简单的 Claude Opus 4.6 提示（低推理、三次投票）macro-F1 为 0.854，总成本 2.59 美元；专门的 Idea Novelty Checker 为 0.642，AI Scientist 评审器为 0.772",
+        "基准、数据和代码已开源"
+      ],
+      "why_it_matters": "团队用「大模型当裁判」做评测或代码评审时，同样要警惕提示词敏感性；换提示词、换模型前后都应在固定数据集上复测，不要只凭一次结果下结论。",
+      "sources": [
+        {
+          "title": "Can we trust LLMs to judge whether a research idea is novel?",
+          "url": "https://huggingface.co/blog/allenai/novelty-bench",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "research",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "know",
+      "figure": {
+        "type": "bars",
+        "title": "简单提示加投票，比专门的新颖性评审器更准也更便宜",
+        "series": [
+          "macro-F1"
+        ],
+        "rows": [
+          {
+            "label": "Claude Opus 4.6 简单提示",
+            "values": [
+              0.854
+            ]
+          },
+          {
+            "label": "AI Scientist 评审器",
+            "values": [
+              0.772
+            ]
+          },
+          {
+            "label": "Idea Novelty Checker",
+            "values": [
+              0.642
+            ]
+          }
+        ],
+        "caption": "数据来自 Ai2 博客，Human+Generated 设置"
+      }
+    }
+  ],
+  "experiments": [
+    "2026-10-31-tool-call-scope-check"
+  ]
+}
