@@ -1,0 +1,11 @@
+{
+  "id": "2026-10-31-tool-call-scope-check",
+  "title": "玩具复现：只看请求就能拦下的越界工具调用",
+  "goal": "用纯 Python 复现 safeagents 第一阶段的两条规则（未声明的工具、对话中没出现过的主机），在手写的模拟会话上看它们能拦下哪些越界调用、会不会误拦正常调用，以及哪类越界操作必须靠后续阶段。",
+  "related_item": "2026-10-31-hf-safeagents",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "未声明工具和向陌生主机发数据的调用被拦截，用户或工具结果里给出的地址放行；读取 /proc/1/environ 这类不含主机的越界操作在第一阶段拦不住",
+  "tags": ["agent", "safety", "coding"]
+}
