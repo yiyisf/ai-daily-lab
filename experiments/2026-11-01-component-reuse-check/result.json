@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-01-component-reuse-check",
+  "ran_at": "2026-10-31T22:09:12+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "--- 日期选择：手写日历 + 新装依赖  -> FLAG\n    R2: 新组件 CustomDatePicker 与已有 DatePicker 重名\n    R1: 原生 <input>，组件库已有 Input\n    R1: 原生 <button>，组件库已有 Button\n    R3: 新依赖 react-datepicker 与已有 DatePicker 重叠\n--- 日期选择：复用已有 Input  -> OK\n--- 提交按钮：另写一个 MyButton  -> FLAG\n    R2: 新组件 MyButton 与已有 Button 重名\n    R1: 原生 <button>，组件库已有 Button\n--- 确认弹窗：用原生 dialog 自己写  -> FLAG\n    R1: 原生 <dialog>，组件库已有 Modal\n--- 筛选表单：复用 Select 与 Button，带隐藏字段  -> OK\n--- 下拉框：原生 select + 新装下拉库  -> FLAG\n    R2: 新组件 CitySelect 与已有 Select 重名\n    R1: 原生 <select>，组件库已有 Select\n    R3: 新依赖 react-select 与已有 Select 重叠\n--- 备注输入：复用 Textarea  -> OK\n--- 工具函数：与组件无关  -> OK\n\n[PASS] 应拦的 4 条改动全部被至少一条规则拦下\n[PASS] 复用组件库的改动没有被误拦\n[PASS] type=hidden 的原生 input 按例外放行\n[PASS] 新装的日期库被 R3 识别为与 DatePicker 重叠\n[PASS] MyButton 被 R2 识别为与 Button 重名\nMETRIC: 检出率 = 100.0 %\nMETRIC: 误报率 = 0.0 %\nMETRIC: R1 命中次数 = 5 次\nMETRIC: R2 命中次数 = 3 次\nMETRIC: R3 命中次数 = 2 次\nRESULT: 三条确定性规则在 8 条模拟改动上拦下全部 4 条绕开组件库的写法，无误报；规则只认名字和标签，换个写法就可能漏\n",
+  "stderr": ""
+}
