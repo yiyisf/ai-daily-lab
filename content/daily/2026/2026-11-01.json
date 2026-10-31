@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-01",
+  "generated_at": "2026-11-01T06:03:57+08:00",
+  "editor_note": "今天最该关注的是安全：Wiz 把十月九家 AI 开发平台的入侵串起来看，被盗的模型密钥几天内就被大规模转卖滥用。和团队问题最贴近的是两个扩展：ponytail 让编码 Agent 先找现成组件再动手，阿里开源的 Open Code Review 可以把规范写成审查规则，配套实验演示了用确定性规则拦下绕开组件库的改动。开源模型方面，Clover-35B-A3B 预览版激活参数仅 3B，INT4 可在 16GB 显卡上跑。OpenAI 的 Agent 监控文章无法打开，未收录。共 15 条。",
+  "tldr": [
+    {
+      "text": "Wiz：十月至少 9 家 AI 开发平台被攻破，一把泄露密钥 30 小时内被调用约 80 万次",
+      "item_id": "2026-11-01-wiz-black-october"
+    },
+    {
+      "text": "ponytail 技能让 Agent 先复用已有组件：日期选择器从手写 335 行变成 10 行",
+      "item_id": "2026-11-01-ponytail-skill"
+    },
+    {
+      "text": "Clover-35B-A3B 开源：激活 3B、128K 上下文，INT4 可在 16GB 显卡运行",
+      "item_id": "2026-11-01-clover-35b-a3b"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-01-ponytail-skill",
+      "reason": "针对 AI 不复用组件库的问题，用一份规则文件让 Agent 先找现成实现",
+      "steps": [
+        "不能装插件的 Agent：把仓库里的 AGENTS.md 复制进项目",
+        "让 Agent 做一个小的前端需求，看它是否先复用已有组件",
+        "在支持技能的 Agent 里运行 `/ponytail-review` 审查这次改动"
+      ]
+    },
+    {
+      "item_id": "2026-11-01-open-code-review",
+      "reason": "接上自部署模型做代码审查，把组件库和编码规范写成可定制的审查规则",
+      "steps": [
+        "运行 `npm install -g @alibaba-group/open-code-review`",
+        "运行 `ocr config provider` 添加自定义提供方，再用 `ocr config model` 选模型",
+        "在项目目录运行 `ocr review` 审查当前改动"
+      ]
+    },
+    {
+      "item_id": "2026-11-01-opencode-2-2-5",
+      "reason": "上下文小的自部署模型更容易爆窗口，按比例留压缩缓冲一份配置适配所有模型",
+      "steps": [
+        "升级到 OpenCode v2.2.5",
+        "在 opencode.json 中设置 `\"compaction\": { \"buffer\": \"20%\" }`",
+        "分别用上下文窗口不同的模型跑长会话，观察压缩触发时机"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-11-01-wiz-black-october",
+      "category": "news",
+      "title": "Wiz 汇总十月九家 AI 开发平台被攻破，被盗密钥遭大规模滥用",
+      "summary": "Wiz 10 月 30 日把本月多起事件串起来看：至少 9 家 AI 开发平台披露了安全事件，包括 Fireworks AI、Railway、Warp、OpenCode 和 Northflank，公开报告显示攻击者专门搜刮平台上存储的环境变量，尤其是能调用 AI 服务的密钥。Wiz 跟踪了两把泄露的企业密钥：一把在约 30 小时内被调用约 80 万次 Bedrock，另一把在约 13 小时内被调用约 170 万次、成功超过 100 万次，Wiz 估计两例按标价合计可能超过 10 万美元。",
+      "key_points": [
+        "各家自述的入口包括凭据访问、构建基础设施提权、第三方依赖和遗留系统，Wiz 注明这些尚未确认",
+        "供应商凭据被访问后 30 分钟内，一个住宅 IP 就用 InvokeModel 调用扫过多家组织的密钥，随后用代理池探测各家模型、用脚本枚举配额",
+        "允许 global.* 跨区域配置的那把密钥只有约 6% 的调用被限流；只允许 us.* 的那把，大部分超额调用被地区配额挡住",
+        "Wiz 发现相关 IP 关联到收 USDT、打折转售前沿模型的网站，但没有把它们与九起入侵直接挂钩"
+      ],
+      "why_it_matters": "在 CI、PaaS 或 Agent 平台的环境变量里放了云端模型密钥的团队，值得检查密钥能调用的模型和区域是否收得够窄、用量突增有没有告警；自部署推理服务的访问令牌也是同一类目标。",
+      "sources": [
+        {
+          "title": "Black October for AI developer platforms",
+          "url": "https://www.wiz.io/blog/black-october-for-ai-developer-platforms",
+          "kind": "primary",
+          "publisher": "Wiz",
+          "published_at": "2026-10-30"
+        }
+      ],
+      "tags": [
+        "safety",
+        "infra"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "steps",
+        "title": "密钥从泄露到被大规模滥用，中间只隔几天",
+        "steps": [
+          {
+            "label": "凭据外泄",
+            "sub": "平台上存储的 AI 密钥被取走"
+          },
+          {
+            "label": "验证",
+            "sub": "用 InvokeModel 调用确认密钥可用"
+          },
+          {
+            "label": "探测",
+            "sub": "代理池试各家模型，脚本枚举配额"
+          },
+          {
+            "label": "滥用",
+            "sub": "短时间内大量调用高价模型"
+          }
+        ],
+        "caption": "结构来自 Wiz 对两例企业密钥的追踪"
+      }
+    },
+    {
+      "id": "2026-11-01-chatgpt-shared-link-flaw",
+      "category": "news",
+      "title": "Parameter 披露 ChatGPT 共享链接漏洞链：打开链接就能读私密对话",
+      "summary": "安全公司 Parameter 10 月 28 日公开了一条已修复的 ChatGPT 漏洞链：共享对话里的交互式图表会加载数学库 MathLive，它接收跨窗口消息时不检查来源，攻击者借此注入 HTML、生成一个没有 sandbox 的 iframe，再利用 CSP 白名单里 YouTube 端点的 JSONP 反射执行脚本。脚本以 chatgpt.com 身份运行，能列出受害者最近的对话、读取从未分享过的私密对话并外传。OpenAI 将其定为最高的 P1 级，10 月 26 日修复，支付 5,000 美元赏金。",
+      "key_points": [
+        "受害者只需打开一个看起来正常的共享链接，其中一个版本约 4.5 秒后自动触发",
+        "处理 postMessage 时要同时校验 origin 和来源窗口，不要通过跨窗口配置传递原始 HTML",
+        "动态创建的 iframe 只要可能受不可信内容影响，就应保留 sandbox",
+        "CSP 只是纵深防御：白名单域名上任何会回显输入的端点都可能被用来执行脚本"
+      ],
+      "why_it_matters": "团队自建的 AI 对话页、Artifact 预览或嵌入模型生成 HTML 的页面，只要用了第三方组件和 iframe，这几条教训都直接适用，可以对照自查。",
+      "sources": [
+        {
+          "title": "We found a gap at OpenAI",
+          "url": "https://www.parameter.ai/labs/we-found-a-gap-at-openai",
+          "kind": "primary",
+          "publisher": "Parameter",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "A Shared ChatGPT Link Could Run Code in Your Logged-In Session",
+          "url": "https://thehackernews.com/2026/10/a-shared-chatgpt-link-could-run.html",
+          "kind": "secondary",
+          "publisher": "The Hacker News",
+          "published_at": "2026-10-31"
+        }
+      ],
+      "tags": [
+        "safety",
+        "devtools"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-01-gpt-rosalind-6",
+      "category": "news",
+      "title": "OpenAI 发布生命科学专用模型 GPT-Rosalind-6，仅向审核用户开放",
+      "summary": "OpenAI 10 月 30 日发布 GPT-Rosalind-6，与 GPT-6 Astra 使用同一套权重，但对生物学两用问题的拒答更少，仍拒绝武器化相关请求。它只通过可信访问计划提供，申请者要接受用例、治理和安全措施审核，企业须限制授权用户并让合格人员复核输出后才能用于实验或决策。官方自报 MedChemBench v7 从上一代的 28.9% 升到 49.6%，LifeSciBench Gold 从 44.0% 升到 61.3%。",
+      "key_points": [
+        "系统卡把它在生物与化学方面评为 High（低于 Critical），网络安全方面评为 Critical",
+        "为此采用更保守的网络安全拒答边界，并沿用 GPT-6 Astra 的实时网络攻击拦截",
+        "部分对齐测试结果不一：受警告后仍绕过限制的比例为 21.7%，高于 GPT-6 Astra 的 18.9%"
+      ],
+      "why_it_matters": "闭源且需要审核准入，团队用不上；可以留意的是「同一权重、按领域放宽拒答、配合准入与人工复核」这种发布方式。",
+      "sources": [
+        {
+          "title": "GPT-Rosalind-6 System Card",
+          "url": "https://deploymentsafety.openai.com/gpt-rosalind-6",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-10-30"
+        }
+      ],
+      "tags": [
+        "llm",
+        "safety"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-01-kimi-k2-api-retire",
+      "category": "news",
+      "title": "Moonshot 停止向新用户开放 Kimi K2 系列 API，年底前全部下线",
+      "summary": "Moonshot 开放平台的模型文档显示，从 10 月 31 日起新注册用户不能再使用 K2 系列模型，已有用户暂不受影响，K2 系列计划在 2026 年 12 月底前全部下线。涉及 kimi-k2-0905-preview、kimi-k2-turbo-preview、kimi-k2-thinking 等型号，官方推荐迁移到 kimi-k3.1-pro，并提供迁移指南。",
+      "key_points": [
+        "当前在列的模型中，kimi-k3.1-pro 和 kimi-k3 为 1M 上下文，kimi-k2.7-code 与 kimi-k2.6 为 256k",
+        "同一页面另有一处写 kimi-k2 系列已于 5 月 25 日停止，两处说法不一致，以平台通知为准"
+      ],
+      "why_it_matters": "下线的是官方 API，已经下载的 K2 开放权重不受影响；如果有工具链或评测脚本直接调用 Moonshot API 上的 K2 型号名，需要在年底前改掉。",
+      "sources": [
+        {
+          "title": "Kimi 开放平台：模型列表",
+          "url": "https://platform.kimi.ai/docs/models",
+          "kind": "primary",
+          "publisher": "Moonshot AI"
+        }
+      ],
+      "tags": [
+        "llm",
+        "open-weights"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-01-clover-35b-a3b",
+      "category": "opensource",
+      "title": "DiffuSpace 开源扩散语言模型 Clover-35B-A3B 预览版",
+      "summary": "DiffuSpace 10 月 30 日以 Apache 2.0 许可开源 Clover-35B-A3B-Preview：一个总参数 35B、激活 3B 的 MoE 扩散语言模型，为块扩散重新设计了 Gated DeltaNet，支持思考模式，上下文 128K。官方自报 SWE-bench Verified 73.6、Terminal-Bench 2.1 51.7、GPQA Diamond 83.8，INT4 量化版能在 16GB 显存的 RTX 5070 Ti 上运行，MATH-500 上为 101.8 tokens/s。",
+      "key_points": [
+        "推理支持 SGLang（官方推荐）和 llama.cpp，模型卡还给出 vLLM 与 Docker Model Runner 用法，并列出 16 个量化版本",
+        "BF16 权重约 69 GB；模型只处理文本，长生成偶尔会重复",
+        "模型卡保留了上游 Qwen3.6 的许可与版权声明",
+        "官方称单张 H200 上 Agent 任务为 515 tokens/s，均为自报数据"
+      ],
+      "why_it_matters": "激活参数只有 3B、INT4 可放进 16GB 显卡、Apache 2.0、128K 上下文，对自部署团队门槛很低；但它是预览版，扩散模型的推理栈也不如自回归模型成熟，建议先在非关键任务上试。",
+      "sources": [
+        {
+          "title": "Clover-35B-A3B-Preview: A New Way for Intelligence",
+          "url": "https://huggingface.co/blog/Diffuspace/clover-35b-a3b-preview",
+          "kind": "primary",
+          "publisher": "DiffuSpace",
+          "published_at": "2026-10-30"
+        },
+        {
+          "title": "Diffuspace/Clover-35B-A3B-Preview",
+          "url": "https://huggingface.co/Diffuspace/Clover-35B-A3B-Preview",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "llm",
+        "inference"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://huggingface.co/Diffuspace/Clover-35B-A3B-Preview",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "2026-11-01-opencode-2-2-5",
+      "category": "opensource",
+      "title": "OpenCode 2.2.1–2.2.5：压缩缓冲可按上下文百分比设置，新增 /goal",
+      "summary": "开源编码 Agent OpenCode 在 10 月 29 日到 30 日连发 5 个版本。2.2.5 允许把压缩缓冲写成模型上下文窗口的百分比（如 \"20%\"），一份配置就能同时适配小窗口和大窗口的模型；2.2.1 新增 /goal，会话会一直推进到审查者确认目标完成；定时任务可选开启并在 opencode serve 下运行。",
+      "key_points": [
+        "2.2.3 的破坏性变更：托管策略里 integration.use 不再管 MCP、技能和插件，改由新的 mcp.use、skill.use、plugin.use 控制",
+        "修复 stdio 消息超过 10 MiB 时 MCP 服务被断开的问题，LiteLLM 报上下文超限时改为触发压缩而不是中断会话",
+        "edit 找不到 oldString 时，报错会给出文件里最接近的几行",
+        "2.2.3 起可通过内置的 Claude Agent 提供方使用 Claude Code 的登录和模型"
+      ],
+      "why_it_matters": "团队的自部署模型上下文窗口各不相同，按百分比留压缩缓冲比写死 token 数更省心；用 LiteLLM 做网关的环境也能少遇到会话被上下文超限打断。",
+      "sources": [
+        {
+          "title": "OpenCode v2.2.5 release notes",
+          "url": "https://github.com/anomalyco/opencode/releases/tag/v2.2.5",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-30"
+        },
+        {
+          "title": "OpenCode v2.2.3 release notes",
+          "url": "https://github.com/anomalyco/opencode/releases/tag/v2.2.3",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-30"
+        },
+        {
+          "title": "OpenCode v2.2.1 release notes",
+          "url": "https://github.com/anomalyco/opencode/releases/tag/v2.2.1",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": [
+        "coding",
+        "agent",
+        "context-engineering"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "follow_up_of": "2026-10-27-opencode-2-2",
+      "repo": {
+        "url": "https://github.com/anomalyco/opencode"
+      }
+    },
+    {
+      "id": "2026-11-01-mcp-skills-extension-beta",
+      "category": "tools",
+      "title": "MCP 扩展有了成熟度分级，Skills 扩展定为 Beta",
+      "summary": "MCP 的 SEP-3392「扩展生命周期」已定稿，给所有扩展分为 Experimental、Beta、Stable 和并入核心四个阶段，阶段由规范所在目录体现，每个阶段允许的改动和审批人不同。按其过渡表，Skills、Tasks 和 Server Cards 扩展定为 Beta，Apps 和 Auth 定为 Stable；10 月 29 日 Skills 规范已移到 specification/beta/。",
+      "key_points": [
+        "Skills 扩展的标识 io.modelcontextprotocol/skills 和 skill:// 资源方式不变，现有实现照常可用",
+        "Beta 阶段鼓励真实使用，破坏性变更应少且须记录在变更日志里；进入 Stable 需要两个能互通的独立实现和一致性测试",
+        "Skills 扩展让 MCP 服务端随工具一起发布 SKILL.md 技能包，客户端用 skills/list、skills/get 获取，并用 SHA-256 摘要校验内容",
+        "Skills 最终是成为 Stable 扩展还是并入核心协议，目前尚未确定"
+      ],
+      "why_it_matters": "想把团队内部规范做成技能、通过 MCP 统一下发的，可以开始按 Beta 规范试点；但仍可能有破坏性变更，生产使用要盯住它的变更日志。",
+      "sources": [
+        {
+          "title": "SEP-3392: Extension Lifecycle",
+          "url": "https://modelcontextprotocol.io/seps/3392-extension-lifecycle",
+          "kind": "primary",
+          "publisher": "Model Context Protocol"
+        },
+        {
+          "title": "Move the Skills specification to specification/beta/ (SEP-3392)",
+          "url": "https://github.com/modelcontextprotocol/ext-skills/pull/161",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-29"
+        },
+        {
+          "title": "MCP Skills Extension",
+          "url": "https://skills.extensions.modelcontextprotocol.io/",
+          "kind": "primary",
+          "publisher": "Model Context Protocol"
+        },
+        {
+          "title": "Skills Over MCP Is Now Officially Beta",
+          "url": "https://apievangelist.com/2026/10/29/skills-over-mcp-is-now-officially-beta/",
+          "kind": "secondary",
+          "publisher": "API Evangelist",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": [
+        "mcp",
+        "agent-skills"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-01-claude-code-2-1-316",
+      "category": "tools",
+      "title": "Claude Code 2.1.314–2.1.316：可禁止写出工作目录，子 Agent 推理强度可单设",
+      "summary": "Claude Code 10 月 30 日和 31 日发布 2.1.314 与 2.1.316。新设置 permissions.blockWritesOutsideWorkingDirectories 让 Write、Edit 等工具在任何权限模式下都拒绝写工作目录之外的路径；新环境变量 CLAUDE_CODE_SUBAGENT_EFFORT 可单独设定子 Agent 的推理强度，不再继承主会话。Opus 4.8 的快速模式自 10 月 30 日起弃用，11 月 30 日移除。",
+      "key_points": [
+        "修复经 LLM 网关时 claude-opus-4.8 这类带点号的模型名被误认成旧模型、上下文窗口和输出上限都用错的问题",
+        "网关拒绝某个 beta 请求头时，会去掉该请求头重发，而不是直接失败",
+        "PreCompact 钩子的输出现在每个截断到 10,000 字符，避免压缩失败或反复执行"
+      ],
+      "why_it_matters": "团队主要用开源命令行 Agent，Claude Code 本身未必在用；「限制写出工作目录」「子 Agent 单独设推理强度」这两项值得在自己的 Agent 配置里找对应做法。",
+      "sources": [
+        {
+          "title": "Claude Code CHANGELOG",
+          "url": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        },
+        {
+          "title": "Claude Code v2.1.316",
+          "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.316",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-31"
+        }
+      ],
+      "tags": [
+        "coding",
+        "devtools",
+        "agent"
+      ],
+      "importance": 2,
+      "actionability": "watch",
+      "follow_up_of": "2026-10-28-claude-code-2-1-312"
+    },
+    {
+      "id": "2026-11-01-ponytail-skill",
+      "category": "kits",
+      "title": "ponytail：让编码 Agent 先找现成组件再动手的技能",
+      "summary": "ponytail 是一个快速增长的编码 Agent 技能，核心是一份 SKILL.md：写代码前按顺序问「需不需要存在、代码库里有没有、标准库或平台能不能做、已装依赖有没有」，都不行才写最少的代码，但校验、错误处理、安全和无障碍不许省。README 的例子是加日期选择器：不装技能时 Agent 手写日历共 335 行，装上后复用仓库已有的 Input 组件，只写 10 行。10 月 29 日发布的 5.3.3 主要修复 Claude Code 里的状态栏显示问题。",
+      "key_points": [
+        "作者自测：同一 Agent 在 39 个任务上各跑 5 次，代码量少 53%，有风险逻辑附带测试的比例为 98%（不装为 68%）；测试用的是 Opus 5.5，换开源模型效果需自行验证",
+        "/ponytail-review 会读改动牵涉到的代码而不只是 diff，每条问题写清现象、后果和修法",
+        "作者提醒只从 DietrichGebert/ponytail 或 npm 的 @dietrichgebert/ponytail 安装，它从不附带 .exe 或 .dll"
+      ],
+      "why_it_matters": "直接对应「AI 不复用已有组件、自己另写一套」的问题；不能装插件的 Agent 也能把精简版 AGENTS.md 放进项目当规则文件用，与模型无关。",
+      "sources": [
+        {
+          "title": "DietrichGebert/ponytail README",
+          "url": "https://github.com/DietrichGebert/ponytail",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "ponytail v5.3.3",
+          "url": "https://github.com/DietrichGebert/ponytail/releases/tag/v5.3.3",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-01-component-reuse-check",
+      "kit": {
+        "kind": "skill",
+        "name": "ponytail",
+        "version": "5.3.3",
+        "repo": "https://github.com/DietrichGebert/ponytail",
+        "license": "MIT",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "OpenCode",
+          "Gemini",
+          "Cursor",
+          "Copilot"
+        ],
+        "capabilities": [
+          "写代码前按「是否需要→代码库已有→标准库→平台原生→已装依赖」的顺序找现成方案",
+          "带分支、循环、解析、金额或安全的逻辑会留一个小测试，回复末尾说明跳过了什么、有什么风险",
+          "/ponytail-review 审查当前改动，/ponytail-audit 对整个仓库排出优先修复项",
+          "/ponytail-debt 把 shortcut: 注释收集成待还清单"
+        ],
+        "highlights": [
+          "整个技能就是一份提示词，另有给规则文件型 Agent 用的精简版 AGENTS.md",
+          "明确写出「对方案偷懒，对阅读不偷懒」：先读牵涉的代码再选方案",
+          "安全、校验和无障碍被列为不可省略项，避免为了少写代码而削掉必要逻辑"
+        ],
+        "install": "Claude Code：/plugin marketplace add DietrichGebert/ponytail，然后 /plugin install ponytail@ponytail；Codex：codex plugin marketplace add DietrichGebert/ponytail，codex plugin add ponytail@ponytail；其他 Agent：把 AGENTS.md 复制进项目",
+        "changes": [
+          "Team、Enterprise 和受管机器上首个提示不再出现警告，状态栏恢复显示模型和会话名",
+          "大仓库下 git ls-files 缓冲加大，代码库地图不再丢文件",
+          "Windows 上钩子超时放宽到 15 秒，避免 node 启动慢时丢输出"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-01-open-code-review",
+      "category": "kits",
+      "title": "阿里开源 Open Code Review：规则引擎加 Agent 的代码审查 CLI",
+      "summary": "Open Code Review 原是阿里内部的 AI 代码审查助手，开源后以 ocr 命令行提供，读取 Git diff，由带工具的 Agent 审查改动并给出行级评论，也能用 ocr scan 审查整个目录。它把「审哪些文件、怎么分组、套用哪些规则」交给确定性逻辑，只把动态判断和查上下文交给模型。最新的 v1.13.3 于 10 月 22 日发布。",
+      "key_points": [
+        "官方用 50 个开源仓库、200 个真实 PR、10 种语言、1,505 个人工标注问题构建了评测集 AACR-Bench",
+        "官方称同一模型下比通用 Agent 的精确率和 F1 更高、token 只用约 1/9，但召回率更低，是有意取舍",
+        "审查规则可按路径定制；委派模式下由你的编码 Agent 用自己的模型审查，不需要单独配置模型",
+        "可接入 GitHub Actions、GitLab CI 和 Gerrit"
+      ],
+      "why_it_matters": "可以配置自定义模型提供方，适合接团队自部署的模型；把组件库和编码规范写成审查规则，是在提示词之外再加一道检查 AI 代码是否守规范的关卡。",
+      "sources": [
+        {
+          "title": "alibaba/open-code-review README",
+          "url": "https://github.com/alibaba/open-code-review",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Open Code Review v1.13.3",
+          "url": "https://github.com/alibaba/open-code-review/releases/tag/v1.13.3",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-22"
+        }
+      ],
+      "tags": [
+        "coding",
+        "agent-skills",
+        "devtools"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "other",
+        "name": "Open Code Review",
+        "version": "1.13.3",
+        "repo": "https://github.com/alibaba/open-code-review",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "Cursor",
+          "Kimi Code",
+          "OpenCode"
+        ],
+        "capabilities": [
+          "审查工作区改动、分支区间或单个提交，输出行级评论，可导出 JSON",
+          "ocr scan 对整个仓库或指定目录做全文件审查",
+          "按文件特征匹配审查规则，支持按路径定制",
+          "以插件或技能形式接入多种编码 Agent，也可作为 MCP 服务扩展"
+        ],
+        "highlights": [
+          "文件选择、相关文件分组和规则匹配由确定性逻辑完成，大改动也不会漏审文件",
+          "每组文件交给独立上下文的子 Agent 审查，可并发",
+          "独立的定位与反思模块减少评论行号漂移"
+        ],
+        "install": "npm install -g @alibaba-group/open-code-review"
+      }
+    },
+    {
+      "id": "2026-11-01-benchmarkers-dilemma",
+      "category": "ideas",
+      "title": "Artificial Analysis 指数改用私有评测，Nathan Lambert 谈榜单困境",
+      "summary": "Nathan Lambert 10 月 28 日撰文讨论 Artificial Analysis 智能指数 v5：新版分为知识工作、编程、科学和通用四类，各占 25%，并改用题目和环境都不公开的私有评测。在新榜单上，有 8 个闭源模型超过最好的开放权重模型 Kimi K3.1 Pro。文章没有给出结论式的答案，而是摆出了几方面的取舍。",
+      "key_points": [
+        "支持私有评测：能防止针对公开题刷分，Lambert 认为方向上站得住",
+        "反对私有评测：失去社区找出题目缺陷的机会，只能完全信任出题方",
+        "开源差距：Lambert 认为新榜单夸大了差距，但旧榜单也高估了开源模型，开源模型的价值更多在便宜推理和私有定制",
+        "各方处境不同：OpenAI、Anthropic 已不太在意公开指数，小实验室却要靠它建立可信度，他希望出现更多偏向不同的榜单"
+      ],
+      "why_it_matters": "团队选开源模型时常看综合榜单；这篇提醒综合分背后的权重和题目选择会左右排名，选型最好再用自己的任务做一轮小评测。",
+      "sources": [
+        {
+          "title": "Artificial Analysis v5 and the benchmarker's dilemma",
+          "url": "https://www.interconnects.ai/p/artificial-analysis-v5-and-the-benchmarkers",
+          "kind": "primary",
+          "publisher": "Interconnects",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "open-weights"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-01-vllm-cpu-decision-model",
+      "category": "practices",
+      "title": "League 在 CPU 上用 vLLM 跑决策模型，单请求延迟降约 19%",
+      "summary": "League 10 月 29 日在 Hugging Face 发文，介绍把 DiffusionGemma 26B-A4B 作为低延迟决策模型放到纯 CPU 机器上、用 vLLM 服务的优化。原来一次结构化判断要两步引擎调用，他们把提示词和答案模板合并成一次前向计算，在 24 核 C4 实例上单并发中位延迟从约 660 毫秒降到约 540 毫秒，p95 从 1059 毫秒降到 813 毫秒；常驻一台 C4 每月约 996 美元，约为 A100 的五分之一。",
+      "key_points": [
+        "优化以可选参数 single_pass_reads 提交给 vLLM（PR 仍在评审），默认关闭且只在 CPU 后端可用；另外三个 CPU 修复已合入",
+        "并发 2 到 20 时吞吐提升 5.5% 到 15%，并发越高收益越小；作者认为持续高负载下 GPU 仍更合适",
+        "打开优化后，231 道题里 C4 有 2 道、C3 有 4 道判断结果变了，准确率变化不显著；作者提醒「更快更便宜」不等于结果完全一致"
+      ],
+      "why_it_matters": "对「是否需要追问」「改动是否符合规范」这类二选一判断，用 CPU 上的小决策模型代替调用大模型是一条省成本的路；文中的对照实验设计（复跑基线、统计判断是否改变）也值得照搬。",
+      "sources": [
+        {
+          "title": "A Low-Cost Decision Model on CPU: Optimizing DiffusionGemma with vLLM - Part I",
+          "url": "https://huggingface.co/blog/LeagueLabs/optimizing-diffgemma-decision-model-vllm-cpu-i",
+          "kind": "primary",
+          "publisher": "League / Hugging Face",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": [
+        "inference",
+        "infra"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "单请求合并为一次前向后，C4 上延迟明显下降",
+        "series": [
+          "优化前",
+          "优化后"
+        ],
+        "rows": [
+          {
+            "label": "中位延迟",
+            "values": [
+              660,
+              540
+            ]
+          },
+          {
+            "label": "p95 延迟",
+            "values": [
+              1059,
+              813
+            ]
+          }
+        ],
+        "unit": "毫秒",
+        "caption": "数据来自 League 博客，24 核 C4 实例、单并发"
+      }
+    },
+    {
+      "id": "2026-11-01-skill-checklist-decompose",
+      "category": "skills",
+      "title": "一份需求里有好几件事时，先让 AI 拆成编号清单，做完逐条对账",
+      "summary": "OpenAI 的提示工程指南在讲 Agent 任务时建议：把请求拆成若干子项，逐项确认完成，不要只做完一部分就停；动手调用工具前先按步骤做计划，并用待办清单跟踪进度。这条原则不写代码也用得上：交给 AI 的需求只要包含多处改动，就先要一份编号清单，最后按清单逐条报告。",
+      "key_points": [
+        "AI 常见的失败不是做错，而是只做了一部分就宣布完成",
+        "编号清单同时是计划、进度表和验收单，人看清单比看整段输出快得多",
+        "清单先给人确认，能在动手前发现 AI 对需求的理解偏差"
+      ],
+      "why_it_matters": "产品、测试、开发都会把一整份需求丢给 AI；先拆清单再执行，既能减少漏改，也让产出变短、好检查，正对「AI 产出太长没人看完」的问题。",
+      "sources": [
+        {
+          "title": "Prompt engineering",
+          "url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
+          "kind": "primary",
+          "publisher": "OpenAI"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "decompose",
+        "scenario": "产品经理把一份包含多处改动的需求交给编码 Agent 实现",
+        "bad": "按附件里的需求把订单详情页改一下，改完告诉我。",
+        "good": "附件是 [订单详情页] 的需求。请先不要改代码：\n1. 把需求拆成编号清单，每条一句话，写清改哪里、改成什么；\n2. 需求里没说清的地方单独列出，最多 3 个问题；\n3. 等我确认清单后再动手，一次做一条；\n4. 全部做完后按清单逐条回复「已完成 / 未完成 + 原因」，不需要复述代码。",
+        "why": [
+          "先出清单再动手，理解偏差在改代码前就能发现",
+          "把疑问限制在 3 个以内，避免 AI 问得太多没人回",
+          "逐条对账让「只做了一半」无处藏身",
+          "要求按清单简短回复，产出长度可控，几十秒就能看完"
+        ],
+        "practice": "找一个你最近交给 AI 的多点需求，让它先输出编号清单，看看清单里有没有你没想到或它理解错的条目。"
+      }
+    },
+    {
+      "id": "2026-11-01-automated-em-search",
+      "category": "research",
+      "title": "Anthropic：自动红队找到能骗过数据审核、又能教坏模型的微调数据",
+      "summary": "Anthropic 对齐团队让 Claude 红队 Agent 编写最多 5,000 条的微调数据集，要求既能通过训练数据审核器（被标记超过 10% 或超过 100 行即拒收），又要让一个小 Claude 模型在 6 项不对齐评测上尽可能变差。每一轮搜索最终都找到了这样的数据集，成功的数据大多把不对齐行为包在角色扮演或创意写作里，审核器把它们当作无害内容。训练出的不良行为还会扩散到模型自身的助手人格和数据里从未出现的行为上。",
+      "key_points": [
+        "直白的不对齐数据会被审核器拦下，伪装成故事的才能通过",
+        "结果在 Claude Opus 4.8 早期检查点和 Qwen 3.6 27B 上部分复现",
+        "作者强调这不说明已部署的 Claude 会这样做：模型是被故意训坏的，实验设置也偏向红队",
+        "下一步建议包括把攻击数据混进大语料里检验、要求数据同时提升有用能力，使攻击更像正常训练"
+      ],
+      "why_it_matters": "用自有或采购数据微调开源模型的团队要注意：只按表面内容审核训练数据并不够，微调后最好再跑一轮行为评测。",
+      "sources": [
+        {
+          "title": "Automated search for subtle emergent misalignment",
+          "url": "https://alignment.anthropic.com/2026/automated-em-search/",
+          "kind": "primary",
+          "publisher": "Anthropic Alignment Science"
+        }
+      ],
+      "tags": [
+        "safety",
+        "fine-tuning",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-01-dayjob-tax",
+      "category": "research",
+      "title": "Surge 税务评测：前沿 Agent 完整交付专业税务工作的通过率约 10%",
+      "summary": "Surge AI 10 月 27 日发布 DAYJOB: Tax，用 50 个覆盖 8 个税务领域的工作环境、共 1,789 个文件，测试 Agent 能否从客户请求做到完整交付，并主动发现客户没提的问题。以满足 95% 评分项为通过线，Claude Sonnet 5.5 的 pass@1 为 10.8%，Claude Fable 5.1 为 9.6%，Claude Opus 5.5 为 9.2%。",
+      "key_points": [
+        "典型失败一：比较了两个成交日期，却没提醒客户某日期后会失去售房免税资格",
+        "典型失败二：在记录存疑的情况下，默认一对夫妻未婚并据此给建议，五次尝试都没去核实",
+        "作者结论：模型常能完成单个步骤，难在判断什么最重要并据此行动"
+      ],
+      "why_it_matters": "测的是闭源模型，但失败模式有普遍意义：Agent 容易带着未经核实的假设往下做；让 AI 处理需求或业务规则时，可以要求它先列出自己的假设再动手。",
+      "sources": [
+        {
+          "title": "DAYJOB: Tax",
+          "url": "https://surgehq.ai/blog/dayjob-tax",
+          "kind": "primary",
+          "publisher": "Surge AI",
+          "published_at": "2026-10-27"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "agent"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    }
+  ],
+  "experiments": [
+    "2026-11-01-component-reuse-check"
+  ]
+}

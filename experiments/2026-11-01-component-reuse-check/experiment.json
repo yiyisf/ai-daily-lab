@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-01-component-reuse-check",
+  "title": "玩具实验：用三条规则拦下绕开组件库的 AI 改动",
+  "goal": "借鉴 ponytail 技能「先查代码库里有没有」的思路，用不调用模型的确定性规则检查手写的模拟前端改动：原生标签已有封装、新组件与已有组件重名、新依赖与已有组件功能重叠，看能拦下哪些、会不会误拦正常复用。",
+  "related_item": "2026-11-01-ponytail-skill",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "4 条绕开组件库的改动全部被拦下，复用 Input、Select、Textarea 的改动和 type=hidden 的原生 input 不被误拦",
+  "tags": ["coding", "agent-skills", "workflow"]
+}
