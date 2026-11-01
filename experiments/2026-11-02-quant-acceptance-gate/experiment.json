@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-02-quant-acceptance-gate",
+  "title": "玩具实验：用两段式验收门筛出不能用的量化模型文件",
+  "goal": "按 quantcheck README 描述的筛查规则（15 题冒烟测试低于 9 题先标可疑，再与同一变体高精度版本的中位数比较），在手写的模拟分数上运行，看它与只用一条阈值相比能少多少误报，以及组基线不足时是否不下结论。",
+  "related_item": "2026-11-02-quantcheck-v3-4",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "两个模拟的失效文件被判为不能用，变弱但可用的低比特文件不被误判，小模型变体因组基线不足不下结论，rep6 能区分原地打转的输出",
+  "tags": ["inference", "evaluation", "open-weights"]
+}
