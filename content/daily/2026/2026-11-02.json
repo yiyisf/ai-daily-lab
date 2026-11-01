@@ -1,1 +1,586 @@
-PLACEHOLDER
+{
+  "schema_version": 1,
+  "date": "2026-11-02",
+  "generated_at": "2026-11-02T06:06:53+08:00",
+  "editor_note": "今天和自部署团队最相关的是两件事：quantcheck 实测发现 Ollama 官方库里有 7 个低比特代码模型基本不能用，配套实验演示了上线前的两段式验收；memdoor 用 5 个 Qwen3.8-27B 分工协作，在难题上追平了原论文实现。Nolan Lawson 的框架基准则发现 Agent 常常不用提供给它的 MCP 和技能。周末新闻偏少，本期共 12 条，工具栏目只收 1 条。",
+  "tldr": [
+    {
+      "text": "quantcheck 实测 327 个代码模型文件：Ollama 官方库 7 个低比特版本基本不能用",
+      "item_id": "2026-11-02-quantcheck-v3-4"
+    },
+    {
+      "text": "memdoor 用 5 个 Qwen3.8-27B 分工解题，10 道难题 5 轮平均解出 9.8 道",
+      "item_id": "2026-11-02-memdoor-team-solve"
+    },
+    {
+      "text": "Lawson 让 Agent 用 12 种框架写同一应用：Nuxt 的 MCP 一次都没被调用",
+      "item_id": "2026-11-02-ai-cost-js-frameworks"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-02-quantcheck-v3-4",
+      "reason": "上线低比特量化模型前花几分钟确认它真能写代码，避免把坏文件推给全组",
+      "steps": [
+        "克隆仓库后运行 `python3 -m venv .venv && .venv/bin/pip install evalplus==0.3.1`",
+        "用 `harness/audit.py --only <标签> --results-dir my-results` 跑 15 题冒烟测试",
+        "用 `rerun-2026-10/scripts/rescore_census.py` 打分，低于 9 题再与高精度版本比较"
+      ]
+    },
+    {
+      "item_id": "2026-11-02-impeccable-4-8",
+      "reason": "用不依赖模型的规则检查 AI 改的前端代码，并把项目视觉规范写成 DESIGN.md",
+      "steps": [
+        "在项目根目录运行 `npx impeccable install`，重启编码工具",
+        "在 Agent 里运行 `/impeccable document`，生成 DESIGN.md",
+        "运行 `npx impeccable detect src/` 扫描界面代码"
+      ]
+    },
+    {
+      "item_id": "2026-11-02-memdoor-team-solve",
+      "reason": "用自部署模型试多角色协作解题，看小模型靠编排能提升多少",
+      "steps": [
+        "运行 `curl -fsSL https://memdoor.ai/install.sh | bash`，再用 `memdoor connect local` 接本地模型",
+        "把 team-solve 复制到 `~/.memdoor/workflows/`，在样例目录运行 `memdoor workflow run team-solve --wait`",
+        "把 task.md 换成自己的题目，并配上 tests/N.in 和 tests/N.out"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-11-02-deepseek-superagent-prototype",
+      "category": "news",
+      "title": "DeepSeek 开源 Super-agent 原型：常驻群聊和 GitHub 主动接活",
+      "summary": "DeepSeek Harness 团队近日在官方公众号发文介绍「Super-agent」设计，并在 GitHub 以 MIT 许可证开源了原型 dsh-superagent。它面向单个 GitHub 仓库，监听 GitHub（可选飞书）消息，有权限的人提出需求时开一个工作项，在独立的会话和目录里完成，再回到原对话交付，例如提交 PR。README 明确说这是研究原型、不是正式产品，代码大量由编码 Agent 完成，使用前要自行审查。",
+      "key_points": [
+        "架构分两层：全局 Router 接收消息、分派任务并保留跨任务上下文，Worker 负责复现 issue、代码审查等具体工作，结果统一由 Router 回复",
+        "DeepSeek 内部模拟测试（约 300 条模拟消息、其中约 20 条真实需求、各跑 5 次）中，任务完成时间 p95 为 15.7 分钟，单会话方式为 29.5 分钟",
+        "代价是缓存读取 token 从 23.23M 增至 31.77M，约多 37%；测试用的是合成消息和模拟工具，没有直接衡量代码质量",
+        "团队列出的未解决问题包括长期记忆、持续外部输入带来的提示注入与凭据风险，以及多任务并行时人如何监督"
+      ],
+      "why_it_matters": "「只在被要求或团队规则允许时才行动、只在需要人时才说话」的设计原则，对想让 Agent 接 issue 又怕刷屏的团队有参考价值；原型绑定 DeepSeek Harness，接自部署模型需要自行评估。",
+      "sources": [
+        {
+          "title": "deepseek-ai/dsh-superagent-prototype README",
+          "url": "https://github.com/deepseek-ai/dsh-superagent-prototype",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "DeepSeek 发布 Super-agent 设计探索",
+          "url": "https://finance.biggo.com/news/ccf3ef75-c371-43e4-a87d-dfbcf203c450",
+          "kind": "secondary",
+          "publisher": "BigGo Finance",
+          "published_at": "2026-10-31"
+        }
+      ],
+      "tags": [
+        "agent",
+        "workflow",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "repo": {
+        "url": "https://github.com/deepseek-ai/dsh-superagent-prototype",
+        "license": "MIT"
+      }
+    },
+    {
+      "id": "2026-11-02-ai-training-robots-token",
+      "category": "news",
+      "title": "四家 AI 公司承诺遵守统一的 robots.txt 训练退出标记",
+      "summary": "Anthropic 标准负责人 Kevin Kelley 10 月 30 日向 IETF 提交个人草案，提出用 robots.txt 里的 __usage_ai-training 用户代理组表达「内容能否用于 AI 训练」。Google、OpenAI、Anthropic 和 Microsoft 表示会遵守：Anthropic 已开始支持，Microsoft 从 2027 年 2 月 1 日起，Google 在 2027 年初，OpenAI 称在未来几个月内。",
+      "key_points": [
+        "沿用 RFC 9309 的路径匹配和最长匹配规则，不新增指令；Disallow 表示反对用于训练，Allow 表示同意",
+        "User-Agent: * 的通配组不算训练偏好；该标记只表达用途偏好，本身不控制抓取，也不影响搜索收录",
+        "草案没有 IETF 正式地位，私下的授权协议可以覆盖这一偏好，也无法撤回已经发生的抓取"
+      ],
+      "why_it_matters": "对团队对外发布的文档站、博客来说，一条规则即可对多家厂商表达训练偏好，不必逐个写爬虫名；对日常研发影响不大，了解即可。",
+      "sources": [
+        {
+          "title": "Machine-Readable Training Preference Signal (draft-kelley-aipref-training-preference-signal-00)",
+          "url": "https://datatracker.ietf.org/doc/draft-kelley-aipref-training-preference-signal/",
+          "kind": "primary",
+          "publisher": "IETF Datatracker",
+          "published_at": "2026-10-30"
+        },
+        {
+          "title": "Google, OpenAI, Anthropic and Microsoft back a shared robots.txt signal for AI training",
+          "url": "https://www.engadget.com/2303225/google-openai-anthropic-ai-crawling-controls/",
+          "kind": "secondary",
+          "publisher": "Engadget",
+          "published_at": "2026-10-31"
+        }
+      ],
+      "tags": [
+        "policy"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-02-volta-llm-infostealer",
+      "category": "news",
+      "title": "Cisco Talos 披露窃密木马 VOLTA：用大模型给受害者资产估价排序",
+      "summary": "Cisco Talos 10 月 31 日分析了一款名为 VOLTA 的 Windows 窃密木马：它收集浏览器密码、Cookie、聊天和云服务会话、SSH 与云密钥等，再通过 OpenRouter 调用大模型，把收集到的信息整理成受害者画像并按变现价值给资产排序。Talos 认为，AI 在这里替代的是攻击者「分拣赃物」的分析工作，而不是加快窃取本身。",
+      "key_points": [
+        "默认模型是 anthropic/claude-opus-4.6，回复像拒绝时依次退到 moonshotai/kimi-k2 和 google/gemini-2.5-flash，温度设为 0.2",
+        "推理请求从受害者机器发出，流量走受害者自己的网络；没有 API 密钥时木马跳过这一步照常运行",
+        "防护建议包括限制哪些进程能以 --headless 启动 Chrome、把凭据放进硬件支持的存储、发现感染后吊销令牌并改密码"
+      ],
+      "why_it_matters": "提醒团队：开发机上的 SSH 密钥、云凭据和模型 API 密钥都是窃密目标；终端上出现异常的 OpenRouter 等推理 API 流量，也可以作为排查线索。",
+      "sources": [
+        {
+          "title": "Appraisal by AI: Model-driven victim prioritization in the VOLTA infostealer",
+          "url": "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/",
+          "kind": "primary",
+          "publisher": "Cisco Talos",
+          "published_at": "2026-10-31"
+        },
+        {
+          "title": "Malware uses LLMs to rank victims by how much they're worth",
+          "url": "https://news.ycombinator.com/item?id=50316531",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "safety"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-02-memdoor-team-solve",
+      "category": "opensource",
+      "title": "memdoor team-solve：5 个 Qwen3.8-27B 分工解题，复现 GVS5H 方法",
+      "summary": "开源编码 Agent memdoor（Apache-2.0）发布了 team-solve 工作流示例，用 8 个 YAML 文件、不写代码地复现 GVS5H 论文的多 Agent 解题法：规划、两个思路提案、求解、评审和修复各由一个全新上下文的 Agent 负责，彼此只通过磁盘上的文件交流，最后由跑样例测试的脚本判定成败。作者用 Qwen3.8-27B 在 LiveCodeBench Hard 前 10 题上各跑 5 轮，平均解出 9.8 题，论文作者的原始实现为 9.6 题，Fable 5 单次调用为 8.0 题。",
+      "key_points": [
+        "作者明确说 9.8 与 9.6 在噪声范围内，结论是「与原实现持平」，不是更强；题目来自 2025 年春季比赛，不能排除训练集污染",
+        "模型跑在 OpenRouter 上而非本地，50 次运行共花 35.79 美元，中位每次约 40 分钟、0.39 美元",
+        "唯一失分题是评审 Agent 编了一个错误的反例，团队把正确程序改错了；作者建议用小输入暴力解校验反例、并保留最后一个通过样例的版本",
+        "工作流步骤不指定模型，可以用 memdoor connect local 接 Ollama、llama.cpp、vLLM 等本地服务，Ollama 需要 32K 上下文"
+      ],
+      "why_it_matters": "说明中等规模的开源权重模型靠「多角色 + 文件交接 + 测试判定」的编排，能接近更强闭源模型单次调用的效果；代价是时间和 token 成倍增加，自部署 27B 模型的团队可以拿自己的题目试。",
+      "sources": [
+        {
+          "title": "memdoor/examples/workflows/team-solve README",
+          "url": "https://github.com/guregodevo/memdoor/blob/169cdd1efad98cec4aa624375a08c529dd12b8f1/examples/workflows/team-solve/README.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "team-solve NOTES.md",
+          "url": "https://github.com/guregodevo/memdoor/blob/169cdd1efad98cec4aa624375a08c529dd12b8f1/examples/workflows/team-solve/NOTES.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Memdoor: A team of 5 Qwen3.8-27B models beats Fable 5 on LiveCodeBench Hard",
+          "url": "https://news.ycombinator.com/item?id=50320995",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "agent",
+        "open-weights",
+        "coding",
+        "workflow"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/guregodevo/memdoor",
+        "license": "Apache-2.0",
+        "language": "Go"
+      },
+      "figure": {
+        "type": "steps",
+        "title": "每个角色都从全新上下文开始，只靠文件交接",
+        "steps": [
+          {
+            "label": "plan",
+            "sub": "读 task.md，写出计划和笔记"
+          },
+          {
+            "label": "ideate ×2",
+            "sub": "并行给出两种不同思路的方案"
+          },
+          {
+            "label": "solve",
+            "sub": "选定方案，写出 solution.py"
+          },
+          {
+            "label": "review",
+            "sub": "跑样例测试，评审给出修复指令并修改"
+          },
+          {
+            "label": "verify",
+            "sub": "再跑样例，失败则整个运行失败"
+          }
+        ],
+        "base": {
+          "label": "磁盘上的共享文件",
+          "sub": "plan.md、notes.md、solution.py 和测试输出"
+        },
+        "caption": "结构来自 memdoor team-solve README"
+      }
+    },
+    {
+      "id": "2026-11-02-quantcheck-v3-4",
+      "category": "tools",
+      "title": "quantcheck v3.4：上线量化模型前先跑 15 题冒烟测试",
+      "summary": "quantcheck 是论文《Broken on Arrival》的配套验收工具，作者实际运行了 327 个代码模型文件：Ollama 官方库中 8GB 以内的全部 305 个标签和 22 个 Hugging Face 热门社区文件，先跑 15 道 HumanEval+ 冒烟题，再与同一模型高精度版本的成绩比较。官方库里有 7 个标签（2.3%）基本不能用，其中 6 个一道题都做不对，全是参数不超过 4B 的模型的 q2_K 到 q3_K_L 低比特版本。10 月 28 日发布的 v3.4 修正了对两个社区文件的诊断。",
+      "key_points": [
+        "修订版论文撤回了「文件损坏」的说法：这几个文件是对原始权重未经校准的标准 llama.cpp 量化，加上 imatrix 校准后，Qwen q2_K 从 0 题提升到 106–113 题（共 164 题）",
+        "v3.4 发现 TheBloke 的两个 deepseek-coder-6.7B 文件失分是因为缺少聊天模板：不加模板只解出 16 和 18 题，加上正确模板后为 98 和 101 题",
+        "冒烟测试在一张 RTX 4090 上每个标签约 30 秒生成时间（不含下载和打分），作者主张模型仓库像包仓库一样设验收关卡",
+        "代码为 MIT 许可证，审计数据集为 CC BY 4.0"
+      ],
+      "why_it_matters": "自部署团队常直接 ollama pull 低比特量化版本省显存，这个工具和方法可以在上线前花几分钟确认文件真能用；聊天模板缺失这类问题在内网自制 GGUF 时同样会遇到。",
+      "sources": [
+        {
+          "title": "aditi-p31/quantcheck README",
+          "url": "https://github.com/aditi-p31/quantcheck",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Broken on Arrival (arXiv:2609.05881)",
+          "url": "https://arxiv.org/abs/2609.05881",
+          "kind": "primary",
+          "publisher": "arXiv"
+        }
+      ],
+      "tags": [
+        "inference",
+        "evaluation",
+        "open-weights"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-02-quant-acceptance-gate"
+    },
+    {
+      "id": "2026-11-02-impeccable-4-8",
+      "category": "kits",
+      "title": "Impeccable 4.8.0：给编码 Agent 的设计词汇和 62 条反「AI 味」规则",
+      "summary": "Impeccable 是 Paul Bakaus 维护的前端设计技能，最初基于 Anthropic 官方的 frontend-design 技能，提供 24 个命令：用 bolder、quieter、polish 等词把模糊的「好看一点」变成具体操作，用 critique、audit 做可用性和技术审查，另带一个不调用模型、不需要 API key 的检测器，用 62 条确定性规则找出 AI 生成页面的常见毛病。10 月 26 日发布的 4.8.0 新增 GitHub Actions 行级标注等功能。",
+      "key_points": [
+        "/impeccable init 读代码后写出 PRODUCT.md，/impeccable document 把现有视觉规范整理进 DESIGN.md，后续命令都读这两个文件以保持一致",
+        "安装器会配一个设计 Hook，在 Agent 每次改界面文件后扫描并把问题交回给它；README 提醒 Claude Code 中命令型 Hook 不受模型权限审批约束，无人值守前应先检查",
+        "新方案开始时会从 impeccable.style 拉取视觉方向，关闭遥测也不会停止这个请求；项目代码和 PRODUCT.md 不会上传",
+        "live 模式应用文案修改时会以你的权限执行 package.json 中可选的校验脚本，在陌生仓库使用前要先看一眼"
+      ],
+      "why_it_matters": "检测器与模型无关，可以放进 CI 给 AI 改的前端代码把关，配合 DESIGN.md 让 Agent 沿用项目已有的视觉规范；生成效果图等功能依赖图像能力，自部署纯文本模型用不上，审查和检测部分可以直接用。",
+      "sources": [
+        {
+          "title": "pbakaus/impeccable README",
+          "url": "https://github.com/pbakaus/impeccable",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Impeccable Skill 4.8.0",
+          "url": "https://github.com/pbakaus/impeccable/releases/tag/skill-v4.8.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-26"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "coding",
+        "devtools"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "Impeccable",
+        "version": "4.8.0",
+        "repo": "https://github.com/pbakaus/impeccable",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "Cursor",
+          "Codex CLI",
+          "GitHub Copilot",
+          "Gemini CLI",
+          "OpenCode",
+          "Pi",
+          "DeepSeek Harness"
+        ],
+        "capabilities": [
+          "用 bolder、quieter、distill、typeset、layout 等命令对指定组件做一类具体的设计调整",
+          "critique 按可用性启发式打分并排出修复优先级，audit 检查无障碍、性能、主题和响应式，按 P0–P3 分级",
+          "npx impeccable detect 扫描源码目录或运行中的页面，输出 JSON 或 GitHub Actions 标注",
+          "document 把现有视觉系统写进 DESIGN.md，extract 把重复出现的样式抽进设计系统"
+        ],
+        "highlights": [
+          "检测器是 62 条确定性规则，不调用模型，结果可复现，可直接接进 CI",
+          "先写 PRODUCT.md 和 DESIGN.md 再动手，后续命令都基于项目已有规范，而不是模型默认审美",
+          "4.8.0 起引擎下载会与随技能提交的摘要比对，不匹配的二进制拒绝运行"
+        ],
+        "install": "npx impeccable install",
+        "changes": [
+          "detect --github 把每条问题标注到 PR 对应行，--list-rules 列出全部规则",
+          "安装器支持 Devin 和 Replit Agent",
+          "引擎下载按随包提交的摘要校验，更新失败时保留已安装的技能",
+          "design-system-radius 不再把 calc()、min()、max() 里的数字误判为圆角，monorepo 中优先使用各包自己的设计令牌"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-02-lambert-open-models-cyber",
+      "category": "ideas",
+      "title": "Nathan Lambert 反思：开源模型与网络安全风险，他错在哪",
+      "summary": "Nathan Lambert 10 月 30 日回顾了自己早先的判断：他曾认为即使 Claude Mythos 在 4 月以开源权重发布，也「基本没事」，网络风险的讨论被夸大了。十月密集的高危漏洞披露和随后的大型加密货币盗窃让他修正说法：他仍认为开源模型在攻防之间起到平衡作用，但承认「没事」用词不对，行业将被迫付出代价转向新的软件工作方式。",
+      "key_points": [
+        "Lambert 引用的材料认为，近期攻击中闭源模型发挥的作用比开源模型更大，但他自己也说这一判断不确定性很高",
+        "他列举的另一方观点：Rob Wiblin 称权重泄露会是「真正的灾难」，Anthropic 的 Project Glasswing 文章警告后果严重；他认为部分说法仍有夸大",
+        "评论者提出，安全从业者更关注「实际发生了什么、本可以怎样避免」，而攻防研究长期偏向进攻",
+        "他的建议是让开源模型长期便宜、充足，避免少数公司同时掌握产生漏洞和修复漏洞的工具"
+      ],
+      "why_it_matters": "开源权重模型的发布节奏和许可，可能受安全政策讨论影响；对依赖开源模型的团队，这是需要持续跟踪的外部风险，同时也提醒要把 AI 生成代码的安全审查做扎实。",
+      "sources": [
+        {
+          "title": "Was I wrong about open models & cyber risks?",
+          "url": "https://www.interconnects.ai/p/was-i-wrong-about-open-models-and",
+          "kind": "primary",
+          "publisher": "Interconnects",
+          "published_at": "2026-10-30"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "safety",
+        "policy"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-02-ai-cost-js-frameworks",
+      "category": "practices",
+      "title": "Nolan Lawson 实测：让 Agent 用 12 种前端框架写同一个应用的成本",
+      "summary": "Nolan Lawson 10 月 28 日发布基准：让 Claude Opus 5.5 在沙箱里用 12 种前端方案各写 5 次同一个宝可梦浏览应用，并要求使用框架最新版本及其官方 MCP 或技能，再用基于无障碍树的一致性测试验收。按 API 价格折算，每次构建的中位成本从低到高包括 Hono+htmx 2.67、Astro 2.76、Nuxt 2.82、Vanilla 2.98、SvelteKit 4.28、Gracile+Lit 4.65 和 Angular 4.97 美元；耗时最短的是 Astro 的 8.2 分钟，最长的是 Angular 的 17.2 分钟。",
+      "key_points": [
+        "Agent 经常不用提供给它的工具：Nuxt 的 MCP 一次都没被调用，Next.js 的技能 5 次里只读过 1 次，作者怀疑现有 MCP 和技能可能弊大于利",
+        "SvelteKit v3 可能太新、不在模型训练数据里，Agent 每次都去读迁移指南，成本因此偏高",
+        "不用框架的 Vanilla 对照组并不是最便宜或最快的，作者认为一定的框架结构对 Agent 有帮助",
+        "局限：只测了一种内容型、低交互应用，单模型单档推理强度；HN 讨论中不少人认为应用太简单，并质疑用代码行数衡量的意义"
+      ],
+      "why_it_matters": "「给了 MCP 或技能，Agent 也未必用」正是 AI 不守组件库和规范的原因之一：与其只在提示词里提供工具，不如加确定性的检查兜底；作者「用数据而非感觉选型」的做法，也可以照搬到团队自部署模型上评估技术栈。",
+      "sources": [
+        {
+          "title": "The AI cost of JavaScript frameworks",
+          "url": "https://nolanlawson.com/2026/10/28/the-ai-cost-of-javascript-frameworks/",
+          "kind": "primary",
+          "publisher": "Nolan Lawson",
+          "published_at": "2026-10-28"
+        },
+        {
+          "title": "The AI cost of JavaScript frameworks (HN)",
+          "url": "https://news.ycombinator.com/item?id=50323088",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "coding",
+        "evaluation",
+        "agent-skills"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "同一应用，不同框架让 Agent 的构建成本相差近一倍",
+        "series": [
+          "中位成本"
+        ],
+        "rows": [
+          {
+            "label": "Hono+htmx",
+            "values": [
+              2.67
+            ]
+          },
+          {
+            "label": "Astro",
+            "values": [
+              2.76
+            ]
+          },
+          {
+            "label": "Nuxt",
+            "values": [
+              2.82
+            ]
+          },
+          {
+            "label": "Vanilla",
+            "values": [
+              2.98
+            ]
+          },
+          {
+            "label": "SvelteKit",
+            "values": [
+              4.28
+            ]
+          },
+          {
+            "label": "Gracile+Lit",
+            "values": [
+              4.65
+            ]
+          },
+          {
+            "label": "Angular",
+            "values": [
+              4.97
+            ]
+          }
+        ],
+        "unit": "美元",
+        "caption": "数据来自 Nolan Lawson 博客，按 Claude Code API 价格折算的每次构建中位成本，每种框架 5 次"
+      }
+    },
+    {
+      "id": "2026-11-02-skill-audience-length",
+      "category": "skills",
+      "title": "让 AI 写给别人看的东西时，先说清读者是谁、多长、什么结构",
+      "summary": "Anthropic 的提示工程最佳实践建议，一个具体的请求应当交代输出的读者和用途，写明字数、格式等约束，以及想要的结构（表格、列表还是段落），并且说「要做什么」而不是「不要做什么」。很多 AI 产出太长没人看，往往不是模型啰嗦，而是请求里没说给谁看、看多久。",
+      "key_points": [
+        "读者和用途决定该保留哪些细节：给开发的要接口和边界，给测试的要验收条件，给老板的要结论",
+        "长度和结构要写成具体数字与格式，如「不超过 10 行」「一张三列表格」",
+        "说明为什么有这个限制（例如「要在站会上 1 分钟内读完」），AI 更容易做对取舍"
+      ],
+      "why_it_matters": "正对「AI 产出太长、没人看完」的问题；这条习惯与模型无关，自部署的小上下文模型上同样有效，产出越短还越省上下文。",
+      "sources": [
+        {
+          "title": "Best practices for prompt engineering",
+          "url": "https://claude.com/blog/best-practices-for-prompt-engineering",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "goal",
+        "scenario": "让 AI 把一份冗长的需求讨论记录整理成发给开发和测试的需求说明",
+        "bad": "帮我把这份会议记录整理成需求文档，写详细一点。",
+        "good": "附件是 [功能名] 的需求讨论记录。请整理成一份发给开发和测试的需求说明：\n- 读者：要据此排期的开发、要据此写用例的测试，他们没参加会议；\n- 长度：正文不超过 15 行，大家要在站会前 2 分钟内读完；\n- 结构：先一句话说清要做什么，再用三列表格列「改动点 / 验收条件 / 负责人」，最后单列「待确认问题」，最多 3 条；\n- 记录里没定的事情放进「待确认问题」，不要自己补全。",
+        "why": [
+          "写明读者是没参会的开发和测试，AI 才知道要保留验收条件、去掉讨论过程",
+          "给出具体行数和阅读时间，比「详细一点」「简洁一点」更容易做对",
+          "指定表格结构，产出可以直接贴进任务系统，也方便逐条核对",
+          "待确认问题限制在 3 条，并禁止 AI 自行补全，避免问得太多或编造需求"
+        ],
+        "practice": "把你最近一次让 AI 写的文档请求补上「读者、长度、结构」三行，重新生成一次，比较两版的长度和可读性。"
+      }
+    },
+    {
+      "id": "2026-11-02-workfactory-workpilot",
+      "category": "research",
+      "title": "WorkFactory：合成 11 万个职业任务，训练出 WorkPilot 开源模型",
+      "summary": "10 月 27 日的论文 WorkFactory：从职业意图出发生成可执行的工作任务，用「信息支撑图」标出每个任务的产出依赖哪些数据、数据在哪，再用试跑探测缺失的支撑并修复任务。他们为 612 种职业生成了 112,686 个任务，用教师轨迹微调 4B、27B 和 35B-A3B 三个规模的 Qwen 模型，得到 WorkPilot 系列，在四个职业工作基准上都超过各自的基座模型。",
+      "key_points": [
+        "WorkPilot-35B-A3B 在 GDPval-AA v2.1 上的 Elo 从 879 提升到 1565",
+        "规模分析显示收益递减、且依赖具体模型，执行长度先增后减",
+        "消融显示规划和修复两个环节减少了试跑发现的环境缺陷，并提升下游表现；论文称数据和模型在 GitHub 仓库发布"
+      ],
+      "why_it_matters": "这是用合成任务把中小规模开源模型往「能干办公类 Agent 活」方向微调的一条路线；35B-A3B 激活参数小，适合自部署评估，但效果需要在自己的任务上复测。",
+      "sources": [
+        {
+          "title": "WorkFactory: Turning Professional Intents into Executable Work for Scalable Agent Training",
+          "url": "https://arxiv.org/abs/2610.37161",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-27"
+        },
+        {
+          "title": "IQuestLab/WorkFactory",
+          "url": "https://github.com/IQuestLab/WorkFactory",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "fine-tuning",
+        "open-weights",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-02-glance-generator-reranker",
+      "category": "research",
+      "title": "论文 Glance：让生成模型兼任 RAG 重排器，省掉单独的重排模型",
+      "summary": "Glance 给生成模型加一个小的决策适配器和指针头，候选段落共享一次预填充，再从缓存的上下文分出简短的相关性探测来打分，不必为每个段落单独预填充。一个常驻的 9B 骨干同时负责生成、通用判断和重排，每增加一种判断能力只多约 0.1 GiB；在 MS MARCO 上微调只用了 39 分钟。",
+      "key_points": [
+        "nDCG@10：SciFact 上 0.741 对 bge-reranker-v2-m3 的 0.721，NFCorpus 上 0.345 对 0.326",
+        "在 300 道 HotpotQA 题上，用它选出的上下文比交叉编码器选出的，答案 F1 高 0.045",
+        "作者说明只评测了两个检索数据集、一个问答数据集和一个骨干家族，结果属于初步"
+      ],
+      "why_it_matters": "显存紧张的自部署 RAG 可以少部署一个重排模型；适配器已在 Hugging Face 发布，但目前只验证了一个 9B 骨干，换成团队在用的模型需要自己训练和评测。",
+      "sources": [
+        {
+          "title": "Glance: The Generator Is Its Own Reranker",
+          "url": "https://arxiv.org/abs/2610.40454",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-29"
+        }
+      ],
+      "tags": [
+        "rag",
+        "inference",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-02-soft-mtp",
+      "category": "research",
+      "title": "论文 Soft-MTP：一行改动去掉多 token 预测训练里的噪声梯度",
+      "summary": "论文指出，标准多 token 预测（MTP）训练的交叉熵梯度可以精确拆成两部分：一部分是把 MTP 头拉向主模型下一 token 分布的 KL 自蒸馏项，有助于投机解码；另一部分是信噪比很低的残差，会干扰学习，而且规模越大干扰越强。Soft-MTP 只保留 KL 自蒸馏信号，适用于 DeepSeek 和 Meta 两种 MTP 结构，不增加参数、没有可测的额外开销。",
+      "key_points": [
+        "在 167M 到 1.2B 参数的实验中，降低了下一 token 困惑度、加快了投机解码并提高了零样本准确率",
+        "从 689M 参数起降低了 MTP 困惑度，1.2B 模型微调后数学和代码推理有提升",
+        "实验规模较小，单一作者，代码已开源"
+      ],
+      "why_it_matters": "这是训练侧的改进，团队不训练基座模型就用不上；如果后续开源模型采用，受益的是投机解码速度，属于了解即可。",
+      "sources": [
+        {
+          "title": "Multi-Token Prediction Done Right",
+          "url": "https://arxiv.org/abs/2610.38331",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": [
+        "research",
+        "inference"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    }
+  ],
+  "experiments": [
+    "2026-11-02-quant-acceptance-gate"
+  ]
+}
