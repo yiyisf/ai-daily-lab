@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-03-name-seeded-weight-check",
+  "title": "玩具实验：按张量名重新生成，识别伪造的模型权重",
+  "goal": "按 CellCog 核查「14T Mythos 泄露」时描述的方法（张量名哈希作种子、PCG64 生成正态值、舍入到 bfloat16），在本地构造的小型伪造与模拟训练权重上检验：按名重新生成后比较符号一致率，能否区分两者，以及配方一变是否失效。",
+  "related_item": "2026-11-03-fake-mythos-leak",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 120,
+  "expected": "同配方伪造的张量符号一致率为 100%，模拟训练权重约 50% 且不被误判；换一种哈希的伪造权重同样约 50%，说明此法只能证伪",
+  "tags": ["open-weights", "safety", "inference"]
+}
