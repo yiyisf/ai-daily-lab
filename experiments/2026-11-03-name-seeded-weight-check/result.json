@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-03-name-seeded-weight-check",
+  "ran_at": "2026-11-02T22:13:39+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 2.9,
+  "packages": [
+    "numpy==2.2.6"
+  ],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "== 伪造（同一配方）: 6/6 个张量被判为可按名重新生成\n   model.layers.0.input_layernorm.weight              符号一致 100.00%\n   model.layers.0.self_attn.q_proj.weight             符号一致 100.00%\n   model.layers.0.mlp.down_proj.weight                符号一致 100.00%\n   model.layers.1.post_attention_layernorm.weight     符号一致 100.00%\n   model.layers.1.self_attn.o_proj.weight             符号一致 100.00%\n   lm_head.weight                                     符号一致 100.00%\n== 模拟训练权重: 0/6 个张量被判为可按名重新生成\n   model.layers.0.input_layernorm.weight              符号一致  50.00%\n   model.layers.0.self_attn.q_proj.weight             符号一致  50.63%\n   model.layers.0.mlp.down_proj.weight                符号一致  50.60%\n   model.layers.1.post_attention_layernorm.weight     符号一致  50.00%\n   model.layers.1.self_attn.o_proj.weight             符号一致  50.61%\n   lm_head.weight                                     符号一致  49.36%\n== 伪造（换了哈希）: 0/6 个张量被判为可按名重新生成\n   model.layers.0.input_layernorm.weight              符号一致  48.05%\n   model.layers.0.self_attn.q_proj.weight             符号一致  50.98%\n   model.layers.0.mlp.down_proj.weight                符号一致  50.37%\n   model.layers.1.post_attention_layernorm.weight     符号一致  47.66%\n   model.layers.1.self_attn.o_proj.weight             符号一致  49.85%\n   lm_head.weight                                     符号一致  49.38%\n[PASS] 同一配方伪造的全部张量都能按名重新生成（舍入到 bf16 后符号仍一致）\n[PASS] 模拟训练权重没有任何张量被误判\n[PASS] 换一种哈希的伪造权重查不出来：此方法只能证伪，不能证明权重是真的\n[PASS] 辅助线索：伪造的 norm 权重均值接近 0，训练过的 RMSNorm 权重通常围绕 1\nMETRIC: 同配方伪造 平均符号一致率 = 100.00 %\nMETRIC: 模拟训练权重 平均符号一致率 = 50.20 %\nMETRIC: 换哈希伪造 平均符号一致率 = 49.38 %\nMETRIC: 伪造 norm 权重均值 = 0.0000\nMETRIC: 训练 norm 权重均值 = 0.9975\nRESULT: 知道生成配方时，按张量名重新生成能一眼识破伪造权重；配方一变就失效，最终仍要靠厂商一手确认\n",
+  "stderr": ""
+}
