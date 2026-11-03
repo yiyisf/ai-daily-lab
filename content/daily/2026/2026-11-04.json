@@ -1,0 +1,589 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-04",
+  "generated_at": "2026-11-04T06:20:00+08:00",
+  "editor_note": "本期 12 条，要闻偏少，方法与实践、理念与讨论两个栏目今天没有找到够格的新内容，暂缺。最值得读的是两篇与编码 Agent 编排有关的论文：ParallACT 发现多个 Agent 并行改同一仓库时，矛盾任务成功率大幅下滑；另一篇发现 harness 换任务继续自我进化会「遗忘」旧任务。配套实验演示了合并无冲突但验收失败的情况；工具方面，Ollama 0.40.14 修正了 OpenAI 兼容接口覆盖采样默认值的问题。",
+  "tldr": [
+    {
+      "text": "ParallACT：两个 Agent 并行改同一段代码，Claude Code 成功率从 62% 跌到 16%",
+      "item_id": "2026-11-04-parallact-shared-codebase"
+    },
+    {
+      "text": "Ollama 0.40.14：OpenAI 兼容接口不传采样参数时，改用模型自带默认值而非 1.0",
+      "item_id": "2026-11-04-ollama-0-40-14"
+    },
+    {
+      "text": "harness 换到新任务继续进化 5 轮，SWE-Bench 从 94.0% 掉到 32.0%",
+      "item_id": "2026-11-04-harness-continual-forgetting"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-04-ollama-0-40-14",
+      "reason": "Agent 走 OpenAI 兼容接口调 Ollama 时，采样参数终于和模型推荐值一致",
+      "steps": [
+        "把 Ollama 升级到 v0.40.14",
+        "用不传 temperature、top_p 的请求调用 OpenAI 兼容端点，对比升级前后的输出稳定性"
+      ]
+    },
+    {
+      "item_id": "2026-11-04-skillsaw",
+      "reason": "给规则文件和 Skill 做体检，找出矛盾、过长和藏着危险命令的地方",
+      "steps": [
+        "在仓库根目录运行 `uvx skillsaw tree`，看它识别出哪些规则文件",
+        "运行 `uvx skillsaw` 查看问题，再用 `uvx skillsaw baseline` 只对新增问题报错"
+      ]
+    },
+    {
+      "item_id": "2026-11-04-llm-cli-0-37",
+      "reason": "把内网自部署模型接进命令行，方便批量试提示词和对比输出",
+      "steps": [
+        "按文档运行 `llm openai endpoint add BASE_URL -m MODEL_NAME --id MODEL_ID`，填入内网服务地址",
+        "用 `llm -m MODEL_ID '问题'` 提问，再用 `llm logs -n 1` 查看记录"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-04-clean-merge-not-compatible"
+  ],
+  "items": [
+    {
+      "id": "2026-11-04-anthropic-message-threads",
+      "category": "news",
+      "title": "Anthropic 推出 Message threads 公测：长会话每轮只发新消息",
+      "summary": "Anthropic 11 月 2 日在 Claude Platform 上推出 Messages API 的 Message threads 公测。首次请求发送完整对话并建立 thread，之后每轮只发新消息和上一条回复的 ID；thread 在内存中加密保存、不落盘，最后一次请求后 5 分钟过期。Claude 每轮仍读取完整对话，所以 token 用量不变，省下的是请求体积和首 token 延迟。",
+      "key_points": [
+        "Claude Code 已对多数用户默认开启；500k–1M token 的请求，首 token 延迟中位数下降约 35%",
+        "适合长时间运行的编码 Agent、电脑操作 Agent 和大量文档、图片的工作流",
+        "按标准 token 价格计费，沿用现有速率限制；在 Claude Platform、AWS、Microsoft Foundry 和 Google Cloud 上可用",
+        "通过在请求中加入 thread 参数启用，具体格式以官方文档为准"
+      ],
+      "why_it_matters": "这是 Claude API 的功能，自部署环境用不上；它说明长会话 Agent 的延迟有相当一部分来自每轮重发上下文，评估自部署推理服务时可以关注长对话场景下的首 token 延迟。",
+      "sources": [
+        {
+          "title": "Message threads: send your conversation once",
+          "url": "https://claude.com/resources/articles/message-threads",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-02"
+        }
+      ],
+      "tags": [
+        "llm",
+        "agent",
+        "inference"
+      ],
+      "importance": 2,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-04-github-pull-request-target-block",
+      "category": "news",
+      "title": "GitHub 12 月 2 日起默认阻止公开仓库的 pull_request_target",
+      "summary": "GitHub 11 月 2 日宣布，从 12 月 2 日起，所有公开仓库的 GitHub Actions 默认阻止 `pull_request_target` 事件，除非 Actions 事件策略明确允许。原因是该事件在基础仓库上下文中运行、能访问仓库密钥，运行来自 fork 的不可信代码可能导致流水线被攻破或密钥泄露。私有和内部仓库不受影响。",
+      "key_points": [
+        "11 月 9 日和 16 日 16:00–18:00（UTC）各有一次演练，期间被阻止的运行会失败",
+        "演练之间规则处于评估模式，工作流照常运行但会给出警告；可在 Insights 里查看哪些运行会被阻止",
+        "需要该事件的工作流，可在 Actions 事件策略中按工作流文件单独放行",
+        "适用于 GitHub Free、Team 和 Enterprise Cloud 的公开仓库，不适用于 Enterprise Server"
+      ],
+      "why_it_matters": "用 Actions 跑 AI 代码审查或 Agent 工作流、又接受外部 PR 的公开仓库，常会用到这个事件；11 月 9 日前检查一遍，免得演练时流水线突然失败。",
+      "sources": [
+        {
+          "title": "pull_request_target blocked by default December 2",
+          "url": "https://github.blog/changelog/2026-11-02-pull_request_target-blocked-by-default-december-2",
+          "kind": "primary",
+          "publisher": "GitHub Changelog",
+          "published_at": "2026-11-02"
+        }
+      ],
+      "tags": [
+        "devtools",
+        "safety",
+        "workflow"
+      ],
+      "importance": 2,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-04-coworkos",
+      "category": "opensource",
+      "title": "人大开源 CoworkOS：三层运行时的长程人机协作 Agent",
+      "summary": "中国人民大学团队开源 CoworkOS（MIT 许可），定位是面向长程、人机在环工作的协作运行时：Main Agent 负责计划、委派和评估，Coordinator Runtime 分发子任务并跟踪生命周期，可选的 Subagents 在限定范围内执行。人和 Agent 可以共同编辑同一份文档、演示文稿、CAD 模型或 Blender 场景，模型服务可配置，工作区、记忆和执行记录保存在本机。",
+      "key_points": [
+        "论文称在 6 类真实应用的 12 个基准上与 Codex、DeepSeek Harness 表现相当",
+        "配套研究中，五轮自动后训练把 Qwen3.6-35B-A3B 在 8 个基准上的平均分从 33.19 提到 42.95",
+        "CLI 支持 macOS 和 Linux，需要 Node.js ≥22.19.0；桌面版目前只支持 Apple Silicon 的 macOS 14+",
+        "`coworkos init` 引导填写模型服务地址、模型 ID 和 API Key，连接测试会消耗额度"
+      ],
+      "why_it_matters": "模型地址可自定义，理论上能接自部署的 OpenAI 兼容服务；但长程任务对上下文和工具调用能力要求高，论文主控模型是 GLM-5.3，换成上下文有限的自部署模型效果如何需要自己评估。",
+      "sources": [
+        {
+          "title": "CoworkOS: Scaling Agent Coworkers for Real-world Automation",
+          "url": "https://huggingface.co/papers/2611.03178",
+          "kind": "primary",
+          "publisher": "Hugging Face Papers",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "RUC-NLPIR/CoworkOS README",
+          "url": "https://github.com/RUC-NLPIR/CoworkOS/blob/main/README.zh-CN.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "repo": {
+        "url": "https://github.com/RUC-NLPIR/CoworkOS",
+        "license": "MIT",
+        "language": "TypeScript"
+      },
+      "tags": [
+        "agent",
+        "workflow",
+        "open-weights"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-04-llm-cli-0-37",
+      "category": "opensource",
+      "title": "Simon Willison 的 LLM 0.37：一条命令接入 OpenAI 兼容端点",
+      "summary": "Simon Willison 11 月 2 日发布命令行工具和 Python 库 LLM 0.37，汇总约两个月的功能和修复。新增 `llm openai endpoint add` 命令，用来配置走 OpenAI 兼容接口的额外模型；默认模型改为更便宜的 `gpt-6-luna`；嵌入支持为二进制内容标注不同类型。本次包含 12 位作者的修复，作者称多数为 AI 辅助完成。",
+      "key_points": [
+        "命令格式为 `llm openai endpoint add BASE_URL -m MODEL_NAME --id MODEL_ID`，会写入 `extra-openai-models.yaml`",
+        "可用 `--supports-tools`、`--supports-schema` 等选项标注模型能力，`--key` 只记录密钥名，不把密钥写进文件",
+        "新增 `gpt-6.1-sol` 和 `gpt-6.1-terra` 两个模型",
+        "Willison 称审查这些 AI 辅助的贡献，负担比他预想的小"
+      ],
+      "why_it_matters": "自部署的 vLLM、Ollama 等服务大多提供 OpenAI 兼容接口，用这条命令就能把内网模型接进 LLM，在命令行里做批量提问、记录日志和对比输出。",
+      "sources": [
+        {
+          "title": "LLM 0.37",
+          "url": "https://simonwillison.net/2026/Nov/2/llm/",
+          "kind": "primary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "Configure an OpenAI-compatible model",
+          "url": "https://llm.datasette.io/en/stable/other-models.html",
+          "kind": "primary",
+          "publisher": "LLM docs"
+        }
+      ],
+      "repo": {
+        "url": "https://github.com/simonw/llm",
+        "language": "Python"
+      },
+      "tags": [
+        "devtools",
+        "inference",
+        "open-weights"
+      ],
+      "importance": 3,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-04-ollama-0-40-14",
+      "category": "tools",
+      "title": "Ollama 0.40.14：OpenAI 兼容接口不再覆盖模型自带的采样参数",
+      "summary": "Ollama 11 月 3 日发布 0.40.14。最值得注意的变化是：OpenAI 兼容端点不再覆盖模型包里自带的采样默认值——客户端没传 `temperature`/`top_p` 时，用模型自己的值而不是 1.0，与 `/api/chat` 的行为一致。",
+      "key_points": [
+        "`ollama launch claude` 现在会对 Claude Code 应用模型的输出 token 上限，云端模型不再撞上默认的 128k 上限",
+        "`/v1/responses` 保留可读的输入内容（包括之前助手的拒答），不再压平",
+        "MLX 上大词表的 top-k 采样更快",
+        "修复 `/api/chat` 上云端搜索结果（含压缩响应）的解码"
+      ],
+      "why_it_matters": "很多编码 Agent 通过 OpenAI 兼容接口调用 Ollama 且不传采样参数，之前会被按 1.0 采样，输出可能比模型推荐配置更发散；升级后行为与模型推荐值一致，值得重测一下之前觉得「不稳定」的场景。",
+      "sources": [
+        {
+          "title": "Ollama v0.40.14 release notes",
+          "url": "https://github.com/ollama/ollama/releases/tag/v0.40.14",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "inference",
+        "open-weights",
+        "devtools"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "follow_up_of": "2026-10-28-ollama-0-40-12"
+    },
+    {
+      "id": "2026-11-04-claude-code-2-1-317",
+      "category": "tools",
+      "title": "Claude Code 2.1.317：Hook 回调失败可阻止操作，搜索超时不再当完整结果",
+      "summary": "Claude Code 11 月 3 日发布 2.1.317。Agent SDK 的 Hook 回调新增 `onFailure: \"block\"`，回调失败时阻止该操作而不是放行；修复了搜索触及时间上限时，Claude 把不完整的 Grep 和 Glob 结果当成完整结果的问题。",
+      "key_points": [
+        "新增检查：网页或 shell 工具调用要把账号邮箱发到网络上时，会先询问",
+        "移除 Read 工具的「文件自上次读取后未改变」占位，重复读取未改动的文件会返回内容",
+        "与主会话使用不同模型的子 Agent，改用该模型保存的推理强度或其默认值",
+        "修复内容很大的 CLAUDE.md 改动后，自动压缩后出现「Prompt is too long」"
+      ],
+      "why_it_matters": "Claude Code 本身依赖闭源模型；但「Hook 失败时默认阻止」「搜索超时要明确告诉模型结果不完整」这两点，在开源 CLI Agent 里写 Hook 或工具时同样值得照做。",
+      "sources": [
+        {
+          "title": "Claude Code v2.1.317 release notes",
+          "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.317",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "coding",
+        "devtools",
+        "agent"
+      ],
+      "importance": 2,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-04-skillsaw",
+      "category": "kits",
+      "title": "skillsaw：给 CLAUDE.md、AGENTS.md 和 SKILL.md 做 lint",
+      "summary": "skillsaw 是一个面向「驱动编码 Agent 的文件」的 linter（Apache 2.0）。它能识别 Agent Skills、CLAUDE.md、AGENTS.md、QWEN.md、OpenCode、Codex、Cursor 等多种格式，检查结构、内容质量和供应链安全，安全的结构问题可以自动修复。10 月 16 日发布的 v0.22.0 新增 `-q/--quiet` 精简输出和 Goose recipe 支持。",
+      "key_points": [
+        "内容规则检查重复文件间的指令漂移、指令过多、段落过长、措辞含糊、自相矛盾和缺少停止条件",
+        "安全规则拦截 Hook 里的 `curl | sh` 等下载即执行、隐形 Unicode 字符、隐藏指令和嵌入的凭据",
+        "`skillsaw baseline` 先接受现有问题，只对新增问题报错，适合老仓库逐步接入",
+        "支持文本、JSON、SARIF 等输出，可接入 GitHub、GitLab CI"
+      ],
+      "why_it_matters": "规则文件和 Skill 写多了容易互相矛盾、越写越长，占掉有限的上下文；用 skillsaw 在 CI 里检查，可以把「规则文件当代码来审」落到实处，也能防住第三方 Skill 里藏的恶意 Hook。",
+      "sources": [
+        {
+          "title": "stbenjam/skillsaw README",
+          "url": "https://github.com/stbenjam/skillsaw",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "skillsaw v0.22.0",
+          "url": "https://github.com/stbenjam/skillsaw/releases/tag/v0.22.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-16"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "context-engineering",
+        "safety",
+        "devtools"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "other",
+        "name": "skillsaw",
+        "version": "v0.22.0",
+        "repo": "https://github.com/stbenjam/skillsaw",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "OpenAI Codex",
+          "Cursor",
+          "OpenCode",
+          "Goose"
+        ],
+        "capabilities": [
+          "校验 SKILL.md、插件清单、MCP 配置和各家规则文件的结构与前言",
+          "检查规则内容的质量和 token 开销，如重复、矛盾、过长和含糊措辞",
+          "扫描 Hook 和配置里的危险命令、隐形字符和凭据等供应链风险",
+          "对安全的结构问题自动修复，并给每次运行打出字母等级"
+        ],
+        "highlights": [
+          "一个工具覆盖多家 Agent 的配置格式，团队混用多种 Agent 时不用各配一套检查",
+          "baseline 机制允许逐步接入，不必一次修完所有历史问题",
+          "附带 skillsaw-onboard 技能，可以让编码 Agent 自己完成接入"
+        ],
+        "install": "uvx skillsaw（或 npx skills add stbenjam/skillsaw，选择 skillsaw-onboard 技能）"
+      }
+    },
+    {
+      "id": "2026-11-04-agent-skills-0-6-15",
+      "category": "kits",
+      "title": "agent-skills 0.6.15：密钥检查不再把密钥打印进 Agent 记录",
+      "summary": "Addy Osmani 维护的 agent-skills 10 月 31 日发布 0.6.15。旧版安全技能用 `git diff --cached | grep` 检查暂存区里的密钥，会把匹配行原样打印出来，密钥因此进入终端和 Agent 的对话记录，且 git 出错时还会显示为「干净」；新版改为只输出文件名，git 失败时直接以非零状态退出。",
+      "key_points": [
+        "constraints 技能新增报告门禁：Semgrep 和 axe 即使有阻断级发现也会返回 0，现在高危和严重问题会让 CI 失败",
+        "修正对比度阈值：大字号是 18pt（24px）或 14pt 粗体，而不是 18px",
+        "修复 simplify-ignore 两个可能破坏受保护代码的问题",
+        "评测支持用 `--eval <id>` 单独跑一个行为用例"
+      ],
+      "why_it_matters": "用了这套技能做安全检查的团队建议升级；「检查脚本本身别把敏感信息带进 Agent 上下文」「确认扫描工具真的会让 CI 失败」这两条，自己写 Skill 时也值得照着检查。",
+      "sources": [
+        {
+          "title": "Agent Skills 0.6.15",
+          "url": "https://github.com/addyosmani/agent-skills/releases/tag/0.6.15",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-31"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "safety",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "follow_up_of": "2026-10-27-addyosmani-agent-skills",
+      "kit": {
+        "kind": "skill",
+        "name": "agent-skills",
+        "version": "0.6.15",
+        "repo": "https://github.com/addyosmani/agent-skills",
+        "license": "MIT",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "Gemini CLI",
+          "OpenCode",
+          "Cursor"
+        ],
+        "capabilities": [
+          "security-and-hardening：检查暂存区密钥等安全问题",
+          "constraints：把安全与无障碍要求写成 CI 门禁",
+          "code-simplification：简化代码，并用 simplify-ignore 保护指定代码块"
+        ],
+        "highlights": [
+          "密钥检查只输出文件名，不让密钥进入 Agent 对话记录",
+          "要求先对一个故意的违规样例运行门禁命令，确认会失败后才算「已启用」"
+        ],
+        "install": "npx skills add addyosmani/agent-skills（OpenCode：把技能复制到 .opencode/skills/ 或 ~/.config/opencode/skills/）",
+        "changes": [
+          "暂存区密钥检查改用 `git diff --cached -i -G'…' --name-only`，只打印文件名",
+          "constraints 技能附带报告门禁，阻断高危和严重的 Semgrep、axe 发现",
+          "修复 simplify-ignore 恢复占位符时可能写坏代码的问题",
+          "修正大字号对比度阈值，评测支持单独运行一个用例"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-04-skill-check-before-commit",
+      "category": "skills",
+      "title": "让 AI 改完代码先解释、再跑检查，你看过再决定提交",
+      "summary": "GitHub 的 Copilot 最佳实践指南专门有一节「检查 Copilot 的工作」：AI 仍会出错，每条建议都要验证。具体做法是采纳前先弄懂代码（可以让 AI 解释），审查时不只看功能，也看安全、可读性和可维护性，再用测试、lint、代码扫描等自动化工具多加一层把关；指南也强调最终负责的是你。",
+      "key_points": [
+        "先理解再采纳：看不懂的改动，先让 AI 用几句话解释",
+        "审查维度包括功能、安全、可读性和长期可维护性",
+        "测试和 lint、代码扫描等工具是人工审查之外的额外一层",
+        "上下文不再有帮助时，开一个新对话比在旧对话里反复纠正更有效"
+      ],
+      "why_it_matters": "不论用什么模型都适用；对自部署的较小模型更重要——让它把改动讲清楚、把检查结果贴出来，比你自己逐行读 diff 省时间，也更容易发现它「改了不该改的地方」。",
+      "sources": [
+        {
+          "title": "Best practices for using GitHub Copilot",
+          "url": "https://docs.github.com/en/copilot/get-started/best-practices",
+          "kind": "primary",
+          "publisher": "GitHub Docs"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "review",
+        "scenario": "让编码 Agent 修一个线上报错，准备提交代码",
+        "bad": "登录页那个报错帮我修一下，改完直接提交。",
+        "good": "请修复登录页的报错：[报错信息]。\n改完先不要提交，按顺序给我：\n1. 用三五句话说明改了哪些文件、为什么这么改；\n2. 运行 [测试命令] 和 [lint 命令]，贴出结果；\n3. 列出你不确定的地方，以及可能影响到 [相关模块] 的改动。\n我看完说明和检查结果后，再决定是否提交。",
+        "why": [
+          "先要解释再采纳，看不懂的改动不会混进代码库",
+          "要求运行测试和 lint，用自动检查替你挡掉一部分错误",
+          "让 AI 主动列出不确定之处，审查时知道该重点看哪里",
+          "把「是否提交」留给自己决定，责任边界清楚"
+        ],
+        "practice": "下次让 AI 改代码时，在要求末尾加一句「改完先解释改动并贴出测试结果，不要直接提交」。"
+      }
+    },
+    {
+      "id": "2026-11-04-parallact-shared-codebase",
+      "category": "research",
+      "title": "ParallACT：多个编码 Agent 并行改同一仓库，矛盾任务成功率从 62% 跌到 16%",
+      "summary": "Mediratta、Xiao、Peter Stone 等人 10 月 30 日提交论文，提出 ParallACT 基准：多个编码 Agent 在没有编排者的情况下，各自处理同一仓库里的不同需求。任务分两类：互补任务各自有用，但实现必须共用接口；矛盾任务以不兼容的方式改同一段代码。拿到全部任务的单 Agent「oracle」能解决大多数任务，并行 Agent 则差很多，矛盾任务上尤其明显。",
+      "key_points": [
+        "矛盾任务上，Claude Code 配 Claude Opus 4.8 的成功率从 62% 降到 16%",
+        "另外 6 种配置（两种 Agent harness × 三个开源权重模型）出现同样明显的差距",
+        "告诉 Agent「还有一个同伴在改」帮助很小；给一个沟通渠道只追回一小部分差距，还增加 token 开销",
+        "实验变量包括执行顺序、相互可见性、是否知道同伴存在、有无沟通渠道"
+      ],
+      "why_it_matters": "团队用多个 Agent 或 worktree 并行处理需求时，「各自测试通过、合并没冲突」不代表能一起工作；今天的配套实验演示了合并无冲突但验收失败的情况，合并门禁应重跑双方测试，共用接口最好在开工前写进任务说明。",
+      "sources": [
+        {
+          "title": "Decentralized Multi-Agent Coordination and Communication in Shared Codebases",
+          "url": "https://arxiv.org/abs/2611.00314",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-30"
+        }
+      ],
+      "tags": [
+        "agent",
+        "coding",
+        "evaluation",
+        "open-weights"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "experiment_id": "2026-11-04-clean-merge-not-compatible",
+      "figure": {
+        "type": "bars",
+        "title": "矛盾任务上，并行 Agent 的成功率远低于单 Agent",
+        "series": [
+          "成功率"
+        ],
+        "rows": [
+          {
+            "label": "单 Agent 拿到全部任务",
+            "values": [
+              62
+            ]
+          },
+          {
+            "label": "多个 Agent 并行",
+            "values": [
+              16
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自论文摘要，配置为 Claude Code + Claude Opus 4.8"
+      }
+    },
+    {
+      "id": "2026-11-04-harness-continual-forgetting",
+      "category": "research",
+      "title": "论文：Agent harness 换任务继续自我进化，旧任务成绩从 94.0% 掉到 32.0%",
+      "summary": "论文研究「harness 自我进化」——不改模型权重，只改 Agent 外围的 harness 来提升表现——能否在多种任务间持续进行而不遗忘。作者把三个软件工程数据集组织成六个进化方向，测试两种代表性方法，发现在后一个数据集上进化会明显损害之前数据集上的表现。",
+      "key_points": [
+        "使用 DeepSeek-V4-Flash-0731 时，Meta-Harness 进化后 SWE-Bench 达到 94.0%",
+        "接着在 FeatureBench 上继续进化，到第五轮时 SWE-Bench 跌到 32.0%，相对下降 66%",
+        "作者据此给出持续自我进化的若干建议，代码已开源"
+      ],
+      "why_it_matters": "团队按某类任务反复调整规则文件、Skill 或提示词，本质上也是在改 harness；为新任务优化时，最好保留覆盖旧任务类型的回归用例，避免「修好一类、搞坏一类」。",
+      "sources": [
+        {
+          "title": "Can Coding Agents Sustain Continual Evolution without Forgetting?",
+          "url": "https://arxiv.org/abs/2611.03219",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "THU-Agent/continual-harness-evolution",
+          "url": "https://github.com/THU-Agent/continual-harness-evolution",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "coding",
+        "context-engineering",
+        "evaluation"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "换到新任务继续进化后，SWE-Bench 成绩大幅回落",
+        "series": [
+          "SWE-Bench"
+        ],
+        "rows": [
+          {
+            "label": "在 SWE-Bench 上进化后",
+            "values": [
+              94.0
+            ]
+          },
+          {
+            "label": "再在 FeatureBench 进化 5 轮",
+            "values": [
+              32.0
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自论文摘要，模型为 DeepSeek-V4-Flash-0731，方法为 Meta-Harness"
+      }
+    },
+    {
+      "id": "2026-11-04-weight-space-programming",
+      "category": "research",
+      "title": "MIT 演示「权重空间编程」：让大模型直接读改小模型的权重",
+      "summary": "MIT CSAIL 的 Rikiya Takehi、Omar Khattab 等人 11 月 2 日发文，展示让 GPT-6 Astra 不经梯度下降、通过推理每部分权重的作用来直接读写神经网络权重。在 Qwen3.5-0.8B 上，只改 131,072 个权重（0.016%），MATH-500 从 7.9% 升到 48.1%，GSM8K 从 13.8% 升到 67.1%，IFEval 从 21.0% 升到 62.3%。",
+      "key_points": [
+        "读取：只看一个 17,253 个权重的策略网络，4 次都判断对它是在哪个游戏上训练的",
+        "Qwen3.5-0.8B 编辑后，回答撞到 token 上限的比例从 93% 降到 33%；作者认为编辑能去掉障碍，但加不了模型本来没有的能力",
+        "在 Gemma 3 270M 上，编辑对 MATH-500 的影响始终不超过约 1 个点",
+        "作者称结果尚早，受上下文长度和 harness 效率限制；代码、日志和编辑后的模型已公开"
+      ],
+      "why_it_matters": "依赖闭源前沿模型做编辑，自部署环境暂时用不上；但「小模型的部分失败来自可去掉的障碍（如输出停不下来）」这一观察，对评估和调优小尺寸开源模型有参考价值。",
+      "sources": [
+        {
+          "title": "Weight-Space Programming",
+          "url": "https://rikiyat.github.io/blog/weight-space-programming/",
+          "kind": "primary",
+          "publisher": "MIT CSAIL",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "RikiyaT/Qwen3.5-0.8B-weight-space-programming",
+          "url": "https://huggingface.co/RikiyaT/Qwen3.5-0.8B-weight-space-programming",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": [
+        "research",
+        "open-weights",
+        "reasoning"
+      ],
+      "importance": 3,
+      "actionability": "know",
+      "figure": {
+        "type": "bars",
+        "title": "改 0.016% 的权重，Qwen3.5-0.8B 三项分数明显上升",
+        "series": [
+          "编辑前",
+          "编辑后"
+        ],
+        "rows": [
+          {
+            "label": "MATH-500",
+            "values": [
+              7.9,
+              48.1
+            ]
+          },
+          {
+            "label": "GSM8K",
+            "values": [
+              13.8,
+              67.1
+            ]
+          },
+          {
+            "label": "IFEval",
+            "values": [
+              21.0,
+              62.3
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自作者博客，为作者自报结果"
+      }
+    }
+  ]
+}
