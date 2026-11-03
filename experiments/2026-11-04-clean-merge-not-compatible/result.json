@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-04-clean-merge-not-compatible",
+  "ran_at": "2026-11-03T22:11:52+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.2,
+  "stdout": "- independent: 互不相关：A 调整包邮门槛，B 新增一个格式化函数\n    单独验收 A=True B=True | 合并冲突块=0 | 合并后验收 A=True B=True\n- same-line: 直接矛盾：A 把折扣改成八折，B 改成八五折（同一行）\n    单独验收 A=True B=True | 合并冲突块=1 | 合并后验收 A=False B=False\n- hidden-semantic: 隐性冲突：A 把包邮门槛提到 200，B 让总价含运费（按旧门槛写验收）\n    单独验收 A=True B=True | 合并冲突块=0 | 合并后验收 A=True B=False\n- interface-mismatch: 接口没对齐：A 新文件调用 discount_for(code)，B 实现的却叫 get_discount_rate(code)（A 依赖 B 的接口，单独无法验收）\n    单独验收 A=False B=True | 合并冲突块=0 | 合并后验收 A=False B=True\n[PASS] 前三个场景里，两个任务各自单独都能通过自己的验收测试\n[PASS] 互不相关的改动：合并无冲突，合并后两边测试都通过\n[PASS] 同一行的直接矛盾：git 报告合并冲突，能被合并检查拦下\n[PASS] 隐性语义冲突：合并无冲突，但合并后至少一边验收失败\n[PASS] 接口没对齐：合并无冲突，但合并后至少一边验收失败\nMETRIC: 场景总数 = 4 个\nMETRIC: 合并无冲突的场景 = 3 个\nMETRIC: 合并后双方验收都通过 = 1 个\nMETRIC: 只看合并冲突会漏掉的场景 = 2 个\nRESULT: 3 个合并无冲突的场景里有 2 个合并后验收失败，并行 Agent 的改动要合并后重跑双方测试\n",
+  "stderr": ""
+}
