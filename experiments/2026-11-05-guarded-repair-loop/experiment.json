@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-05-guarded-repair-loop",
+  "title": "玩具实验：自动修复只收「检查器确认变好」的改动",
+  "goal": "受 IBM Research Palette 的 check-and-repair harness 启发，用固定种子生成一批带重叠、越界文本框的「幻灯片」，让一个随机改动的不可靠编辑器去修，比较不修复、照单全收、只收检查器确认变好的改动三种策略的问题总数和变坏页数。",
+  "related_item": "2026-11-05-ibm-palette-small-model-harness",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "guarded 策略不会让任何一页变坏，问题总数低于不修复、不高于照单全收；照单全收会改坏一部分原本较好的页面",
+  "tags": ["agent", "evaluation", "workflow"]
+}
