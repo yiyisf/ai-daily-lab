@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-05-guarded-repair-loop",
+  "ran_at": "2026-11-04T22:07:12+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.15",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "幻灯片 300 页，检查器标出问题的 282 页，修复前问题总数 872\n策略          问题总数    无问题页     变好页     变坏页\nnone           872        18        0        0\nblind          834        28       93       74\nguarded        716        28      116        0\n\n[PASS] guarded 策略没有让任何一页变坏\n[PASS] guarded 的问题总数低于不修复\n[PASS] guarded 的问题总数不高于 blind\n[PASS] blind 策略至少让一页变坏（编辑器确实不可靠）\n\nMETRIC: none 问题总数 = 872 个\nMETRIC: blind 问题总数 = 834 个\nMETRIC: guarded 问题总数 = 716 个\nMETRIC: blind 变坏页数 = 74 页\nMETRIC: guarded 变坏页数 = 0 页\nMETRIC: blind 变好页数 = 93 页\nMETRIC: guarded 变好页数 = 116 页\nRESULT: 同一个不可靠的编辑器，照单全收时 74 页被改坏、剩 834 个问题；只收检查器确认变好的修改时 0 页变坏、剩 716 个问题\n",
+  "stderr": ""
+}
