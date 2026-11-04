@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "generated_at": "2026-11-05T07:30:00+08:00",
+  "editor_note": "本期 13 条，要闻偏少、以安全为主：Postman 桌面版被报告擅自给多款编码 Agent 装插件和 Hook，Check Point 披露把广告写进 Codex 全局指令的越狱包。对自部署团队最值得读的是论文《You don't need long context》：频繁压缩上下文几乎不掉分，还能换来更高吞吐。IBM Palette 的「检查器确认变好才采纳」配了一个离线实验；vLLM 0.33.0 改为只发 CUDA 13.0 包，升级前要先检查环境。",
+  "tldr": [
+    {
+      "text": "论文：每个上下文只做一个动作，Opus 4.5 的 SWE-bench Verified 仍有 70.2%",
+      "item_id": "2026-11-05-you-dont-need-long-context"
+    },
+    {
+      "text": "Postman 12.33.4 被报告自动给 Codex、Claude Code 装插件、MCP 和 Hook",
+      "item_id": "2026-11-05-postman-agent-plugin-autoinstall"
+    },
+    {
+      "text": "vLLM 0.33.0 只发布 CUDA 13.0 包，移除 Medusa，新增 /v1/decisions",
+      "item_id": "2026-11-05-vllm-0-33"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-05-mcode-stack",
+      "reason": "给编码 Agent 装上上下文预算、长会话和独立评审的检查清单，不依赖具体模型",
+      "steps": [
+        "git clone https://github.com/MiniMax-AI/mcode-stack.git ~/mcode-stack",
+        "把 stacks/ronny/skills 下需要的技能目录（如 long-command-check）复制到 ~/.agents/skills/",
+        "开新会话，用 /long-command-check 或让 Agent 按描述自动加载"
+      ]
+    },
+    {
+      "item_id": "2026-11-05-skill-scope-task-for-agent",
+      "reason": "需求写清问题、验收标准和改动范围，Agent 少乱改、少另起组件",
+      "steps": [
+        "挑一个待办 bug，按示例补上验收标准和改动范围",
+        "交给 Agent 后，对比它改动的文件是否都在范围内"
+      ]
+    },
+    {
+      "item_id": "2026-11-05-vllm-0-33",
+      "reason": "自部署推理服务升级前，先确认 CUDA 13.0 和被移除功能的影响",
+      "steps": [
+        "检查推理节点驱动是否支持 CUDA 13.0，确认没有用到 Medusa 或 MLP speculator",
+        "在测试环境 docker pull vllm/vllm-openai:v0.33.0 并跑一遍现有回归请求"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-05-guarded-repair-loop"
+  ],
+  "items": [
+    {
+      "id": "2026-11-05-postman-agent-plugin-autoinstall",
+      "category": "news",
+      "title": "用户报告 Postman 桌面版未经同意给 Codex、Claude Code 装插件",
+      "summary": "Postman 桌面应用的支持仓库里，一位用户 10 月 25 日开 issue 报告：升级到 12.33.4 后，应用在日志标记为 auto-existing-upgrade 的过程中，自动为 Codex 和 Claude Code 装上 Postman 插件，并写入 MCP 配置和 SessionStart Hook。11 月 3 日另一位用户在升级到 12.35.1 后报告了相同情况，还提到 Cursor 和 Copilot 的配置里也出现了 Postman 条目。截至目前帖子里没有 Postman 官方回应。",
+      "key_points": [
+        "Codex 的 ~/.codex/config.toml 被加入 postman 插件市场和已启用的 postman@postman 插件，另有一个远程 Postman MCP 服务",
+        "报告中的 SessionStart Hook 会注入文字，让 Agent 在非简单 API 任务中加载 postman:api-engineer 技能，不限于用户明确提到 Postman 时",
+        "Claude Code 的 ~/.claude/settings.json 里启用了 postman@claude-plugins-official，~/.local/bin 下还出现了 Postman CLI",
+        "有用户说应用菜单里的卸载项没有清掉 Copilot 的配置；帖子里的清理脚本未经验证，运行前要自己审查"
+      ],
+      "why_it_matters": "开发机上任何桌面应用都可能悄悄改写编码 Agent 的配置、Hook 和 MCP 列表；用 Postman 的同事可以按帖子列出的路径自查，团队也值得把 Agent 配置目录纳入定期检查。",
+      "sources": [
+        {
+          "title": "Postman desktop installs coding agent plugins without consent (issue #14370)",
+          "url": "https://github.com/postmanlabs/postman-app-support/issues/14370",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-25"
+        }
+      ],
+      "tags": [
+        "safety",
+        "agent",
+        "mcp"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-05-checkpoint-prompt-adware",
+      "category": "news",
+      "title": "Check Point 披露「提示词广告软件」：越狱包改写 Codex 全局指令插广告",
+      "summary": "Check Point Research 11 月 3 日发文，把一种新现象命名为 prompt adware：持久修改 Agent 的全局提示词、Skill 或配置文件，用自然语言指令影响之后的输出。他们分析的 Haiou 4.5.0 是一个面向 OpenAI Codex 的中文越狱包，载荷经签名和 AES-256-GCM 加密，在 GitHub 上看不到明文提示词。安装后它写入 31 个模块化提示文件和 6 个安全类 Skill，其中 00-identity.md 要求模型在用户说「hi」「hello」等触发词时回复一段推广某 LLM 网关的固定文案。",
+      "key_points": [
+        "广告靠自然语言指令实现，不是可执行代码，常规的恶意软件扫描不容易发现",
+        "同一作者的 Claude Code 版本没有广告注入；Check Point 测试时 Sonnet 5 把注入尝试标为提示词注入",
+        "该越狱包在 GitHub 上有 250 多个 star，自带卸载程序可以撤销改动",
+        "文章还提醒第三方 LLM 网关本身就是供应链风险，引用的研究称部分网关可能窥探数据、窃取密钥或注入工具调用"
+      ],
+      "why_it_matters": "自部署环境同样会装第三方 Skill 和全局规则文件，这类「只改文字」的篡改与模型无关；装来源不明的提示词包前要能读到明文，定期检查全局规则和 Skill 目录里有没有多出来的内容。",
+      "sources": [
+        {
+          "title": "Free the Model, Sell the Gateway: Prompt Adware Hidden in Jailbreak Bundles",
+          "url": "https://research.checkpoint.com/2026/free-the-model-sell-the-gateway-prompt-adware-hidden-in-jailbreak-bundles/",
+          "kind": "primary",
+          "publisher": "Check Point Research",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "safety",
+        "agent-skills",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-05-cwe-bench-v2",
+      "category": "news",
+      "title": "CWE-bench v2 开源：100 个真实仓库安全修复任务，DeepSeek V4.1 Flash 性价比突出",
+      "summary": "Collinear AI 11 月 3 日在 Hugging Face 发布 CWE-bench v2：100 个任务覆盖 91 种 CWE，每个任务给 Agent 一个真实开源仓库和一句指令，要求找到并修复安全缺陷且不破坏原有功能，评分由程序判定。11 个模型中 Gemini 4 Argon 以 67.8% pass@1 领先，Claude Opus 5.5 为 67.3%；DeepSeek V4.1 Flash 达到 57.0% pass@1，每次尝试成本 0.04 美元。",
+      "key_points": [
+        "每个任务都经过人工复核，并检查起始代码确实失败、参考修复能通过、验证器会拒绝已知的上游补丁",
+        "95 个任务至少被一个模型解出，但领先模型仍有 19% 的任务每次都失败",
+        "每次尝试成本：Opus 5.5 为 1.83 美元，Gemini 4 Argon 为 3.92 美元",
+        "数据集需申请访问，通过 Harbor 运行；另有一套未公开的保留集"
+      ],
+      "why_it_matters": "DeepSeek V4.1 Flash 是开源权重模型，安全修复类任务上比领先的闭源模型低约 10 个点，每次尝试成本却只有 Opus 5.5 的几十分之一，自部署团队评估「让 Agent 修安全问题」时可以把这套任务作为参考基准。",
+      "sources": [
+        {
+          "title": "CWE-bench v2: More coverage, quality, and transparency",
+          "url": "https://huggingface.co/blog/cwe-bench",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "safety",
+        "coding",
+        "open-weights"
+      ],
+      "importance": 3,
+      "actionability": "know",
+      "figure": {
+        "type": "bars",
+        "title": "pass@1 只差 0.5 个点，成本却差一倍以上",
+        "series": [
+          "pass@1"
+        ],
+        "rows": [
+          {
+            "label": "Gemini 4 Argon",
+            "values": [
+              67.8
+            ]
+          },
+          {
+            "label": "Claude Opus 5.5",
+            "values": [
+              67.3
+            ]
+          },
+          {
+            "label": "DeepSeek V4.1 Flash",
+            "values": [
+              57.0
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自 Collinear AI 在 Hugging Face 发布的博客"
+      }
+    },
+    {
+      "id": "2026-11-05-vllm-0-33",
+      "category": "opensource",
+      "title": "vLLM 0.33.0 发布：只发 CUDA 13.0 包，新增 /v1/decisions 接口",
+      "summary": "vLLM 11 月 2 日发布 0.33.0，包含 389 位贡献者的 927 个提交。本版升级到 PyTorch 2.14.0，发布的 wheel 和镜像只支持 CUDA 13.0，不再提供 CUDA 12.9 版本；默认 ROCm 镜像升到 ROCm 10.0，ROCm 7.2 仍单独发布。新增模型支持包括 Muse Spark Open、Step-5 Preview、AliceAI-Foundation-80B-A3B 等。",
+      "key_points": [
+        "OpenAI 兼容的 /v1/decisions 接口对支持的生成模型默认开启；/v1/embeddings 支持 token 级嵌入",
+        "新增卡死引擎和 worker 进程的看门狗，会打印堆栈；Rust 前端修复了长对话返回 HTTP 500 的问题",
+        "破坏性变更：移除 Medusa 和 MLP speculator、旧的 Ray compiled-graph 执行器，生成暂停期间的请求改返回 HTTP 503",
+        "GLM-5.3-Flash 默认使用 FP8 KV cache，PR 中的测试端到端吞吐高 9.8%"
+      ],
+      "why_it_matters": "用 vLLM 自部署的团队升级前要先确认驱动和基础镜像支持 CUDA 13.0，并检查是否用到了被移除的 Medusa 或 MLP speculator；内网镜像也要同步更新到新的镜像名和 tag。",
+      "sources": [
+        {
+          "title": "vLLM v0.33.0 release notes",
+          "url": "https://github.com/vllm-project/vllm/releases/tag/v0.33.0rc3",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-02"
+        }
+      ],
+      "tags": [
+        "inference",
+        "infra",
+        "open-weights"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/vllm-project/vllm",
+        "license": "Apache-2.0",
+        "language": "Python"
+      }
+    },
+    {
+      "id": "2026-11-05-anthropic-flashprove",
+      "category": "opensource",
+      "title": "Anthropic 开源 FlashProve：用零知识证明证明回复出自指定权重",
+      "summary": "Anthropic 11 月 2 日发布研究原型 FlashProve（Apache 2.0），让模型提供方先对权重做承诺，再为每条回复生成 zkSNARK 证明，证明它确实出自该模型，且不暴露权重。在 4-bit 的 Llama 4 Maverick（400B 参数 MoE、每 token 约 17B 激活）上，单张 H100 证明速度约 110 token/s，每 1,024 token 请求的证明约 19 MB，客户端验证约 17 秒。",
+      "key_points": [
+        "开销约为 vLLM 同批次 GPU 时间的 72 倍，最高负载下约 94 倍；每个模型离线准备约 39 分钟",
+        "证明只覆盖权重的整数版本和贪心解码，最长 1,024 token 上下文；模型架构不保密，计时侧信道不在范围内",
+        "仓库包含证明器、C++ 快速验证器、Lean 验证器和 Lean 证明，标注为不再维护的研究原型"
+      ],
+      "why_it_matters": "离生产可用还远，自部署团队暂时用不上；它回答的是「API 背后到底是不是那个模型」这一信任问题，今后采购第三方推理服务时可能成为一种可验证手段。",
+      "sources": [
+        {
+          "title": "Provable inference with FlashProve",
+          "url": "https://www.anthropic.com/research/provable-inference",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "anthropics/FlashProve",
+          "url": "https://github.com/anthropics/FlashProve",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "safety",
+        "inference",
+        "research"
+      ],
+      "importance": 2,
+      "actionability": "know",
+      "repo": {
+        "url": "https://github.com/anthropics/FlashProve",
+        "license": "Apache-2.0",
+        "language": "Lean"
+      }
+    },
+    {
+      "id": "2026-11-05-transformers-mic",
+      "category": "tools",
+      "title": "Hugging Face 提出 Model Integration Contracts：用缩小版模型给集成做回归测试",
+      "summary": "Hugging Face 11 月 3 日提出 Model Integration Contracts（transformers-mic）：每份契约由三部分组成——从真实检查点配置缩小得到的固定 fixture、一段可运行的 Markdown 用法示例、人工复核过的输出基线；用法示例在 fixture 上仍能复现基线，契约就成立。这样大模型的集成也能在 CPU 上做廉价检查。",
+      "key_points": [
+        "Llama 4 Scout 的 fixture 从 108.6B 参数缩到 44.7M；UMT5 fixture 权重 66 MB，原检查点 1,227 MB",
+        "UMT5 的一次回归从 7 月 30 日持续到 9 月 28 日，标签对数概率偏移 1.22，训练损失偏移约 0.20",
+        "在 Whisper 上注入的 24 个人为故障中，随机 fixture 抓到 18 个，过拟合 fixture 全部抓到",
+        "截至 11 月 1 日，MIC 的 CI 只报告失败、不阻止合并"
+      ],
+      "why_it_matters": "自部署团队常随推理框架一起升级 transformers，模型行为可能悄悄变化；MIC 的思路（缩小模型 + 固定基线）也可以借来给自家微调或部署流程做冒烟测试，目前仍是提案阶段。",
+      "sources": [
+        {
+          "title": "Transformers Model Integration Contracts",
+          "url": "https://huggingface.co/blog/transformers-mic",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "open-weights",
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-05-mcode-stack",
+      "category": "kits",
+      "title": "MiniMax 开源 MCode Stack：编码团队日常在用的工程技能合集",
+      "summary": "MiniMax 10 月 28 日开源 MCode Stack（MIT），收录 MiniMax Code 团队日常使用的工作流和 SKILL.md 技能。主栈 stacks/ronny 按一天的工作时刻组织：拆分任务、控制上下文和工具开销、处理长会话和长命令、独立评审、委派前写 brief、Agent 说完成后先看证据。每个技能配有一篇 MCode Engineering Notes 文章说明原理。",
+      "key_points": [
+        "subagent-split-check 判断一件事该交给子 Agent 还是留在主循环；independent-review 只给评审方 diff、需求和测试结果，从干净上下文评审",
+        "tool-budget-audit、context-tax-audit 测量工具定义和每轮注入内容占了多少上下文，以及对前缀缓存的影响",
+        "taste-to-checks 把反复出现的人工纠正变成测试、lint、Hook 或 CI 步骤",
+        "engineering-* 系列改编自 Google Engineering Practices，这部分沿用 CC-BY 3.0"
+      ],
+      "why_it_matters": "这些技能讲的是 Agent 周边的工程习惯，不绑定模型；上下文预算、长会话压缩和「把纠正变成检查」几项对上下文有限的自部署模型尤其有用，也能用来约束 Agent 遵守既有规范。",
+      "sources": [
+        {
+          "title": "MiniMax-AI/mcode-stack README",
+          "url": "https://github.com/MiniMax-AI/mcode-stack",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-10-28"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "context-engineering",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "MCode Stack",
+        "repo": "https://github.com/MiniMax-AI/mcode-stack",
+        "license": "MIT",
+        "compatible": [
+          "MiniMax Code",
+          "Claude Code",
+          "Codex"
+        ],
+        "capabilities": [
+          "任务拆分：判断是否交给子 Agent，把大改动拆成可评审的小 PR",
+          "上下文治理：审计工具定义和每轮注入内容的开销，决定压缩、写文件还是开新会话",
+          "评审：从干净上下文独立评审 diff，按严重度写评审意见",
+          "委派与验收：委派前写清目标和「验证」标准，Agent 交付时先看证据"
+        ],
+        "highlights": [
+          "每个技能对应一篇原理文章，先讲为什么再给可执行的检查清单",
+          "使用通用 SKILL.md 格式，也可只复制单个技能目录到 ~/.agents/skills/",
+          "checklist 同时提供纯文本版本，不装也能直接读"
+        ],
+        "install": "claude plugin install ronny --marketplace MiniMax-AI/mcode-stack；单个技能：git clone https://github.com/MiniMax-AI/mcode-stack.git ~/mcode-stack && mkdir -p ~/.agents/skills && cp -R ~/mcode-stack/stacks/ronny/skills/long-command-check ~/.agents/skills/"
+      }
+    },
+    {
+      "id": "2026-11-05-goedecke-weight-space-rebuttal",
+      "category": "ideas",
+      "follow_up_of": "2026-11-04-weight-space-programming",
+      "title": "Sean Goedecke 质疑「权重空间编程」：LLM 读改权重并非超人能力",
+      "summary": "针对 MIT CSAIL 团队让 GPT-6 Astra 直接读写神经网络权重的工作，Sean Goedecke 11 月 3 日发文反驳。他认为识别小网络在哪个游戏上训练的任务，只需算出第一层各输入权重的 L2 范数画成热力图，人也能看出来；修复 Qwen 0.8B 数学能力的做法，本质上与 steering、abliteration 等已有方法一致。原作者则认为这类直接编辑展示了不经梯度下降改模型的可能，并提到自我编辑可能通向递归自我改进。",
+      "key_points": [
+        "Goedecke：Qwen 模型并非数学差，而是超过 32k token 后陷入循环，Astra 找出驱动循环的权重并削弱，这是有能力的研究者也会用的标准做法",
+        "Goedecke：权重编辑像让 LLM 改编译后的二进制，令人印象深刻，但改模型最好的途径仍是训练",
+        "HN 讨论分歧：有人认为速度和规模本身就是超人之处，也有人认为原报道被夸大了",
+        "Goedecke 在更新里说自己对结果「很佩服」，只是它没有超出他对强模型的预期"
+      ],
+      "why_it_matters": "读前沿研究的「突破」时，值得先问一句「用简单方法能不能做到同样效果」；对自部署团队而言，调小模型的可靠路径仍是常规微调和已有的 steering 类方法。",
+      "sources": [
+        {
+          "title": "LLMs are not superhuman at reading and writing neural network weights",
+          "url": "https://www.seangoedecke.com/llms-are-not-superhuman-at-reading-and-writing-neural-network-weights/",
+          "kind": "primary",
+          "publisher": "Sean Goedecke",
+          "published_at": "2026-11-03"
+        },
+        {
+          "title": "Weight-Space Programming",
+          "url": "https://rikiyat.github.io/blog/weight-space-programming/",
+          "kind": "primary",
+          "publisher": "MIT CSAIL",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "Hacker News discussion",
+          "url": "https://news.ycombinator.com/item?id=50344861",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "research",
+        "open-weights"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-05-egoless-mathematics",
+      "category": "ideas",
+      "title": "Terence Tao 博客客座文章：AI 时代的「无我数学」，评论区争议不小",
+      "summary": "Terence Tao 的博客 11 月 2 日刊出 Karthik C. S.、Amit Sahai 和 Jie Xue 的客座文章。作者认为，AI 迫使数学家追问工作的目的：若把价值绑在产出成果和证明个人能力上，眼下的不安就暴露了这种理解的问题；数学真理先于人存在，发现本身的乐趣不会因别人或 AI 先找到而减少。",
+      "key_points": [
+        "作者批评把论文、引用、奖项当作价值本身，也不赞成只因为「机器做不到」才看重创造力和直觉",
+        "作者明确不讨论具体政策和生计问题，并承认自己也还没做到「无我」",
+        "评论区反对意见：文章回避了经费、职位和谁控制 AI 研究，把担忧说成虚荣是在压制合理关切",
+        "也有读者建议用 Lean 等形式化验证约束 AI 辅助的成果，主张对 AI 结果和人的结果同等审查"
+      ],
+      "why_it_matters": "这场讨论不只关乎数学：AI 承担越来越多产出后，团队如何评价个人贡献、新人如何积累「爬坡」经验，研发团队同样会遇到。",
+      "sources": [
+        {
+          "title": "Egoless mathematics in the AI era",
+          "url": "https://terrytao.wordpress.com/2026/11/02/egoless-mathematics-in-the-ai-era/",
+          "kind": "primary",
+          "publisher": "Terence Tao's blog",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "Hacker News discussion",
+          "url": "https://news.ycombinator.com/item?id=50341736",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "research"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-05-ibm-palette-small-model-harness",
+      "category": "practices",
+      "experiment_id": "2026-11-05-guarded-repair-loop",
+      "title": "IBM Palette：20B 开源模型加检查修复环节，按指定设计语言做幻灯片",
+      "summary": "IBM Research 11 月 3 日介绍 Palette：用一个 20B 开源权重模型，在约 1,000 份按 IBM Design Language 合成的幻灯片（约 10,000 页）上训练，同一个 LoRA 适配器兼任「设计者」（写 JSON 设计说明）和「编码者」（逐页写 pptxgenjs 代码）。渲染后由几何检查器找出重叠、截断和越界，交给编辑模型重写，只有检查器确认变好才采用。在 PresentBench 三领域平均分上得 59.7，NotebookLM 为 60.8。",
+      "key_points": [
+        "检查修复环节在 131 份测试幻灯片上平均提升 3.5 分；逐页并行编码让编码阶段快约 6–7 倍",
+        "作者的经验：把推理写进训练数据、先修正示例再加提示词规则、只接受可测量的改进、先做检查器",
+        "防止编造内容最难，提示词规则很少奏效，修正教师模型提示里的参考示例才管用",
+        "局限：未公开权重和代码；评测时的规划由前沿模型起草，不是端到端运行"
+      ],
+      "why_it_matters": "「小模型 + 合成数据学会自家规范 + 确定性检查器把关」正对应 AI 不遵守组件库和规范的问题；权重未公开不能直接用，但「改动经检查器确认变好才采纳」可以马上用到自家 Agent 流程里。",
+      "sources": [
+        {
+          "title": "Palette: teaching a small model to build decks in your design language",
+          "url": "https://huggingface.co/blog/ibm-research/palette-deck-building",
+          "kind": "primary",
+          "publisher": "IBM Research / Hugging Face",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "agent",
+        "evaluation",
+        "workflow"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "steps",
+        "title": "Palette：先设计、再逐页编码，检查器决定修改去留",
+        "steps": [
+          {
+            "label": "Designer",
+            "sub": "写 JSON 设计说明：配色、字体、每页布局"
+          },
+          {
+            "label": "Coder",
+            "sub": "逐页并行写 pptxgenjs 代码"
+          },
+          {
+            "label": "Checker",
+            "sub": "渲染后找出重叠、截断、越界"
+          },
+          {
+            "label": "Editor",
+            "sub": "重写问题页，检查器确认变好才采用"
+          }
+        ],
+        "base": {
+          "label": "同一个 LoRA 适配器",
+          "sub": "兼任设计者和编码者"
+        },
+        "caption": "结构来自 IBM Research 在 Hugging Face 的博客"
+      }
+    },
+    {
+      "id": "2026-11-05-skill-scope-task-for-agent",
+      "category": "skills",
+      "title": "把任务交给编码 Agent 前，先写清问题、验收标准和改动范围",
+      "summary": "GitHub 的云端编码 Agent 使用指南建议：分配给 Agent 的 issue 就是提示词，理想的任务要有清楚的问题描述、完整的验收标准（例如是否需要单元测试）以及应改哪些文件的指引。指南也列出了更适合自己做的任务：跨仓库的大重构、隐藏依赖多的老代码、生产事故、安全和认证相关、需求不清的工作。",
+      "key_points": [
+        "写完任务先自问：这段文字直接当提示词，Agent 能不能据此完成改动",
+        "从修 bug、补测试、改文档等简单任务开始，熟悉 Agent 的行为",
+        "反馈时把多条意见合成一次评审提交，让 Agent 一次处理完"
+      ],
+      "why_it_matters": "与模型无关，对上下文有限、能力较弱的自部署模型更重要：范围越清楚，Agent 越少乱翻代码、越少改出范围外的东西，也直接缓解「需求说不清」的问题。",
+      "sources": [
+        {
+          "title": "Get the best results from Copilot cloud agent",
+          "url": "https://docs.github.com/en/copilot/tutorials/cloud-agent/get-the-best-results",
+          "kind": "primary",
+          "publisher": "GitHub Docs"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "coding",
+        "agent"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "delegate",
+        "scenario": "把一个前端表单的 bug 交给编码 Agent 处理",
+        "bad": "注册页表单有问题，帮我修一下。",
+        "good": "问题：注册页 [页面路径] 提交时，手机号为空也能通过校验。\n验收标准：\n1. 手机号为空或格式不对时，显示 [现有错误提示组件] 并阻止提交；\n2. 补充对应的单元测试，[测试命令] 全部通过。\n改动范围：只改 [表单组件文件] 和它的测试文件，使用项目现有的校验工具函数，不要新增依赖。\n如果发现需要改动范围以外的文件，先停下来告诉我原因。",
+        "why": [
+          "把现象写成可复现的问题描述，Agent 不用猜「有问题」指什么",
+          "验收标准写明行为和测试，Agent 知道做到什么程度算完成",
+          "限定改动文件并要求复用现有组件和工具函数，避免另起一套",
+          "约定越界时先停下来，权限和停止条件都清楚"
+        ],
+        "practice": "翻出最近一条你想交给 AI 的需求，补上「验收标准」和「改动范围」两段再发出去。"
+      }
+    },
+    {
+      "id": "2026-11-05-you-dont-need-long-context",
+      "category": "research",
+      "title": "论文：频繁压缩上下文，前沿模型在长任务上几乎不掉分",
+      "summary": "Peter Belcak、Pavlo Molchanov 等人 11 月 3 日在 arXiv 发表《You don't need long context》。他们指出越靠后的 token 生成成本越高，在前沿开源权重模型上差距可达 7 倍；通过频繁压缩把活跃上下文保持很短，在多种长程和长输入任务上准确率几乎不受影响。即使每个上下文只执行一个动作（单动作压缩），Claude Opus 4.5 的 SWE-bench Verified 仍为 70.2%（基线 70.0%），Terminal-Bench 2.1 为 51.8%（基线 47.2%）。",
+      "key_points": [
+        "在 H100 上用 vLLM 测得，配置上下文 16K 对比 256K 时，解码吞吐分别为 3.6 倍（GLM 5.2）、5.6 倍（Kimi K2.6）和 7 倍（Qwen 3 Coder Next）",
+        "单动作压缩下活跃上下文峰值中位数为 7–9K token，基线最大 130–200K",
+        "并非所有模型都不掉分：GPT 5.6 Sol 在 SWE-bench Verified 上低 2.0 个点，在 Terminal-Bench 2.1 上低 3.3 个点",
+        "作者据此提出语义状态空间模型（SSSM）作为后续方向"
+      ],
+      "why_it_matters": "对上下文窗口有限的自部署团队是好消息：与其追求超长上下文，不如在 Agent 侧做好频繁压缩和状态外置，同时还能换来明显更高的解码吞吐；不过实验主要用闭源模型完成，换成自家模型要先小规模验证。",
+      "sources": [
+        {
+          "title": "You don't need long context (arXiv:2611.05306)",
+          "url": "https://arxiv.org/abs/2611.05306",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-03"
+        },
+        {
+          "title": "alphaXiv: You don't need long context",
+          "url": "https://www.alphaxiv.org/abs/2611.05306",
+          "kind": "secondary",
+          "publisher": "alphaXiv"
+        }
+      ],
+      "tags": [
+        "context-engineering",
+        "inference",
+        "research",
+        "agent"
+      ],
+      "importance": 5,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "每个上下文只做一个动作，Opus 4.5 两项基准不降反升",
+        "series": [
+          "完整历史基线",
+          "单动作压缩"
+        ],
+        "rows": [
+          {
+            "label": "SWE-bench Verified",
+            "values": [
+              70.0,
+              70.2
+            ]
+          },
+          {
+            "label": "Terminal-Bench 2.1",
+            "values": [
+              47.2,
+              51.8
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自论文，模型为 Claude Opus 4.5"
+      }
+    },
+    {
+      "id": "2026-11-05-ai2-statebench",
+      "category": "research",
+      "title": "Ai2 发布 StateBench：前沿模型长文档状态追踪最低跌到 13%",
+      "summary": "Ai2 11 月 3 日发布 StateBench，测试模型在长文档中追踪实体状态变化的能力，分四级难度：只赋值一次、只需最新值、在当前值上累加、变量之间相互赋值形成依赖链。四个前沿模型都能处理前两级，但在后两级上准确率随长度急剧下降，最长的最难问题上降到 13% 或更低。",
+      "key_points": [
+        "测试的前沿模型为 Gemini 3.8 Flash、Claude Opus 5.5、GPT-6 Sol 和 GPT-6 Luna",
+        "预训练开源模型在最难一级上停留在随机水平；275M 的混合架构模型在 RULER 式题上接近满分，换成「表格编辑」的说法就接近随机",
+        "直接在任务上训练时，Gated DeltaNet 和混合架构能推广到数万次赋值，Transformer 始终没学会最难一级",
+        "数据、代码和技术报告均已公开"
+      ],
+      "why_it_matters": "让 Agent 读长日志、长配置并推断「最终状态」时，不要假设模型能可靠追踪；对上下文有限的自部署模型，更稳妥的做法是让 Agent 把关键状态写进文件或用脚本计算。",
+      "sources": [
+        {
+          "title": "StateBench: Testing how language models track state changes over long documents",
+          "url": "https://huggingface.co/blog/allenai/statebench",
+          "kind": "primary",
+          "publisher": "Ai2 / Hugging Face",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "research",
+        "context-engineering"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    }
+  ]
+}
