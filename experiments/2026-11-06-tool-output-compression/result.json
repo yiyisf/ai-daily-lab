@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-06-tool-output-compression",
+  "ran_at": "2026-11-05T22:07:53+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "场景          原样      截断   smart  截断保留  smart保留\n服务日志     14719     745     447     0/6       6/6\n测试报告      6675     543     252     0/3       3/3\n(数字为估算 token 数，按 4 字符约 1 token 计)\n\n[PASS] 服务日志：smart 压缩后约省下一半以上 token（97.0%）\n[PASS] 服务日志：smart 保留了全部 6 个关键条目\n[PASS] 服务日志：只截断前 20 条会丢掉关键条目（保留 0%）\n[PASS] 测试报告：smart 压缩后约省下一半以上 token（96.2%）\n[PASS] 测试报告：smart 保留了全部 3 个关键条目\n[PASS] 测试报告：只截断前 20 条会丢掉关键条目（保留 0%）\n[PASS] smart 缓存的原文可以按哈希原样取回\n\nMETRIC: 服务日志 smart 节省 = 97.0 %\nMETRIC: 服务日志 truncate 节省 = 94.9 %\nMETRIC: 服务日志 smart 关键条目保留率 = 100.0 %\nMETRIC: 服务日志 truncate 关键条目保留率 = 0.0 %\nMETRIC: 测试报告 smart 节省 = 96.2 %\nMETRIC: 测试报告 truncate 节省 = 91.9 %\nMETRIC: 测试报告 smart 关键条目保留率 = 100.0 %\nMETRIC: 测试报告 truncate 关键条目保留率 = 0.0 %\nRESULT: 保留错误项和离群值的结构化摘要，在大幅缩短工具输出的同时没有丢掉关键条目；简单截断则会漏掉排在后面的错误\n",
+  "stderr": ""
+}

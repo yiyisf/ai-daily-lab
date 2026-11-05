@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-06-tool-output-compression",
+  "title": "玩具实验：压缩工具输出时保留错误项和离群值",
+  "goal": "受 Headroom 压缩 JSON 时保留错误项和离群值、原文可按哈希取回的思路启发，用固定种子生成模拟的服务日志和测试报告，比较原样、只截断前 20 条、结构化摘要三种做法的估算 token 数和关键条目保留情况。",
+  "related_item": "2026-11-06-headroom-context-compression",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "结构化摘要比原样省下一半以上 token 且保留全部关键条目；只截断前 20 条会漏掉排在后面的错误",
+  "tags": ["context-engineering", "agent", "evaluation"]
+}

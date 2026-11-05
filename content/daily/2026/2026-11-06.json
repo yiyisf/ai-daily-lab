@@ -1,0 +1,601 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-06",
+  "generated_at": "2026-11-06T08:30:00+08:00",
+  "editor_note": "本期 13 条，主线是「规则和 harness 怎么写，比换模型更要紧」。论文测出 AGENTS.md 里的条件句最容易被忽略，两个开源权重组合的遵守率很低；IBM 用同一开源模型换 harness，AppWorld 通过率从 30.0% 到 81.1%。模型方面，Kimi K3.1 Pro 权重已上架，Ricursive 开放了 Apache 2.0 的 Ripple-65B。实验演示压缩工具输出时为什么要保留错误项而不是截断。",
+  "tldr": [
+    {
+      "text": "论文：AGENTS.md 规则写成条件句最易被忽略，sonnet-5 上遵守率 35.6% 对 71.6%",
+      "item_id": "2026-11-06-agents-md-policy-wording"
+    },
+    {
+      "text": "IBM：同一开源模型，CUGA 在 AppWorld 通过 81.1%，Deep Agents 仅 30.0%",
+      "item_id": "2026-11-06-cuga-same-model-different-harness"
+    },
+    {
+      "text": "Kimi K3.1 Pro 权重上架：2.8T 总参、104B 激活，MXFP4，自定义许可证",
+      "item_id": "2026-11-06-kimi-k3-1-pro-weights"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-06-agents-md-policy-wording",
+      "reason": "检查规则文件里的条件句，提升 Agent 遵守项目规范的概率",
+      "steps": [
+        "在 AGENTS.md / CLAUDE.md 里找出「如果……就……」写法的规则",
+        "改成直接指令，必要时附一句理由",
+        "挑一条能机械检查的规则，换写法前后各跑几次任务对比遵守情况"
+      ]
+    },
+    {
+      "item_id": "2026-11-06-headroom-context-compression",
+      "reason": "压缩长日志和 JSON 工具输出，给上下文有限的模型腾出空间",
+      "steps": [
+        "pip install \"headroom-ai[all]\"（需 Python 3.11+）",
+        "headroom proxy --port 8787，把 Agent 的 OpenAI 兼容地址指向代理",
+        "用同一任务对比开关代理时的 token 用量和结果"
+      ]
+    },
+    {
+      "item_id": "2026-11-06-skill-name-your-sources",
+      "reason": "整理需求时限定材料来源，减少 AI 自行补出的内容",
+      "steps": [
+        "下次让 AI 整理纪要时加上「只依据以下材料，拿不准的列为待确认」",
+        "要求每条附上对应原话，逐条核对"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "2026-11-06-agents-md-policy-wording",
+      "category": "research",
+      "title": "论文：AGENTS.md 规则怎么写影响遵守率，条件句最容易被忽略",
+      "summary": "Tsuchida 等五位作者 11 月 3 日发表短论文，在 CTXbench 的 86 个任务里，把同一条规则（新增或修改的 Python 函数下一行要加 # @tracked 注释）用四种写法追加到 Agent 上下文文件末尾，在四个 harness 与模型组合上各跑三遍，机械检查是否遵守。四个组合中有三个的遵守率随写法显著变化，「如果你新增或修改函数……」这类条件句在这三个组合里都低于直接指令和带理由的指令。",
+      "key_points": [
+        "四种写法：Prescriptive（直接指令）、Explanatory（指令加理由）、Conditional（条件句）、Prohibitive（禁止句）",
+        "Claude Code + claude-opus-5：Prescriptive 78.0%、Conditional 64.2%；Claude Code + claude-sonnet-5：71.6% 对 35.6%",
+        "qwen-code + gpt-oss-120b 整体很低：Prescriptive 6.7%、Explanatory 20.4%、Conditional 0.8%",
+        "qwen-code + Qwen3-Coder-Next 各写法都不到 1.5%（Prescriptive 1.3%、Conditional 0.4%），差异不显著",
+        "哪种写法最好因组合而异：sonnet 上直接指令最好，gpt-oss-120b 上带理由的写法最好；作者提醒只测了一条规则、10 个仓库，结论需谨慎"
+      ],
+      "why_it_matters": "直接对应「AI 不遵守项目规范」：规则文件里别用条件句，换模型或换 Agent 后要重新验证遵守率；论文里两个开源权重组合的遵守率很低，说明只靠 AGENTS.md 约束自部署模型不够，关键规范最好配 lint 或 Hook 做机械检查。",
+      "sources": [
+        {
+          "title": "Do Coding Agents Follow AGENTS.md? The Effect of Policy Wording on Instruction Compliance",
+          "url": "https://arxiv.org/abs/2611.04367",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-03"
+        },
+        {
+          "title": "Do Coding Agents Follow AGENTS.md?（HTML 全文）",
+          "url": "https://arxiv.org/html/2611.04367",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "coding",
+        "agent",
+        "context-engineering",
+        "evaluation"
+      ],
+      "importance": 5,
+      "actionability": "try",
+      "figure": {
+        "type": "bars",
+        "title": "同一条规则，条件句写法在各组合上的遵守率都更低",
+        "series": [
+          "Prescriptive",
+          "Conditional"
+        ],
+        "rows": [
+          {
+            "label": "Claude Code / opus-5",
+            "values": [
+              78.0,
+              64.2
+            ]
+          },
+          {
+            "label": "Claude Code / sonnet-5",
+            "values": [
+              71.6,
+              35.6
+            ]
+          },
+          {
+            "label": "qwen-code / gpt-oss-120b",
+            "values": [
+              6.7,
+              0.8
+            ]
+          },
+          {
+            "label": "qwen-code / Qwen3-Coder-Next",
+            "values": [
+              1.3,
+              0.4
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自论文 arXiv:2611.04367 表格，86 个任务、每组合重复 3 次"
+      }
+    },
+    {
+      "id": "2026-11-06-kimi-k3-1-pro-weights",
+      "category": "opensource",
+      "title": "Kimi K3.1 Pro 权重上架：2.8T MoE，MXFP4 量化",
+      "summary": "Moonshot AI 已在 Hugging Face 公开 Kimi K3.1 Pro 的完整权重。模型卡显示它是 2.8T 总参数、每 token 激活 104B 的 MoE 模型，上下文 1,048,576 token，支持文本和图像输入。权重通过量化感知训练以 MXFP4 权重、MXFP8 激活发布，推荐用 vLLM、SGLang 或 TokenSpeed 部署。",
+      "key_points": [
+        "每层 896 个专家、每 token 选 16 个，另有 2 个共享专家；93 层中 69 层 KDA、24 层 Gated DSA 注意力",
+        "许可证为自定义的 Kimi K3.1-Pro License：做 Model as a Service 且 12 个月收入超过 2000 万美元须另签协议，月活超 1 亿或月收入超 2000 万美元须在界面显示模型名",
+        "不向第三方提供能力的内部使用不受上述署名和收入条款约束",
+        "多轮和工具调用时须把 reasoning_content 和 tool_calls 原样传回；模型卡未给出所需 GPU 数量"
+      ],
+      "why_it_matters": "上次报道时权重尚未开放，现在可以下载评估；但 2.8T 参数即便是 MXFP4 也需要大规模多卡集群，多数团队更现实的是关注它的许可证条款和后续蒸馏、小尺寸版本。",
+      "sources": [
+        {
+          "title": "moonshotai/Kimi-K3.1-Pro 模型卡",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        },
+        {
+          "title": "Kimi K3.1-Pro License",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/blob/main/LICENSE",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "llm",
+        "inference"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "follow_up_of": "2026-10-24-kimi-k3-1-pro",
+      "repo": {
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro",
+        "license": "Kimi K3.1-Pro License"
+      }
+    },
+    {
+      "id": "2026-11-06-ripple-65b-preview",
+      "category": "opensource",
+      "title": "Ripple-65B Preview 开放：Apache 2.0 稠密编码模型",
+      "summary": "Ricursive Intelligence 在 Hugging Face 发布 Ripple-65B Preview，65B 参数稠密 Transformer，从零在 12T token 上预训练，后训练侧重 Agent 编码，许可证 Apache 2.0。模型卡自报 Terminal-Bench 2.1 为 80.5、SWE-bench Verified 为 76.5，同时发布了 NVFP4 版本和 base 模型。",
+      "key_points": [
+        "80 层、d_model 5120 的「窄而深」结构，采用门控注意力、全局 NoPE 等设计",
+        "SWE-bench Verified 76.5，低于表中 Reflection Beam 的 81.6；作者说明各家评测难以复现，对比是尽力而为",
+        "上下文长度说法不一致：介绍写最长 1M token，训练表写长上下文阶段 2M",
+        "模型卡没有给出 vLLM/SGLang 启动命令和显存要求，只说可在 DGX Spark 等设备上运行，并提供 NVFP4 检查点和 Colab"
+      ],
+      "why_it_matters": "稠密 65B、Apache 2.0，比动辄数百 B 的 MoE 更容易在自有 GPU 上部署和微调；分数为官方自报的预览版，建议先在团队自己的编码任务上对比现用模型。",
+      "sources": [
+        {
+          "title": "ricursiveAI/Ripple-65B-Preview 模型卡",
+          "url": "https://huggingface.co/ricursiveAI/Ripple-65B-Preview",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        },
+        {
+          "title": "Everything That Happened in AI Today Thursday, November 5",
+          "url": "https://www.theneuron.ai/digest/everything-that-happened-in-ai-today-thursday-november-5-2026/",
+          "kind": "secondary",
+          "publisher": "The Neuron",
+          "published_at": "2026-11-05"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "coding",
+        "llm"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://huggingface.co/ricursiveAI/Ripple-65B-Preview",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "2026-11-06-rtx-spark-linux-throttle",
+      "category": "news",
+      "title": "实测：RTX Spark 笔记本跑 Linux 插电降频，推理慢约五倍",
+      "summary": "MindStudio 产品总监 11 月 1 日发文，在 MSI Prestige N16 Flip AI Plus（RTX Spark、128GB 统一内存）上对比 Windows、WSL 和原生 Linux。跑 GPT-OSS-120B 时 Windows 为 65.4 tokens/s、WSL 为 65.1，原生 Linux 只有 13.9；用 vLLM 跑 8 个并发时 WSL 为 127，原生 Linux 为 39.5。文章在 Hacker News 获得较多讨论。",
+      "key_points": [
+        "原因：CPU/GPU 功率分配由 Windows 专用的 Nvidia Platform Controllers and Framework 管理，固件功率表加密、只有 Windows 驱动能解，Linux 下插电时 GPU 被压在约 780 MHz",
+        "Linux 用电池时约 61–67 tokens/s，插电反而降到约 15 tokens/s",
+        "作者认为真正的修复要靠 Nvidia 把这部分电源管理逻辑移植到 Linux 驱动，目前可行的办法是用 WSL",
+        "文章未报道 Nvidia 的回应，测试数据为作者单机实测"
+      ],
+      "why_it_matters": "打算用 RTX Spark 笔记本在本地跑开源模型的同事，暂时不要指望原生 Linux 的性能；台式 DGX Spark 不受此文描述的问题影响（作者测得 61 tokens/s）。",
+      "sources": [
+        {
+          "title": "Linux on the Nvidia RTX Spark laptop",
+          "url": "https://www.mindstudio.ai/blog/linux-nvidia-rtx-spark-laptop",
+          "kind": "primary",
+          "publisher": "MindStudio",
+          "published_at": "2026-11-01"
+        },
+        {
+          "title": "Nvidia RTX Spark encrypted firmware slows inference speed on Linux（HN 讨论）",
+          "url": "https://news.ycombinator.com/item?id=50362905",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "inference",
+        "infra",
+        "open-weights"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-06-claude-watermark-ip-allowlist",
+      "category": "news",
+      "title": "Claude API 给三款旧模型加文本水印，控制台推出 IP 白名单",
+      "summary": "Claude 开发者平台发布说明显示，11 月 3 日起 Claude Mythos 5、Claude Opus 4.7 和 Claude Sonnet 4.6 生成的文本也带上 Anthropic 文本水印。11 月 5 日 Claude Console 推出 IP 白名单（beta），不在名单内的地址请求会被拒绝，用来限制泄露的 API key 被滥用。",
+      "key_points": [
+        "官方文档称水印不改变输出含义和质量，不增加 token 或隐藏字符，也不包含用户或组织信息",
+        "Sonnet 4.6 上把 temperature、top_p 或 top_k 设成非默认值时，输出可能不带水印",
+        "IP 白名单支持 IPv4/IPv6 地址或 CIDR，每个组织最多 1,000 条",
+        "同日 Admin API 新增 beta 接口，可把 Claude Enterprise 成员在所有设备上登出"
+      ],
+      "why_it_matters": "只涉及 Claude 闭源服务，自部署环境用不上；用 Claude API 的团队可以考虑开启 IP 白名单降低密钥泄露风险。",
+      "sources": [
+        {
+          "title": "Claude Platform release notes",
+          "url": "https://platform.claude.com/docs/en/release-notes/overview.md",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-05"
+        },
+        {
+          "title": "Text watermark",
+          "url": "https://platform.claude.com/docs/en/build-with-claude/text-watermark",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "safety",
+        "policy",
+        "llm"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-06-claude-vault-particles",
+      "category": "news",
+      "title": "Anthropic 用 Claude 协助解出原核 vault 颗粒结构",
+      "summary": "Anthropic 科学团队 11 月 4 日发文：Claude 在约 150 亿条预测蛋白中检索 vault 蛋白近亲、设计 DNA 构建体、建议纯化方法，并在内部多 Agent 环境里跑 RELION 冷冻电镜处理。44 个候选蛋白中 7 个形成类 vault 颗粒，冷冻电镜确认 4 个，其中噬菌体来源的 L05 成为首个原核 vault 三维结构。",
+      "key_points": [
+        "研究人员负责方向、分析决策和实验操作；纯化时间从约三天缩短到约 90 分钟，项目总计不到四个月",
+        "文章也列出 Claude 的失误：一份方案加入了干扰 DNA 摄取的添加剂，损失两周；早期冷冻电镜处理漏了标准步骤，产出有缺陷的图",
+        "冷冻电镜分析用了数百张 GPU，作者承认超出多数学术机构的算力；vault 的生物学功能仍未知"
+      ],
+      "why_it_matters": "展示了 Agent 在长周期科研流程里的分工方式和出错点，与研发团队日常工作关系不大，了解即可。",
+      "sources": [
+        {
+          "title": "Investigating vault particles with Claude",
+          "url": "https://www.anthropic.com/research/investigating-vault-particles-with-claude",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-04"
+        }
+      ],
+      "tags": [
+        "agent",
+        "research"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-06-claude-code-2-1-318",
+      "category": "tools",
+      "title": "Claude Code 2.1.318：修复空闲压缩把会话换成非摘要内容",
+      "summary": "Claude Code 发布 2.1.318，以稳定性修复为主。修复了空闲时自动压缩用一段不是摘要的回复替换整段对话、格式错误的工具调用重试耗尽后 --continue 丢失前文等问题；后台子 Agent 的 shell 命令运行 3 分钟后会被移到后台，避免提示缓存过期。",
+      "key_points": [
+        "MCP 工具在加载前被调用时，错误信息现在会返回该工具的输入 schema，方便模型自行纠正",
+        "claude -p 的文本输出会在登录到期前 10 天打印警告，claude auth status 显示到期时间",
+        "不再在 IDE 终端里启动时自动安装或更新 IDE 扩展",
+        "deniedMcpServers 的 URL 规则也会拦截上游地址匹配的 Anthropic 提供的服务器"
+      ],
+      "why_it_matters": "Claude Code 依赖 Claude 模型，团队自部署环境用不上；其中「调用未加载工具时返回 schema」的做法，可以借鉴到自研或开源 Agent 的错误提示设计里。",
+      "sources": [
+        {
+          "title": "Claude Code CHANGELOG（2.1.318）",
+          "url": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "devtools",
+        "coding",
+        "agent"
+      ],
+      "importance": 2,
+      "actionability": "watch",
+      "follow_up_of": "2026-11-04-claude-code-2-1-317"
+    },
+    {
+      "id": "2026-11-06-headroom-context-compression",
+      "category": "kits",
+      "title": "Headroom 0.43：本地压缩工具输出再交给模型，新增 Agent 技能",
+      "summary": "Headroom 是 Apache 2.0 开源的上下文压缩层，在工具输出、日志、文件、RAG 片段和历史对话进入模型前先压缩，提供 Python 库、TypeScript SDK、代理和 MCP 服务。11 月 5 日发布的 0.43.0 把 MCP 服务迁到 SDK 2.x（破坏性变更），并新增面向 Claude Code、Codex、Copilot 的 headroom 技能，同日 0.43.1 做了一批修复。",
+      "key_points": [
+        "按内容类型路由：JSON 用 SmartCrusher（保留错误项和统计离群值），代码用按 AST 的 CodeCompressor，文本用自家 Kompress-v2-base 模型",
+        "原文缓存在本地，模型可以用 headroom_retrieve 按需取回；README 称压缩在本机完成，不把内容发往服务",
+        "README 自测四个 Agent 场景节省 21%–57% token，GSM8K 压缩前后均为 0.870；这些是项目自报数据",
+        "README 未明确说明是否支持自部署模型，只说任何 OpenAI 兼容客户端可通过 headroom proxy 接入；它作为代理会看到全部请求内容，接入前要评估"
+      ],
+      "why_it_matters": "上下文窗口有限的自部署模型最怕长日志和长 JSON 把窗口塞满；可以先在测试环境把它挂在 OpenAI 兼容端点前面，看压缩后任务成功率是否保持。",
+      "sources": [
+        {
+          "title": "headroomlabs-ai/headroom README",
+          "url": "https://github.com/headroomlabs-ai/headroom",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Headroom v0.43.0 release notes",
+          "url": "https://github.com/headroomlabs-ai/headroom/releases/tag/v0.43.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-05"
+        },
+        {
+          "title": "Headroom v0.43.1 release notes",
+          "url": "https://github.com/headroomlabs-ai/headroom/releases/tag/v0.43.1",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-05"
+        }
+      ],
+      "tags": [
+        "context-engineering",
+        "agent-skills",
+        "mcp",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-06-tool-output-compression",
+      "kit": {
+        "kind": "other",
+        "name": "Headroom",
+        "version": "0.43.1",
+        "repo": "https://github.com/headroomlabs-ai/headroom",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "Codex",
+          "OpenCode",
+          "Aider",
+          "Cline",
+          "Continue",
+          "Goose"
+        ],
+        "capabilities": [
+          "压缩工具输出、日志、文件、RAG 片段和对话历史后再发给模型",
+          "以代理（headroom proxy）、headroom wrap 包装命令、MCP 服务或 Python/TS 库的方式接入",
+          "缓存原文，模型可用 headroom_retrieve 取回被压缩的内容",
+          "CacheAligner 标出会破坏 KV 缓存前缀的易变内容"
+        ],
+        "highlights": [
+          "按内容类型选压缩器，JSON 压缩时保留错误项和离群值而不是简单截断",
+          "可逆压缩：压掉的内容不会丢，需要时能取回",
+          "自带评测命令 python -m headroom.evals，可在自己的环境复核准确率"
+        ],
+        "install": "pip install \"headroom-ai[all]\"；headroom wrap claude；headroom proxy --port 8787",
+        "changes": [
+          "0.43.0：MCP 服务迁移到 SDK 2.x（破坏性变更）",
+          "0.43.0：新增面向 Claude Code、Codex、Copilot 和 skills.sh 的 headroom 技能",
+          "0.43.0：流式 chat completions 也能响应 headroom_retrieve",
+          "0.43.1：修复 CCR 缓存淘汰、代理缓存无上限等问题"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-06-ai-tech-debt-php2shell",
+      "category": "ideas",
+      "title": "IEEE Spectrum：AI 找漏洞逼着软件业偿还几十年的技术债",
+      "summary": "IEEE Spectrum 11 月 2 日文章以 PHP2Shell 为例：一个 2024 年就报给 PHP 基金会、只会导致内存耗尽的 bug，被研究员借助 AI 工具约两周内变成可远程执行代码的漏洞，所幸在被利用前上报，四名工程师花了两个月做补丁。文章在 Hacker News 获得 1015 分，围绕「AI 会让软件更安全还是更危险」展开争论。",
+      "key_points": [
+        "乐观方：Tolmo 的 Matt Suiche 认为这是迟到的清理；哥伦比亚大学 Suman Jana 认为 LLM 生成补丁、再由形式化证明检查是可行方向",
+        "Jana 同时指出找 bug 和修 bug 之间存在根本的不对称，主张前沿实验室为开源防守方捐 token 预算",
+        "悲观方：约翰斯·霍普金斯大学 Matthew Green 认为不出大事没人会真正修，并预计 2027 年初会出现严重事件",
+        "HN 上的反对意见：形式化证明只能保证符合规格，规格本身可能错；AI 写的代码也在引入新 bug，代码越多风险越大"
+      ],
+      "why_it_matters": "团队依赖的老旧组件会更快被发现漏洞，及时升级依赖的重要性在上升；用 AI 修漏洞时，补丁同样需要测试和人工审查把关。",
+      "sources": [
+        {
+          "title": "AI Is Forcing Us to Pay Off 40 Years of Technical Debt",
+          "url": "https://spectrum.ieee.org/ai-in-cybersecurity-php2shell-vulnerability",
+          "kind": "primary",
+          "publisher": "IEEE Spectrum",
+          "published_at": "2026-11-02"
+        },
+        {
+          "title": "AI is forcing us to pay off 40 years of technical debt（HN 讨论）",
+          "url": "https://news.ycombinator.com/item?id=50364336",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "safety",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-06-cuga-same-model-different-harness",
+      "category": "practices",
+      "title": "IBM：同一开源模型换 harness，通过率 30.0% 到 81.1%",
+      "summary": "IBM Research 11 月 3 日在 Hugging Face 发文，用同一个开源权重模型 GLM-5.3-flash 分别跑自家开源 harness CUGA、Nous Research 的 Hermes 和 LangChain 的 Deep Agents，在 AppWorld 的 90 个任务上各试一次。任务通过率分别为 81.1%、46.7% 和 30.0%，作者认为 harness 的选择和模型选择同样重要。",
+      "key_points": [
+        "作者归因于 CUGA 的四点设计：任务拆解并给每步精选工具、用代码执行动作、改数据的代码执行前先校验、执行后自动反思",
+        "CUGA 用 Apache 2.0 许可，可对接任何 OpenAI 兼容端点，支持本地、私有云和离线集群部署",
+        "作者给出的选型建议：跨 API 和应用的业务自动化选 CUGA，长程研究类任务选 Deep Agents，终端编码用 opencode 等编码 Agent",
+        "局限：只有一个基准、90 个任务，三者配置并不完全一致，且是 CUGA 作者自己做的对比"
+      ],
+      "why_it_matters": "对用自部署模型的团队，优化 harness（拆解、校验、反思）可能比换更大的模型更划算；CUGA 能接 OpenAI 兼容的内网推理服务，可以拿团队自己的业务流程小规模试跑。",
+      "sources": [
+        {
+          "title": "Same Model, Different Harness: CUGA, Hermes, and Deep Agents — When to Pick CUGA?",
+          "url": "https://huggingface.co/blog/ibm-research/cuga-harness",
+          "kind": "primary",
+          "publisher": "IBM Research / Hugging Face",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "agent",
+        "evaluation",
+        "open-weights"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "figure": {
+        "type": "bars",
+        "title": "同一模型换三个 harness，通过率差距明显",
+        "series": [
+          "任务通过率"
+        ],
+        "rows": [
+          {
+            "label": "CUGA",
+            "values": [
+              81.1
+            ]
+          },
+          {
+            "label": "Hermes",
+            "values": [
+              46.7
+            ]
+          },
+          {
+            "label": "Deep Agents",
+            "values": [
+              30.0
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自 IBM Research 博客，AppWorld 90 个任务、每任务一次尝试"
+      }
+    },
+    {
+      "id": "2026-11-06-skill-name-your-sources",
+      "category": "skills",
+      "title": "让 AI 写东西前，指明它该用哪些材料，别让它自己补",
+      "summary": "微软 Copilot 的提示词入门指南把一个好提示拆成四部分：目标（要做什么，唯一必需的部分）、背景（为什么要、涉及谁）、来源（该用哪些信息或样例，比如附件、网页、邮件）、期望（格式、长度、语气）。指南同时提醒，回答可能包含错误内容，要对照可信来源核实。",
+      "key_points": [
+        "只写目标也能得到回答，但想要符合预期的结果，通常需要补上背景、来源和期望",
+        "「来源」告诉 AI 依据什么写，没给来源时它只能凭通用知识或猜测填空",
+        "多数人需要来回追问几轮，同一提示也可能得到不同回答"
+      ],
+      "why_it_matters": "产品和测试同事写需求摘要、测试计划时，明确「只依据这份纪要」能减少 AI 自行补充的内容，也让审阅的人更容易对照原文核实；这一做法与模型无关，自部署模型同样适用。",
+      "sources": [
+        {
+          "title": "Learn about Copilot prompts",
+          "url": "https://support.microsoft.com/en-us/topic/learn-about-copilot-prompts-f6c3b467-f07c-4db1-ae54-ffac96184dd5",
+          "kind": "primary",
+          "publisher": "Microsoft Support"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "context",
+        "scenario": "让 AI 根据需求评审会的纪要，整理一份给开发看的需求摘要",
+        "bad": "帮我把登录改版的需求整理一下，写清楚点。",
+        "good": "目标：整理一份 [登录改版] 的需求摘要，给开发同事排期用。\n来源：只依据下面这份评审会纪要，纪要里没有的内容不要补；拿不准的地方列在最后的「待确认」里。\n[粘贴纪要]\n期望：用编号列表，每条需求一句话，附上它在纪要里对应的原话；总长度不超过一屏。",
+        "why": [
+          "写明「只依据这份纪要」，AI 不会自己补上听起来合理但没人提过的需求",
+          "要求附上对应原话，审阅的人可以逐条对照核实",
+          "拿不准的单独列出，而不是混在正文里，减少来回澄清",
+          "限定格式和长度，产出不会长到没人看完"
+        ],
+        "practice": "找一份你最近让 AI 整理的文字，补一句「只依据以下材料」并要求附上原话，对比两次结果多出了哪些凭空内容。"
+      }
+    },
+    {
+      "id": "2026-11-06-decision-model-policy-gates",
+      "category": "research",
+      "title": "论文：给编码 Agent 的拦截规则加上正反例，漏检和误报都减少",
+      "summary": "11 月 1 日的论文测试用决策模型在编码 Agent 执行危险操作（删数据、泄露密钥、发错消息）前拦截。作者用 2,643 条按 28 条规则标注的合成工具调用，评测 22 个托管决策模型和 2 个用提示词充当分类器的通用模型。把规则边界写成「例子 + 反例」后，23 个可用模型的召回率提高 5.5 到 26.1 个百分点，其中 21 个的误报下降。",
+      "key_points": [
+        "以 Jev 1.14 为例：召回率从 89.3% 升到 98.2%，在 252 个正常操作上的多余打断从 30.6% 降到 4.8%",
+        "较强的模型在把具体名称换成泛化描述后，大部分提升仍然保留",
+        "在 16 个新场景的追加测试中，22 个模型召回率提升，21 个模型误报下降",
+        "论文附带数据集、规则文本和测试脚手架"
+      ],
+      "why_it_matters": "给 Agent 写权限或安全规则时，光写「不要做危险操作」不够，补上「这个算、那个不算」的边界例子更有效；这条写法同样适用于团队的规则文件。",
+      "sources": [
+        {
+          "title": "Decision Models as Policy Gates for Coding Agents: Explicit Policy Boundaries Improve Detection and Reduce False Alarms",
+          "url": "https://arxiv.org/abs/2611.02155",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-01"
+        }
+      ],
+      "tags": [
+        "safety",
+        "agent",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-06-switch-swe",
+      "category": "research",
+      "title": "Switch-SWE：编码 Agent 中途切换任务，解决率平均降 11.5 点",
+      "summary": "11 月 1 日发布的 Switch-SWE 基准，从 19 个 Python 仓库构造 200 个主任务，每个主任务分别在不被打断和中途穿插其他未完成任务两种会话里运行，只评主任务的最终补丁。7 个编码 Agent 在穿插场景下平均解决率下降 11.5 个百分点（6.0 到 15.0）。",
+      "key_points": [
+        "作者提出一个可插拔的上下文管理模块：挑选相关历史，并维护简短的任务状态摘要",
+        "该模块接到 OpenCode 上后，各模型提升 5.5 到 15.5 个百分点",
+        "代码已在 GitHub 开源"
+      ],
+      "why_it_matters": "一个会话里来回切换多件事会拖累 Agent；实践上可以一件事一个会话，或让 Agent 切换前写下任务状态摘要。",
+      "sources": [
+        {
+          "title": "Switch-SWE: Do Coding Agents Hold Focus When Switching Between Unfinished Tasks?",
+          "url": "https://arxiv.org/abs/2611.02017",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-01"
+        }
+      ],
+      "tags": [
+        "coding",
+        "context-engineering",
+        "evaluation"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    }
+  ],
+  "experiments": [
+    "2026-11-06-tool-output-compression"
+  ]
+}
