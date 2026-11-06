@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-07-repo-map-vs-grep",
+  "ran_at": "2026-11-06T22:13:00+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "模拟仓库：56 个文件，240 个函数，8 个定位目标，每个目标配 2 个诱饵文件\n目标           grep 命中文件   grep 读入    map 读入  定义/调用方正确\nm19_f1               6      1776       254  grep=是 map=是\nm17_f1               5      1434       254  grep=是 map=是\nm16_f2               5      1434       254  grep=是 map=是\nm23_f5               4      1092       125  grep=是 map=是\nm38_f5               5      1434       190  grep=是 map=是\nm18_f3               6      1776       254  grep=是 map=是\nm01_f0               6      1776       254  grep=是 map=是\nm22_f2               4      1092       125  grep=是 map=是\n\n[PASS] grep 方式找到全部 8 个目标的定义和调用方（8/8）\n[PASS] 代码地图方式找到全部 8 个目标的定义和调用方（8/8）\n[PASS] 代码地图方式读入的估算 token 少于 grep 方式（1710 < 11814）\n[PASS] grep 命中了全部 16 个只在注释/字符串里提到名字的诱饵文件\nMETRIC: grep 方式读入 = 11814 token\nMETRIC: 代码地图方式读入 = 1710 token\nMETRIC: 建一次完整代码地图 = 2929 token\nMETRIC: 每次定位节省 = 85.5 %\nRESULT: 8 个定位任务两种方式都找对，代码地图方式少读约 85.5% 的估算 token（不含建图）\n",
+  "stderr": ""
+}

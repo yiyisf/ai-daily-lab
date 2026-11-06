@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-07-decision-file-lint",
+  "title": "玩具实验：检查待办是否写了验收句、提问是否进了决策文件",
+  "goal": "按 Zimmergren 文章里的待办与决策文件规则，写一个离线检查器：每个待办须写明完成标准，Agent 的提问只能出现在决策文件且附建议，已回答的问题要删掉；在内置的好、坏两组示例上验证检查器能区分。",
+  "related_item": "2026-11-07-zimmergren-human-agent-lines",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "符合规则的示例零问题；违规示例中缺验收句、散落的提问、无建议的决策项、已回答未删除的决策项都能被逐条检出",
+  "tags": ["agent", "workflow", "ai-collaboration"]
+}

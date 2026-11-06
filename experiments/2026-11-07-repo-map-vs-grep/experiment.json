@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-07-repo-map-vs-grep",
+  "title": "玩具实验：用代码地图定位函数，比 grep 后整文件读少多少 token",
+  "goal": "受论文 How Should Agents See Code? 启发，用固定种子生成一个模拟 Python 仓库，比较「grep 函数名后整文件读取」和「先查 AST 代码地图、只读目标函数及其调用点」两种定位方式的估算 token 开销和定位正确率。",
+  "related_item": "2026-11-07-how-agents-see-code",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "两种方式都能找到定义和调用方，代码地图方式读取的估算 token 明显更少；grep 会命中只在注释或字符串里出现名字的诱饵文件",
+  "tags": ["coding", "context-engineering", "agent"]
+}
