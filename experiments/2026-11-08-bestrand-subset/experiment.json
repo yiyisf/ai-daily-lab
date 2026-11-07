@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-08-bestrand-subset",
+  "title": "玩具实验：评测集只跑 100 题，BestRand 选题比纯随机稳多少",
+  "goal": "按论文 BestRand 的选题流程（4 倍候选池、128 个随机子集、按探针模型平均分向量挑最具代表性的子集），在固定种子生成的模型×题目得分矩阵上，与纯随机抽题比较目标模型的估分误差，重点看尾部误差。",
+  "related_item": "2026-11-08-bestrand-benchmark-compression",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 120,
+  "expected": "三种预算下 BestRand 的平均误差和 P95 误差都不高于纯随机；预算越大两者误差都越小",
+  "tags": ["evaluation", "research"]
+}

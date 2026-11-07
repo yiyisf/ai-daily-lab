@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-08-bestrand-subset",
+  "ran_at": "2026-11-07T22:11:12+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 3.0,
+  "packages": [
+    "numpy==2.2.6"
+  ],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 5.5,
+  "stdout": "题目数 2000，探针模型 8 个，目标模型 24 个，每种设置 400 个种子\n目标模型全量得分范围 19.9% ~ 93.0%\n\n    k | 方法        |     平均误差 |    P95误差 |     最大误差 |    >5分占比\n   50 | random    |    5.30  |   13.05  |   28.70  |   44.98%\n   50 | bestrand  |    5.03  |   12.25  |   26.25  |   42.60%\n  100 | random    |    3.61  |    9.00  |   17.75  |   26.57%\n  100 | bestrand  |    3.42  |    8.60  |   16.00  |   24.59%\n  200 | random    |    2.51  |    6.20  |   10.90  |   11.53%\n  200 | bestrand  |    2.41  |    6.00  |   11.00  |    9.85%\n\n[PASS] k=50: BestRand 平均误差低于纯随机（5.03 vs 5.30 分）\n[PASS] k=50: BestRand P95 误差低于纯随机（12.25 vs 13.05 分）\n[PASS] k=100: BestRand 平均误差低于纯随机（3.42 vs 3.61 分）\n[PASS] k=100: BestRand P95 误差低于纯随机（8.60 vs 9.00 分）\n[PASS] k=200: BestRand 平均误差低于纯随机（2.41 vs 2.51 分）\n[PASS] k=200: BestRand P95 误差低于纯随机（6.00 vs 6.20 分）\n[PASS] 纯随机：预算从 50 题增加到 200 题，平均误差下降\n\nMETRIC: k=50 纯随机 P95 误差 = 13.05 分\nMETRIC: k=50 BestRand P95 误差 = 12.25 分\nMETRIC: k=100 纯随机 P95 误差 = 9.00 分\nMETRIC: k=100 BestRand P95 误差 = 8.60 分\nMETRIC: k=200 纯随机 P95 误差 = 6.20 分\nMETRIC: k=200 BestRand P95 误差 = 6.00 分\nMETRIC: k=100 纯随机误差超过5分的占比 = 26.57 %\nMETRIC: k=100 BestRand 误差超过5分的占比 = 24.59 %\nRESULT: 在这份模拟数据上，100 题预算下 BestRand 把 P95 估分误差从 9.00 分降到 8.60 分（约降 4%），只多用了探针模型在候选池上的分数\n",
+  "stderr": ""
+}
