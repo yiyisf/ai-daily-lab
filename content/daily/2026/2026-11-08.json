@@ -1,0 +1,531 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "generated_at": "2026-11-08T09:30:00+08:00",
+  "editor_note": "本期 13 条，周末新发布不多，主线是「Agent 的上下文怎么管」。Anthropic 拆解 Agent 记忆的分层和离线整理；Claude Code 把账号邮箱写进请求头的讨论，提醒上下文里的私人信息会外泄；Anthropic 的四个 Office 技能改为 Apache 2.0。开源方面，Hugging Face 开始按 Agent 外壳给小模型训 LoRA。实验用模拟数据比较 BestRand 与纯随机抽题的估分误差。",
+  "tldr": [
+    {
+      "text": "Anthropic 测记忆分层：Opus 5.5 加记忆后从 0.655 升到 0.838，常驻层要小",
+      "item_id": "2026-11-08-anthropic-agent-memory"
+    },
+    {
+      "text": "Anthropic 的 docx、pdf、pptx、xlsx 技能从源码可见改为 Apache 2.0",
+      "item_id": "2026-11-08-anthropic-office-skills-apache"
+    },
+    {
+      "text": "Claude Code 曾把账号邮箱写进 User-Agent，官方称下版移出模型上下文",
+      "item_id": "2026-11-08-claude-code-email-user-agent"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-08-anthropic-agent-memory",
+      "reason": "给团队 Agent 的记忆文件定个规矩，常驻内容少而准，减少错误笔记反复误导",
+      "steps": [
+        "把常驻加载的记忆文件压成索引，控制在 200 行或 25 KB 以内",
+        "在规则文件里写明记忆用来干什么、什么情况下写笔记",
+        "定期对照原始会话记录核对笔记，删掉过时或错误的内容"
+      ]
+    },
+    {
+      "item_id": "2026-11-08-anthropic-office-skills-apache",
+      "reason": "现成的 Office 文档技能可以改造成团队版本，处理需求、报告和表格",
+      "steps": [
+        "在 Claude Code 中运行 /plugin marketplace add anthropics/skills",
+        "运行 /plugin install document-skills@anthropic-agent-skills",
+        "先读 skills/xlsx/SKILL.md 和 scripts，再决定如何移植到团队的 Agent"
+      ]
+    },
+    {
+      "item_id": "2026-11-08-bestrand-benchmark-compression",
+      "reason": "只能跑部分评测题时，用已有模型的结果挑题，估分更稳",
+      "steps": [
+        "克隆 George-Ling3/BestRand，运行 python -m pip install -r requirements.txt",
+        "运行 python run.py --preset quick 看论文设置下的对比",
+        "把团队已有的「模型 × 题目」得分矩阵传给 select() 选题"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-08-bestrand-subset"
+  ],
+  "items": [
+    {
+      "id": "2026-11-08-anthropic-agent-memory",
+      "category": "practices",
+      "title": "Anthropic 拆解 Agent 记忆：常驻层要小，离线「做梦」对照原始记录纠错",
+      "summary": "Anthropic 11 月 6 日发文，把 Agent 记忆分为四层：可检索的会话记录、会话中写下的记忆笔记、wiki 这类整理后的表示、每次新会话都注入的上下文。另设一个离线的「dreaming」环节，回读原始记录来纠正笔记、建立和更新 wiki。文章用 Claude 系列模型在多个任务上测试，并给出适用于其他 Agent 的建议。",
+      "key_points": [
+        "CL-Bench 1.0 数据库任务上，Opus 5.5 加记忆后平均奖励从 0.655 升到 0.838，Sonnet 5 从 0.306 升到 0.61；较弱的 Sonnet 4.6 只从 0.33 升到 0.364，它读记忆的次数不到一半",
+        "在 4.2 亿 token 的文档库上，wiki 加搜索达到 61%，只用搜索为 53%，每题约省 20,000 token；合同条款写进一张共享表只保住 57 条中的 41 条，改成一份合同一页后 57 条全保住",
+        "建议告诉 Agent 记忆用来干什么，但不规定怎么用；要求「只记失败」反而让收益下降",
+        "常驻注入层要小：Claude Code 只加载 MEMORY.md 的前 200 行或 25 KB 作为索引；整理时对照原始记录核对笔记，并行时一页只让一个 Agent 写"
+      ],
+      "why_it_matters": "这些做法不依赖具体模型，可以直接用到开源 CLI Agent 的规则文件和记忆目录上；但测试只用了 Claude 模型，较弱模型可能不主动读记忆，自部署环境里最好在规则文件里写明何时读、何时写。",
+      "sources": [
+        {
+          "title": "The components of agent memory",
+          "url": "https://www.anthropic.com/research/components-of-agent-memory",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-06"
+        }
+      ],
+      "tags": [
+        "agent",
+        "context-engineering",
+        "workflow"
+      ],
+      "importance": 5,
+      "actionability": "try",
+      "figure": {
+        "type": "bars",
+        "title": "加记忆后多数模型明显提升，较弱的 Sonnet 4.6 几乎没涨",
+        "series": [
+          "无记忆",
+          "有记忆"
+        ],
+        "rows": [
+          {
+            "label": "Opus 5.5",
+            "values": [
+              0.655,
+              0.838
+            ]
+          },
+          {
+            "label": "Sonnet 5",
+            "values": [
+              0.306,
+              0.61
+            ]
+          },
+          {
+            "label": "Sonnet 4.6",
+            "values": [
+              0.33,
+              0.364
+            ]
+          }
+        ],
+        "caption": "CL-Bench 1.0 数据库任务平均奖励，数据来自 Anthropic 文章"
+      }
+    },
+    {
+      "id": "2026-11-08-anthropic-office-skills-apache",
+      "category": "kits",
+      "title": "Anthropic 官方 docx、pdf、pptx、xlsx 技能改为 Apache 2.0 开源",
+      "summary": "anthropics/skills 仓库 11 月 6 日合并 #2146，把驱动 Claude 文档能力的 docx、pdf、pptx、xlsx 四个技能从「源码可见、非开源」改为 Apache 2.0，与仓库里大多数技能一致。此前这四个技能的许可证规定，使用须遵守与 Anthropic 的服务协议。",
+      "key_points": [
+        "四个技能都是 SKILL.md 加 scripts 目录的形式，README 称它们是生产环境里在用的复杂技能参考",
+        "xlsx 技能按任务分工：带公式和格式的读写用 openpyxl，批量数据进出用 pandas",
+        "改为 Apache 2.0 后，可以修改、移植到其他 Agent 或纳入团队自己的技能库",
+        "技能会在本机运行 Python 脚本处理文件，引入前建议先读一遍 SKILL.md 和脚本"
+      ],
+      "why_it_matters": "产品和测试同事常要处理 Word、Excel、PPT、PDF，这四个技能现在可以放心改造成团队版本；技能本身是文字说明加脚本，但在开源模型上效果如何需要自己试。",
+      "sources": [
+        {
+          "title": "Move Office skills to the Apache 2.0 license (#2146)",
+          "url": "https://github.com/anthropics/skills/commit/2c5958ecac7cee2b583967a2c4981d0f4a75c579",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-06"
+        },
+        {
+          "title": "anthropics/skills README",
+          "url": "https://github.com/anthropics/skills",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "workflow"
+      ],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "document-skills（docx / pdf / pptx / xlsx）",
+        "repo": "https://github.com/anthropics/skills",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "Claude.ai"
+        ],
+        "capabilities": [
+          "创建、读取、编辑 Word 文档和 .dotx 模板",
+          "处理 PDF：提取文字和表格、合并拆分、旋转、加水印、填表",
+          "创建和修改幻灯片，从 .pptx 中提取文字",
+          "读写 .xlsx / .csv，处理公式、格式、图表和杂乱数据"
+        ],
+        "highlights": [
+          "许可证从源码可见改为 Apache 2.0，可改造和再分发",
+          "每个技能自带 scripts 目录，复杂操作交给脚本而不是让模型手写",
+          "SKILL.md 的 description 写清了触发条件，可作为写技能描述的范例"
+        ],
+        "install": "/plugin marketplace add anthropics/skills；/plugin install document-skills@anthropic-agent-skills"
+      }
+    },
+    {
+      "id": "2026-11-08-claude-code-email-user-agent",
+      "category": "ideas",
+      "follow_up_of": "2026-11-04-claude-code-2-1-317",
+      "title": "Claude Code 把账号邮箱写进 User-Agent：删掉邮箱就够了吗",
+      "summary": "11 月 5 日有用户在 Claude Code 仓库报告，Agent 发起网络请求时把账号邮箱写进了 User-Agent 头。Claude Code 团队成员在 HN 回应：邮箱原本放进模型上下文是为了填 @author 之类字段，模型有时把它写进 curl 命令的 User-Agent，下个版本将把邮箱移出上下文。讨论随即扩展到 Agent 上下文里的私人信息如何防止外泄。",
+      "key_points": [
+        "官方说法：2.1.317 起有默认开启的保护，网页或 curl 类调用含邮箱时会先询问，但不覆盖 Claude 自行运行的脚本；stable 通道当时仍是 2.1.311，建议升级",
+        "质疑一：只靠模型和询问不够，应当默认安全、有确定性保证；有用户测试发现含邮箱的 echo 命令没被拦下，问题仍未定论",
+        "质疑二：网站可以诱导 Agent 回答各种问题，删掉邮箱并不能移除上下文里所有敏感信息",
+        "也有人建议用 Hook 在请求发出前过滤内容，而不是依赖模型自觉"
+      ],
+      "why_it_matters": "用开源 CLI Agent 也会遇到同类问题：规则文件、环境变量、记忆里的个人信息都可能被写进外发请求。可以检查注入了哪些个人信息，并用出站 Hook 拦截含敏感字段的命令。",
+      "sources": [
+        {
+          "title": "Bug Report: Privacy violation in User-Agent header · Issue #107757",
+          "url": "https://github.com/anthropics/claude-code/issues/107757",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-05"
+        },
+        {
+          "title": "Hacker News：Claude Code 团队成员回应",
+          "url": "https://news.ycombinator.com/item?id=50388176",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": [
+        "safety",
+        "coding",
+        "agent"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-08-hf-harness-adapters",
+      "category": "opensource",
+      "title": "Hugging Face 开放 harness 适配器：按 Agent 外壳给小模型训 LoRA",
+      "summary": "Hugging Face 的 harness-hub 11 月 6 日发文，为每个「模型 + Agent 外壳」组合（pi、opencode、hermes）训练一个小 LoRA 适配器：外壳不做改动，在可验证任务上做强化学习，让本地 Agent 换上为它训练过的适配器。环境、safeagents 规则、训练配方和检查点评测都已公开。",
+      "key_points": [
+        "用 TRL 的 AsyncGRPOTrainer 做 GRPO，LoRA rank 32；模型包括 LFM2.5-24B-A2B、LFM3-1.7B，以及实验性的 TwIL-8B",
+        "任务来自 Hub 上公开的 Agent 轨迹：270 个 Repo2RLEnvs 任务（230 训练、40 留出）和 150 个留出的 SmolDataEnvs 任务",
+        "奖励是任务验证器得分，正确时工具调用越少加分越多；safeagents 拦截刷分的工具调用并记 0 分",
+        "评测 9 个检查点共 1,350 个会话，在一张 H200 上不到 1 小时、约 5 美元；各外壳的最终通过率文中尚未给出"
+      ],
+      "why_it_matters": "思路对自部署团队很实用：不换模型，只给常用的开源 CLI Agent 配一个专门训练的 LoRA。目前只有早期适配器，没有使用说明和最终成绩，先关注。",
+      "sources": [
+        {
+          "title": "Harness adapters: Safe RL for efficient agentic development",
+          "url": "https://huggingface.co/blog/harness-hub/harness-adapters",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-06"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "fine-tuning",
+        "agent",
+        "coding"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-08-linum-pjit-21k",
+      "category": "opensource",
+      "title": "Linum 开源 P-JiT：约 2.1 万美元训练的 2B 文生图模型",
+      "summary": "Linum 11 月 4 日发布 P-JiT，一个直接在像素空间工作的扩散 Transformer，采样时约 2.18B 参数，文本编码器为冻结的 Qwen3.5-4B。总训练成本约 21,038 美元，即按每小时 2.50 美元计的 8,415 个 H100 小时；权重和代码以 Apache 2.0 发布。",
+      "key_points": [
+        "预训练在 64 张 H100 上进行，先在 512² 分辨率训练 6.1 亿样本，再在 1024² 训练 5000 万样本",
+        "训练数据排除了文字类图片，因此不能生成清晰文字或海报",
+        "全身人像、多实体场景、多人互动和常识类细节仍是弱项",
+        "作者定位为研究性质的概念验证，长期目标是视频生成"
+      ],
+      "why_it_matters": "属于图像生成，团队当前环境用不上；可作为「小预算训练可用模型」的参考案例。",
+      "sources": [
+        {
+          "title": "Training a Text-to-Image Model for $21K",
+          "url": "https://www.linum.ai/field-notes/pjit-21k",
+          "kind": "primary",
+          "publisher": "Linum",
+          "published_at": "2026-11-04"
+        }
+      ],
+      "tags": [
+        "multimodal",
+        "open-weights"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-08-ollama-0-40-15",
+      "category": "tools",
+      "follow_up_of": "2026-11-04-ollama-0-40-14",
+      "title": "Ollama 0.40.15：支持 9B 编码模型 MiMo V2.6，接入 Kimi Code CLI",
+      "summary": "Ollama 11 月 3 日发布 0.40.15，新增小米 MiMo 面向代码和 Agent 工作流的 9B 模型 mimo-v2.6，以及 AutoTrust 决策模型（9b、35b、27b-vl）。ollama launch 支持 Kimi Code CLI，并能自动填好 Pi 的模型列表。",
+      "key_points": [
+        "运行新模型：ollama run mimo-v2.6",
+        "AutoTrust 决策模型读文本后返回选项、是否概率和评分；本版只支持 Apple silicon",
+        "循环结构和视觉类 GGUF 模型可同时处理多个请求；Qwen3 和 Qwen3.5 支持长上下文（YaRN）缩放",
+        "不带参数运行 ollama 会打开欢迎启动器"
+      ],
+      "why_it_matters": "9B 模型显存要求低，适合在本机给 Pi、OpenCode 这类开源 CLI Agent 试一个编码模型；实际效果需要在团队任务上自己验证。",
+      "sources": [
+        {
+          "title": "Ollama v0.40.15 release notes",
+          "url": "https://github.com/ollama/ollama/releases/tag/v0.40.15",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "inference",
+        "open-weights",
+        "devtools"
+      ],
+      "importance": 3,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-08-tencent-hy4",
+      "category": "news",
+      "title": "腾讯发布 Hy4：首次支持视觉理解和电脑操作，称将开放权重",
+      "summary": "腾讯 11 月 4 日发布 Hy4，首次加入视觉理解和命令行、图形界面的电脑操作能力，并强化指令遵循、长上下文和长程 Agent 任务。官方称将在近几天公开模型权重和系统卡，目前通过腾讯云 TokenHub、CodeBuddy 等产品及 OpenRouter、OpenCode 等第三方平台提供。",
+      "key_points": [
+        "官方价格约为每百万输入 token 0.90 美元、输出 2.70 美元，腾讯云 TokenHub 上 12 月 31 日前五折",
+        "内部评测幻觉率从 Hy4 Preview 的 12.95% 降到 7.2%；金融盲评得分 3.04，DeepSeek-V4.1-Flash-1017 为 2.97，均为腾讯自报",
+        "发布页未给出参数量、上下文长度和许可证"
+      ],
+      "why_it_matters": "权重放出后才能评估自部署的显存需求和许可证；视觉和电脑操作能力在没有多模态的环境里暂时用不上，可等模型卡出来再看纯文本编码表现。",
+      "sources": [
+        {
+          "title": "Tencent Launches Hy4, Joining the Ranks of the World's Leading Open-Source AI Models",
+          "url": "https://www.tencent.com/tencent-launches-hy4-joining-the-ranks-of-the-worlds-leading-open-source-ai-models/",
+          "kind": "primary",
+          "publisher": "Tencent",
+          "published_at": "2026-11-04"
+        }
+      ],
+      "tags": [
+        "open-weights",
+        "llm",
+        "agent"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-08-cognition-swe-2-flash",
+      "category": "news",
+      "title": "Cognition 发布 SWE-2 Flash：基于 Inkling-Small 后训练，暂不公开权重",
+      "summary": "Cognition 11 月 4 日发布编码模型 SWE-2 Flash，以 Thinking Machines 的 Inkling-Small（276B 总参、12B 激活）为基座，在强化学习前加了一段中期训练。价格是 SWE-2 的五分之一，演示中速度约 200 token/s，SWE-2 约 60 token/s；在 Devin Desktop 和 CLI 中 11 月 30 日前免费。",
+      "key_points": [
+        "相对基座，Terminal-Bench 4.0 从 0.9% 升到 20.0%，FrontierCode 2.0 从 3.2% 升到 24.0%，均为官方自报",
+        "Cognition 以网络安全风险为由暂不公开权重，计划几周后公布向可信伙伴和研究机构共享的方案",
+        "没有独立 API 和公开定价"
+      ],
+      "why_it_matters": "说明开放基座经过针对性后训练，编码能力可以大幅提升；但模型本身拿不到，只能了解。",
+      "sources": [
+        {
+          "title": "Introducing SWE-2 Flash",
+          "url": "https://cognition.com/blog/swe-2-flash",
+          "kind": "primary",
+          "publisher": "Cognition",
+          "published_at": "2026-11-04"
+        }
+      ],
+      "tags": [
+        "coding",
+        "llm"
+      ],
+      "importance": 2,
+      "actionability": "know",
+      "figure": {
+        "type": "bars",
+        "title": "SWE-2 Flash 相对 Inkling-Small 基座大幅提升",
+        "series": [
+          "Inkling-Small",
+          "SWE-2 Flash"
+        ],
+        "rows": [
+          {
+            "label": "Terminal-Bench 4.0",
+            "values": [
+              0.9,
+              20.0
+            ]
+          },
+          {
+            "label": "FrontierCode 2.0",
+            "values": [
+              3.2,
+              24.0
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自 Cognition 博客，为官方自报分数"
+      }
+    },
+    {
+      "id": "2026-11-08-psi-aaronson-ambainis",
+      "category": "news",
+      "title": "PSI 称其 AI 系统证明了 Aaronson-Ambainis 猜想，Lean 已验证",
+      "summary": "初创公司 PSI 11 月 6 日宣布，其内部研究系统运行一个未公开的 Anthropic 模型，证明了 2008 年提出的 Aaronson-Ambainis 猜想，并在 Lean 中完成形式化。该猜想涉及量子计算机在随机输入上能否获得指数级加速。",
+      "key_points": [
+        "Lean 在运行第三天接受了证明，之后系统又两次改进结果",
+        "斯坦福的几位研究者已读过证明并反馈意见，正在撰写更短的专家版说明",
+        "目前是公司自行发布，尚未经期刊同行评审；模型不公开，外部无法复现这次运行"
+      ],
+      "why_it_matters": "又一个「AI 产出 + 形式化验证」的数学成果，和开发工作关系不大，了解即可。",
+      "sources": [
+        {
+          "title": "Aaronson-Ambainis conjecture",
+          "url": "https://psi.inc/research/aaronson-ambainis/",
+          "kind": "primary",
+          "publisher": "PSI",
+          "published_at": "2026-11-06"
+        }
+      ],
+      "tags": [
+        "research",
+        "reasoning"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-08-skill-quote-before-conclude",
+      "category": "skills",
+      "title": "让 AI 总结长文档时，先摘原文再下结论，找不到出处就删",
+      "summary": "Anthropic 关于减少幻觉的指南给出几条基础做法：允许模型说「不知道」；处理长文档时先逐字摘出相关原文，再基于摘录完成任务；要求每条结论附上支持它的原文，找不到就撤回。指南也提醒，这些方法能减少但不能消除幻觉，关键信息仍要人工核实。",
+      "key_points": [
+        "先摘录、后分析，让回答扎根在文档原文上",
+        "每条结论配引用，读者可以逐条核对",
+        "明确允许回答「信息不足」，减少硬编出来的结论"
+      ],
+      "why_it_matters": "测试和产品同事经常让 AI 读需求文档、测试报告、会议纪要；这个做法与模型无关，上下文有限时也可以分段摘录后再汇总。",
+      "sources": [
+        {
+          "title": "Reduce hallucinations",
+          "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "review",
+        "scenario": "让 AI 读一份需求文档，总结出需要开发和测试关注的要点",
+        "bad": "帮我看下这份需求文档，总结一下重点和需要注意的地方。",
+        "good": "下面是 [需求名] 的需求文档。请分两步：（1）先逐字摘出与功能范围、验收条件、例外情况有关的原文，编号列出；找不到就写「未找到相关原文」。（2）只根据这些摘录，列出开发和测试需要关注的要点，每条后面标注对应的摘录编号。文档里没写清的地方，写「文档未说明」，不要自己推断。",
+        "why": [
+          "先摘原文再总结，结论只能来自文档本身，而不是 AI 的常识补全",
+          "每条要点标摘录编号，读的人能很快核对是否属实",
+          "允许写「文档未说明」，把需求里的空白暴露出来，而不是被编造的内容填上"
+        ],
+        "practice": "找一份你最近让 AI 总结过的文档，用上面的写法再问一次，对比两次结果里有多少条找不到出处。"
+      }
+    },
+    {
+      "id": "2026-11-08-bestrand-benchmark-compression",
+      "category": "research",
+      "experiment_id": "2026-11-08-bestrand-subset",
+      "title": "论文 BestRand：评测只跑一小部分题，挑「最具代表性」的随机子集",
+      "summary": "论文分析了用题目子集估计全量评测分数时的误差：多数随机子集误差很小，但少数误差极大，呈长尾分布，且不会随评测的模型增多而消失。作者提出 BestRand：在 4 倍候选池里抽 128 个随机子集，用几个探针模型的分数挑出平均分最接近候选池的那个，保留随机抽样的低成本，减少大误差。",
+      "key_points": [
+        "在 70 多个文本、多模态和 Agent 基准上验证，相比有竞争力的方法，高误差风险平均降低 50.2%，估计误差平均降低 16.4%，构建成本只需 51.3%",
+        "在分数区间、模型家族和时间的分布偏移下，分布外估计误差平均降低 21.8%",
+        "代码以 MIT 许可开源，可以把自己的「探针模型 × 题目」得分矩阵传给 select() 得到选题"
+      ],
+      "why_it_matters": "团队给自部署模型做选型、量化或微调回归时，往往只能跑评测集的一部分；用已有几个模型的全量结果当探针来选题，方法简单、不需要额外模型调用。",
+      "sources": [
+        {
+          "title": "Random Is Almost Enough? Stable and Low-Cost Benchmark Compression via BestRand",
+          "url": "https://arxiv.org/abs/2611.00883",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-31"
+        },
+        {
+          "title": "George-Ling3/BestRand",
+          "url": "https://github.com/George-Ling3/BestRand",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "evaluation",
+        "research"
+      ],
+      "importance": 4,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-08-signed-but-steerable-rag",
+      "category": "research",
+      "title": "论文：离线 RAG 知识包签了名，向量仍可被篡改劫持检索",
+      "summary": "论文研究边缘设备上的离线 RAG：更新以签名的「知识包」下发，包含文本和预先算好的向量。作者指出签名只能证明发布者是谁，不能证明向量确实编码了对应文本；如果验证方按余弦容差接受重算的向量，控制向量的一方就能劫持一部分查询。",
+      "key_points": [
+        "在 5 个语料和 2 个嵌入模型上，按实际可用阈值校验时，98%–100% 的查询都可能被劫持",
+        "在运行本地模型的 Raspberry Pi 5 上，攻击使正确回答率从 0.75 降到 0.39",
+        "作者提出校验量化编码并配合校准的保护带，在三个平台的样本里接受了所有诚实向量"
+      ],
+      "why_it_matters": "团队自建 RAG 时如果直接导入别人算好的向量，最好在本地用同一嵌入模型重算并比对，或只导入文本自己建索引。",
+      "sources": [
+        {
+          "title": "Signed but Steerable: Measuring and Closing the Text-Vector Integrity Gap in Offline Retrieval-Augmented Generation",
+          "url": "https://arxiv.org/abs/2611.06498",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-04"
+        }
+      ],
+      "tags": [
+        "rag",
+        "safety",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-08-harness-s",
+      "category": "research",
+      "title": "论文 Harness-S：用多个「兄弟外壳」救回失败任务，再训进一个策略",
+      "summary": "论文观察到，从同一个基础 Agent 外壳派生的不同变体能修好不同的失败，且作用会随训练变化。Harness-S 不去找一个最好的外壳，而是在基础外壳全部失败时，改用几个专门的兄弟外壳重新生成轨迹，替换掉失败组参与强化学习，让最终策略在原外壳下也能用上这些能力。",
+      "key_points": [
+        "三部分：定向演化出兄弟外壳池、只在全部失败时启用的补救训练、按行为画像挑选外壳的自适应路由",
+        "在 AppWorld、SWE-Gym 和 DBBench 上，训练出的策略在原外壳下明显优于只训练策略的做法；摘要未给出具体数字",
+        "代码已在 GitHub 开源"
+      ],
+      "why_it_matters": "和今天 Hugging Face 的 harness 适配器思路相近：外壳本身也是训练资源。对需要自训 Agent 模型的团队有参考价值，一般读者了解即可。",
+      "sources": [
+        {
+          "title": "Harness-S: Learning from Sibling Harnesses for Generalizable Agent Training",
+          "url": "https://arxiv.org/abs/2611.04277",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "agent",
+        "fine-tuning",
+        "research"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    }
+  ]
+}
