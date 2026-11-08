@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-09-agent-allowlist-secrets",
+  "title": "玩具实验：只认密钥格式的扫描器，会漏掉权限文件里哪些密码",
+  "goal": "按 Apiiro 研究中描述的泄露方式，用固定种子生成假凭据，拼成常见的 Agent allow 规则（带格式的 token、PGPASSWORD=、sshpass -p、mysql -p、URL 内口令、Basic 认证头、curl -u），比较「只认密钥格式」与「格式加命令上下文」两种检测器的检出率和误报。",
+  "related_item": "2026-11-09-claude-code-dont-ask-again-secrets",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "两种检测器都能检出带固定格式的 token；人设口令类只有加了上下文规则的检测器能检出；变量引用写法不被误报",
+  "tags": ["safety", "coding", "agent"]
+}
