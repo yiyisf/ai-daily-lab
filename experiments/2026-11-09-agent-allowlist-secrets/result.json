@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-09-agent-allowlist-secrets",
+  "ran_at": "2026-11-08T22:12:13+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "各类别检出情况（A=只认格式，B=格式+上下文）：\n  格式化 token  共 6 条  A 检出 6  B 检出 6\n  PGPASSWORD= 共 3 条  A 检出 0  B 检出 3\n  sshpass -p 共 3 条  A 检出 0  B 检出 3\n  mysql -p   共 3 条  A 检出 0  B 检出 3\n  URL 内口令    共 3 条  A 检出 0  B 检出 3\n  Basic 认证头  共 3 条  A 检出 0  B 检出 3\n  curl -u    共 3 条  A 检出 0  B 检出 3\nMETRIC: 只认格式的检出率 = 25.0 %\nMETRIC: 格式+上下文的检出率 = 100.0 %\nMETRIC: 只认格式的误报数 = 0 条\nMETRIC: 格式+上下文的误报数 = 0 条\n[PASS] 只认格式的检测器能检出全部有固定格式的 token\n[PASS] 加上下文规则后检出数不少于只认格式\n[PASS] 变量引用（$VAR、${VAR}）和不带口令的命令不被误报\n[PASS] 模拟 settings.local.json 中找出 5 条含凭据的 allow 规则（应为 5）\nRESULT: 检出率 只认格式 25.0% / 格式+上下文 100.0%，检查 4/4 通过\n",
+  "stderr": ""
+}
