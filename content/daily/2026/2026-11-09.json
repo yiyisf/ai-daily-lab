@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "generated_at": "2026-11-09T09:30:00+08:00",
+  "editor_note": "本期 14 条，周末新发布不多，主线是「Agent 的权限与交接」。Apiiro 发现 Claude Code 把批准过的带密码命令存进本地权限文件，大量被推到了公开仓库；官方 champion-kit 插件帮团队把重复问题沉淀成规则和技能；两篇论文显示，Agent 接手或连续开发项目时成功率都很低。实验用假凭据比较只认密钥格式与结合命令上下文的扫描规则。",
+  "tldr": [
+    {"text": "Apiiro 查出 1,122 份公开的 Claude Code 权限文件含真实密钥，215 份两款扫描器都漏检", "item_id": "2026-11-09-claude-code-dont-ask-again-secrets"},
+    {"text": "Anthropic 官方插件 champion-kit 0.5.0 上线，帮团队找可写成规则或技能的重复问题", "item_id": "2026-11-09-champion-kit-plugin"},
+    {"text": "论文：编码 Agent 接手做了一半的项目，平均完整交付率只有 4.95%", "item_id": "2026-11-09-project-takeover-benchmark"}
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-09-claude-code-dont-ask-again-secrets",
+      "reason": "检查团队仓库里有没有被 Agent 权限文件带出去的明文密码",
+      "steps": [
+        "在仓库当前文件和 Git 历史里搜索 .claude/settings.local.json，检查 allow 规则里的密码、token 和连接串",
+        "发现泄露的凭据，先轮换，再删除文件或改写历史",
+        "运行 git rm --cached .claude/settings.local.json，并把它加入 .gitignore"
+      ]
+    },
+    {
+      "item_id": "2026-11-09-champion-kit-plugin",
+      "reason": "把团队反复出现的问题和好做法找出来，沉淀成规则、技能或 FAQ",
+      "steps": [
+        "运行 claude plugin install champion-kit@claude-plugins-official",
+        "新开会话，输入 /champion-kit:patterns，按提示选时间窗口和可读的来源",
+        "对照结果，把重复出现的问题写进规则文件或 FAQ"
+      ]
+    },
+    {
+      "item_id": "2026-11-09-llama-modchip",
+      "reason": "没有大显存时，在 64GB 内存的工作站上试跑 MoE 模型",
+      "steps": [
+        "git clone https://github.com/synchopate/llama-modchip.git",
+        "cd llama-modchip",
+        "./modchip chat（默认使用 Nemotron-3.5-30B-A3B）"
+      ]
+    }
+  ],
+  "experiments": ["2026-11-09-agent-allowlist-secrets"],
+  "items": [
+    {
+      "id": "2026-11-09-claude-code-dont-ask-again-secrets",
+      "category": "news",
+      "title": "Apiiro：Claude Code「不再询问」把密码写进 1,122 个公开文件",
+      "summary": "安全公司 Apiiro 在 11 月 1–3 日检查了 GitHub 上 104,185 份公开的 .claude/settings.local.json，发现 1,122 份含真实密钥，涉及 63 个组织。原因是用户对含凭据的 Bash 命令选择「Yes, and don't ask again」后，整条命令连同密码会被存成 allow 规则，文件一旦提交到公开仓库就会泄露。Claude Code 文档写明，它首次写入该文件时会把它加进全局 git 排除，但报道指出这一设置不随项目走，也管不到已被跟踪的文件。",
+      "key_points": [
+        "计入历史提交、共享设置文件和 Agent 对话记录后，共在 1,994 个仓库里找到 2,539 个不同密钥，包括 379 个数据库密码和 43 个 SSH 登录",
+        "1,122 个文件中，Gitleaks 检出 564 个、TruffleHog 检出 643 个，有 215 个两者都没发现：PGPASSWORD=、sshpass -p 后面的密码没有可识别的格式",
+        "建议先轮换泄露的凭据，再用 git rm --cached .claude/settings.local.json 取消跟踪并加入 .gitignore，同时检查共享的 .claude/settings.json",
+        "报道称 Anthropic 尚未对这项研究作出回应"
+      ],
+      "why_it_matters": "凡是会「记住」已批准命令的 Agent 都有同样的风险，团队用的开源 CLI Agent 也应检查权限文件和会话记录；最根本的是命令里不要出现明文密码，改用变量或密钥管理工具引用。",
+      "sources": [
+        {"title": "Claude Code's \"Yes, and Don't Ask Again\" Option Can Leak Passwords and API Keys to GitHub", "url": "https://cybersecuritynews.com/claude-codes-yes-and-dont-ask-again/", "kind": "secondary", "publisher": "Cyber Security News", "published_at": "2026-11-07"},
+        {"title": "Claude Code \"Don't ask again\" left secrets in 1,122 GitHub files", "url": "https://madrobot.blog/2026/11/07/claude-code-dont-ask-again-secrets-github/", "kind": "secondary", "publisher": "madrobot", "published_at": "2026-11-07"},
+        {"title": "Claude Code docs: Settings files and precedence", "url": "https://code.claude.com/docs/en/settings", "kind": "primary", "publisher": "Anthropic"}
+      ],
+      "tags": ["safety", "coding", "agent"],
+      "importance": 5,
+      "actionability": "try",
+      "experiment_id": "2026-11-09-agent-allowlist-secrets",
+      "figure": {
+        "type": "bars",
+        "title": "1,122 个含密钥文件里，两款扫描器都漏掉 215 个",
+        "series": ["文件数"],
+        "rows": [
+          {"label": "Gitleaks 检出", "values": [564]},
+          {"label": "TruffleHog 检出", "values": [643]},
+          {"label": "两者都漏检", "values": [215]}
+        ],
+        "unit": "个",
+        "caption": "数据来自 Apiiro 研究，经 Cyber Security News 转述"
+      }
+    },
+    {
+      "id": "2026-11-09-champion-kit-plugin",
+      "category": "kits",
+      "title": "Anthropic 官方 champion-kit 插件：帮团队里的 AI 推广者办分享、找模式",
+      "summary": "claude-plugins-official 11 月 6 日新增 champion-kit 0.5.0，面向在团队里推广 Claude Code 的「champion」。它在真实仓库上帮忙准备黑客日和答疑时间，从近期 PR 和提交历史里找值得写成规则或技能的重复问题，帮同事判断自己在 AI 使用上处于哪一步、下一步试什么，并生成团队成熟度报告。",
+      "key_points": [
+        "共 7 个命令：hackathon、office-hours、patterns、climb、faq、maturity、routines，routines 给出可直接粘贴的定时任务写法",
+        "读取工作交给只读子 Agent repo-scout：没有 shell 和写文件工具，只返回计数、路径和固定词表里的类别，不复制原文",
+        "读 git 历史、issue、会话记录或写文件前都会单独征求同意；但在 auto 或 accept-edits 模式下写文件不会被拦，README 建议用 Manual 模式",
+        "不给个人排名，成熟度报告只按团队统计；文中的「AI 采用阶梯」是这套工具自己的框架，不是官方基准"
+      ],
+      "why_it_matters": "团队成员用 AI 的深浅差别大，patterns 和 faq 正好对应「把重复问题沉淀成规则、技能和答疑」；插件只支持 Claude Code，但 SKILL.md 写法和 repo-scout 的只读设计可以移植到开源 CLI Agent。",
+      "sources": [
+        {"title": "Add champion-kit plugin (#7017)", "url": "https://github.com/anthropics/claude-plugins-official/commit/1aa4a4b10e6c5e8694d0f72a03dbac4e93bcafd8", "kind": "primary", "publisher": "GitHub", "published_at": "2026-11-06"}
+      ],
+      "tags": ["agent-skills", "ai-collaboration", "workflow"],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "plugin",
+        "name": "champion-kit",
+        "version": "0.5.0",
+        "repo": "https://github.com/anthropics/claude-plugins-official",
+        "license": "Apache-2.0",
+        "compatible": ["Claude Code", "Claude 桌面应用"],
+        "capabilities": [
+          "用真实 backlog 规划黑客日，或给出开放式的起步点子",
+          "安排答疑时间、整理议程，把重复问题写成团队可查的 FAQ",
+          "从提交历史和 PR 评审意见里找重复修复和值得推广的做法",
+          "判断个人或团队处在哪一步，给出下一步可在自己代码上试的事",
+          "按证据给团队打分，生成可分享的 HTML 成熟度报告"
+        ],
+        "highlights": [
+          "证据收集交给只读子 Agent，输出限定为计数、路径和固定类别，降低提示注入的影响",
+          "每次读取或写入都要单独同意，默认推荐的选项是「Not yet」",
+          "不按个人统计或排名，只看团队层面"
+        ],
+        "install": "claude plugin install champion-kit@claude-plugins-official（或在会话中运行 /plugin install champion-kit@claude-plugins-official）"
+      }
+    },
+    {
+      "id": "2026-11-09-project-takeover-benchmark",
+      "category": "research",
+      "title": "论文：让编码 Agent 接手做了一半的项目，完整交付率不到 5%",
+      "summary": "11 月 5 日提交的论文研究编码 Agent 的「项目接手」：给 Agent 之前的交互历史、当前请求和请求前的项目环境，要求完成本次改动，用交付测试评判。在 6 种模型与外壳组合、37 个可执行验证的目标上，给出完整历史时平均完整交付率只有 4.95%。",
+      "key_points": [
+        "即使直接给出正确的目标状态，完整交付率也只有 8.11%；此时构建通过率 96.40%、回归测试通过率 90.99%，目标测试却只通过 9.01%",
+        "作者用「需求原子」拆解难点：找出相关信息、重建请求前的状态、处理当前请求",
+        "论文提出 ReqMemBench 基准，页面暂未给出代码地址"
+      ],
+      "why_it_matters": "Agent 能把代码改到「能编译、不破坏旧功能」，却常常没做对需求本身；交接任务时，把历史决策和当前需求整理成明确的文档，可能比丢给它一长串对话记录更有用。",
+      "sources": [
+        {"title": "Take It From Here: Evaluating Coding Agents On Project Takeover", "url": "https://arxiv.org/abs/2611.07307", "kind": "primary", "publisher": "arXiv", "published_at": "2026-11-05"}
+      ],
+      "tags": ["coding", "evaluation", "research"],
+      "importance": 4,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-09-multi-step-swe",
+      "category": "research",
+      "title": "Multi-step SWE：Agent 在自己写的代码上连续开发，最好成绩 18.5%",
+      "summary": "11 月 4 日提交的论文提出 Multi-step SWE 基准：69 个任务，每个任务是同一代码库上 5 到 15 个相互依赖的步骤，每步都是数小时量级的工程需求，建立在 Agent 前面写的代码之上，早期的设计选择和错误会一路带下去。任务覆盖 4 类工程工作、9 种语言，既有从零搭建，也有已有的开源代码库。",
+      "key_points": [
+        "评测了 9 个前沿模型，最好的解决率只有 18.5%",
+        "69 个任务中有 38 个没有任何模型解出",
+        "每一步都对应一个已有的「事实来源」，同时提供指令和验证方式",
+        "代码和基准发布在 multistepswe.com"
+      ],
+      "why_it_matters": "单步基准上的高分不代表能持续迭代一个项目；让 Agent 长期维护代码时，规则文件、测试和人工评审仍是守住早期设计的关键。",
+      "sources": [
+        {"title": "Multi-step SWE: Can Coding Agents Keep Building on Their Own Code Over Long Horizons?", "url": "https://arxiv.org/abs/2611.07166", "kind": "primary", "publisher": "arXiv", "published_at": "2026-11-04"}
+      ],
+      "tags": ["coding", "evaluation", "research"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-09-trace2eval",
+      "category": "research",
+      "title": "Trace2Eval：用真实 Agent 交互记录生成评测，按评分标准修改平均涨 10 分",
+      "summary": "11 月 4 日提交的论文 Trace2Eval 从真实的编码 Agent 交互轨迹构建评测：由多 Agent 系统还原原始用户请求、把工作区文件恢复到交互前状态并重建运行环境。人工评分标准经标注者对齐后细化，裁判 Agent 依据源码和运行时证据打分，并对照人工评估校准；被测模型先交初版，再按评分标准的反馈修改。",
+      "key_points": [
+        "在 19 种模型与外壳组合上，平均提升 10.05 个百分点",
+        "提升最大的是 DeepSeek-V4-Pro 搭配 Claude Code，提升 19.28 个百分点",
+        "页面暂未给出代码或数据链接"
+      ],
+      "why_it_matters": "可以借鉴这个思路，用团队自己的真实 Agent 会话做内部评测，比通用基准更贴近日常任务；先给 Agent 明确的评分标准再让它修改，本身也是可以直接用的做法。",
+      "sources": [
+        {"title": "Trace2Eval: Contextualized Evaluation of Coding Agents from Real-World Traces", "url": "https://arxiv.org/abs/2611.06506", "kind": "primary", "publisher": "arXiv", "published_at": "2026-11-04"}
+      ],
+      "tags": ["evaluation", "coding", "research"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-09-goodbye-claude-hello-pi",
+      "category": "ideas",
+      "title": "「再见 Claude，你好 Pi」：极简开源编码外壳引发讨论",
+      "summary": "开发者 Caleb 的文章（9 月发布，11 月 7 日更新）解释为何不再把 Claude Code 当主力，改用开源的极简编码外壳 Pi，近日在 Hacker News 上引发讨论。他认为 Claude Code 功能加得快，但稳定性和产品取舍不够；Pi 稳定、可深度定制。评论区有人认同轻量外壳，也有人认为文章已经过时。",
+      "key_points": [
+        "作者统计 Claude Code 今年已发布 244 个版本，超过四分之三改动了系统提示或工具描述；默认 Bash 工具描述将近 3,000 token",
+        "他认为 Pi 容易扩展：约 20 分钟写了个扩展就解决了多标签页连 IDE 的问题，但前几天需要一些折腾",
+        "反对意见：有人认为文章落后了约六周；作者自己也提到，Claude Code 在他决定离开后就加入了 AGENTS.md 支持",
+        "其他声音：有人提到 OpenCode 在本地模型编码测试中表现更好；也有人用 Pi 接本地推理引擎，在 M1 Mac 上跑到约 150 token/s"
+      ],
+      "why_it_matters": "Pi 是 MIT 许可，支持 Ollama 和自定义模型提供方，会从项目目录加载 AGENTS.md，可以和团队现用的 Agent 对比评估；上下文有限的自部署模型尤其要留意外壳的系统提示和工具描述占多少 token。",
+      "sources": [
+        {"title": "Goodbye Claude, hello Pi", "url": "https://caleb.software/posts/claude-to-pi.html", "kind": "primary", "publisher": "caleb.software", "published_at": "2026-11-07"},
+        {"title": "Pi coding agent", "url": "https://pi.dev/", "kind": "primary", "publisher": "Earendil"},
+        {"title": "Goodbye Claude, hello Pi | Hacker News", "url": "https://news.ycombinator.com/item?id=50410107", "kind": "discussion", "publisher": "Hacker News"}
+      ],
+      "tags": ["coding", "agent", "devtools"],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-09-agent-memory-otel-moment",
+      "category": "ideas",
+      "title": "「Agent 记忆需要自己的 OpenTelemetry」：要不要统一记忆格式",
+      "summary": "记忆工具 LoreKit 的作者 Mads Thines 11 月 7 日撰文，认为各家编码 Agent 的记忆格式互不兼容，一个工具学到的经验另一个看不到，应像可观测性领域的 OpenTelemetry 那样先统一数据模型、语义约定和协议，各家再在存储和分析上竞争。Hacker News 上的质疑者明显多于支持者。",
+      "key_points": [
+        "文章给出示意记录：frontmatter 带 id、address、kind、written_by、lifecycle 等字段，正文用 Markdown；另建议一组 MCP 操作（写、读、列、搜、归档）和一致性测试",
+        "作者承认自己做记忆工具有利益冲突，也提到共享记忆会扩大能写入 Agent 上下文的范围，任何格式都防不住投毒",
+        "支持者认为企业需要跨用户、跨流程共享记忆；质疑者认为「它就是个 Markdown 文件」，现在定标准为时过早",
+        "也有人认为 Agent 记忆有害，宁可让 Agent 把发现写进仓库文档，更容易审计"
+      ],
+      "why_it_matters": "团队同时用多种 Agent 时，记忆和规则文件不通用确实有成本；在标准出现之前，把经验写进仓库里的 AGENTS.md 和文档，与模型和工具无关，也便于评审。",
+      "sources": [
+        {"title": "Agent memory needs its OpenTelemetry moment", "url": "https://www.lorekit.io/blog/open-agent-memory-format", "kind": "primary", "publisher": "LoreKit", "published_at": "2026-11-07"},
+        {"title": "Agent memory needs its OpenTelemetry moment | Hacker News", "url": "https://news.ycombinator.com/item?id=50411467", "kind": "discussion", "publisher": "Hacker News"}
+      ],
+      "tags": ["agent", "context-engineering", "workflow"],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-09-claude-code-2-1-319",
+      "category": "tools",
+      "title": "Claude Code 2.1.319：待确认的工具调用可直接拒绝，修复多处权限绕过",
+      "summary": "Claude Code 2.1.319 于 11 月 7 日前后发布。新增 permissions.denyInsteadOfPrompting 设置：原本要等权限确认的工具调用直接被拒绝、本轮继续，适用于终端会话、子 Agent 和 teammates。MCP 服务器把工具调用作为 task 运行时，Claude Code 会立刻转到后台，完成后再告诉模型结果。本版还修复了多处权限和沙箱问题。",
+      "key_points": [
+        "修复创建 worktree 时的沙箱逃逸、构造的环境变量前缀能让部分命令躲过权限检查、sed 命令在 accept-edits 和 auto 模式下可能跳过权限检查",
+        "修复带引号的单词会让 Bash 的 deny、ask 规则漏判；带非查询类参数的 which 改为先询问",
+        "自托管 runner 使用 --trust-workspace false 时，仓库设置文件和技能里的 hook 也不再运行",
+        "设置 CLAUDE_CODE_DISABLE_MCP_TASK_BACKGROUND 可让它在工具调用里等待 MCP task 完成"
+      ],
+      "why_it_matters": "无人值守跑 Agent 时，denyInsteadOfPrompting 能避免整轮卡在权限确认上；几项修复也说明按命令文本匹配的权限规则容易被绕过，开源 CLI Agent 的权限规则同样要配合沙箱使用。",
+      "sources": [
+        {"title": "Claude Code CHANGELOG", "url": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md", "kind": "primary", "publisher": "GitHub"}
+      ],
+      "tags": ["coding", "safety", "devtools"],
+      "importance": 3,
+      "actionability": "try",
+      "follow_up_of": "2026-11-06-claude-code-2-1-318"
+    },
+    {
+      "id": "2026-11-09-llama-modchip",
+      "category": "opensource",
+      "title": "llama-modchip：64GB 内存、无 GPU 跑 284B 的 DeepSeek-V4-Flash",
+      "summary": "llama-modchip 是基于打过补丁的 llama.cpp 的开源工具包（Apache-2.0），专门在纯 CPU 上运行稀疏 MoE 的 GGUF 模型，自带命令行、网页聊天和基准测试工具。作者把 DeepSeek-V4-Flash（284B 总参、13.17B 激活）从 76.87 GiB 的 IQ2_XXS 重新量化到 56.56 GiB，称在 256K 上下文下常驻内存为 58.9 GiB。默认的快速上手模型是 Nemotron-3.5-30B-A3B。",
+      "key_points": [
+        "作者在 Ryzen 9 9955HX、64 GB DDR5、无 GPU 的机器上报告 284B 平均 6.4–9.7 tok/s，README 不同位置给出的速度不一致",
+        "专家层用 IQ1_S 类量化，注意力层用自定义的 Fractal-64 格式；284B 版本要自己用本地分片转换，没有现成文件",
+        "公开的质量检查只覆盖 Nemotron 模型，284B 压缩后的效果没有给出",
+        "仓库仍在密集更新，11 月 8 日刚加入兼容 OpenCode 的网关路由"
+      ],
+      "why_it_matters": "给没有大显存的同事提供了在普通工作站上试跑大 MoE 模型的路径；但性能和效果都是作者自报，极低比特量化对编码质量的影响要自己验证，建议先用默认的 30B 模型试。",
+      "sources": [
+        {"title": "synchopate/llama-modchip", "url": "https://github.com/synchopate/llama-modchip", "kind": "primary", "publisher": "GitHub"}
+      ],
+      "repo": {"url": "https://github.com/synchopate/llama-modchip", "license": "Apache-2.0"},
+      "tags": ["open-weights", "inference"],
+      "importance": 3,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-09-xla-serving-engine",
+      "category": "opensource",
+      "title": "Google 开源 XLA Serving Engine：用 C++ 运行时部署 JAX 模型",
+      "summary": "Google TPU 软件团队 11 月 5 日开源 XLA Serving Engine（XSE），一个 OpenXLA 生态的模型导出与推理运行时，采用 Apache 2.0 许可。模型在 Python 里训练，导出为基于 StableHLO 的 XLA SavedModel，再由 C++ 运行时加载，省去 Python 解释器和 GIL 的开销，支持 TPU、GPU 和 CPU。",
+      "key_points": [
+        "主要面向视觉、推荐、向量嵌入这类非 LLM 模型；长上下文的自回归 LLM，文章建议继续用 vLLM 或 SGLang",
+        "Google 自测短请求下，吞吐是其最好的 Python 服务的 2–5 倍，每次预测的 CPU 时间少 30–70%，内存约为四分之一",
+        "内部已用于 YouTube Shorts、Google Ads、Search 等服务，每秒超过 600 万次查询",
+        "提供带 gRPC 接口的 Docker 镜像，安装说明在仓库 README"
+      ],
+      "why_it_matters": "不能替代团队现有的 LLM 推理框架；如果有用 JAX 训练的 embedding 或重排小模型，可以评估用它降低服务开销。",
+      "sources": [
+        {"title": "Supercharging XLA inference with XLA Serving Engine", "url": "https://opensource.googleblog.com/2026/11/supercharging-xla-inference-xla-serving-engine.html", "kind": "primary", "publisher": "Google Open Source Blog", "published_at": "2026-11-05"}
+      ],
+      "repo": {"url": "https://github.com/openxla/xla-serving", "license": "Apache-2.0"},
+      "tags": ["inference", "infra"],
+      "importance": 2,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-09-nous-arete-27b",
+      "category": "news",
+      "title": "Nous Research 开放 Arete-27B：微调 Qwen3.8-27B 改变敏感议题立场",
+      "summary": "Nous Research 11 月 6 日开放 Arete-27B 权重（Apache-2.0），在 Qwen3.8-27B 上只做监督微调，没有 RL 和偏好优化，目标是让模型在政治敏感话题上的回答转向西方价值观。训练约 5280 万 token、2 个 epoch，样本长度 64k。在作者的 803 题评测中，含宣传内容的回答比例从 22% 降到 0.9%。",
+      "key_points": [
+        "事实得分（满分 5）从 2.32 升到 2.98，由 Grok 4.7 按作者调过的评分标准打分",
+        "通用能力基本持平：内部 Hermes Bench 65.77% 对 65.60%；Terminal-Bench-2.1 从 67% 到 70%，作者说差距可能来自配置差异，不归功于训练",
+        "作者承认只处理了一个可能的根源，没有消除与原有立场相关的全部行为",
+        "模型卡没有给推理命令，Hub 上已有 35 个量化衍生版本"
+      ],
+      "why_it_matters": "27B 体量适合单机自部署，这是一个「只用 SFT 调整价值倾向、通用能力不明显下降」的公开案例；但评测由作者自建并由 LLM 打分，换用前要在自己的任务上复测。",
+      "sources": [
+        {"title": "Arete-27B", "url": "https://nousresearch.com/arete", "kind": "primary", "publisher": "Nous Research", "published_at": "2026-11-06"},
+        {"title": "NousResearch/Arete-27B", "url": "https://huggingface.co/NousResearch/Arete-27B", "kind": "primary", "publisher": "Hugging Face"}
+      ],
+      "tags": ["open-weights", "fine-tuning", "safety"],
+      "importance": 3,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-09-meta-muse-specialized-models",
+      "category": "news",
+      "title": "Meta 为 Muse 和 Meta AI 推出专用模型，重点改进记忆与抗干扰",
+      "summary": "Meta 11 月 6 日介绍为 Muse 和 Meta AI 训练的专用模型，基于现有模型、用 Muse Wonder 系列的方法训练，正在向用户推出。两个重点：Active Memory 区分临时与长期信息、剔除过期细节；Active Focus 在任务遇到意外阻碍时坚持、恢复或换条路，并在用户中途改指令时调整。",
+      "key_points": [
+        "在 Personal Superintelligence Index 上，当前 Muse 模型为 47%，上一版为 38%",
+        "Active Memory 评测中正确使用关键上下文的任务从 76% 升到 90%，遗忘关键信息的情况减少 2.4 倍",
+        "遇到意外问题的日常任务完成率提升 67%",
+        "文章没有说明模型规模，也没有提到开放权重"
+      ],
+      "why_it_matters": "闭源产品功能，团队用不上；但「区分临时和长期信息、主动淘汰过期细节」与整理 Agent 记忆文件的思路一致，写记忆规则时可以参考。",
+      "sources": [
+        {"title": "Specialized models for Muse and Meta AI", "url": "https://research.meta.ai/blog/specialized-models-for-muse-and-metaai", "kind": "primary", "publisher": "Meta", "published_at": "2026-11-06"}
+      ],
+      "tags": ["llm", "agent", "context-engineering"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-09-mopd-trl",
+      "category": "practices",
+      "title": "Hugging Face 演示用 TRL 做多教师在线蒸馏，把多个 RL 专家合成一个模型",
+      "summary": "Hugging Face 11 月 3 日发文介绍 MOPD（多教师在线蒸馏）：先做通用 SFT，再按领域分别 RL 训练专家，最后让学生模型对各领域提示自己生成回答，由该领域的专家逐 token 打分，学生向该教师的分布靠拢。文章给出了用 TRL 的 AsyncDistillationTrainer 实现的完整示例。",
+      "key_points": [
+        "每个教师用 vLLM 单独服务，数据里加 teacher_id 列把提示路由到对应专家；所有教师必须和学生共用分词器",
+        "示例以 SmolLM3-3B 的 SFT 检查点为学生，数学、代码、指令遵循三个 GRPO 专家为教师，在 4 张 H200 上测试",
+        "只训 60 步（约为论文训练量的 1%），AIME24 从 17.5 升到 24.2，AIME25 从 19.2 升到 22.5，IFEval 从 67.5 升到 73.0",
+        "指令遵循提示约占 20%，却只占 1–3% 的训练 token，因为回答很短"
+      ],
+      "why_it_matters": "想给自部署小模型分领域增强时，这是一条可以照着做的公开流程；但需要多张大显存 GPU，适合有训练资源时评估。",
+      "sources": [
+        {"title": "MOPD: how frontier labs merge RL experts into one model and how to do it using TRL", "url": "https://huggingface.co/blog/sergiopaniego/mopd-trl", "kind": "primary", "publisher": "Hugging Face", "published_at": "2026-11-03"}
+      ],
+      "tags": ["fine-tuning", "open-weights"],
+      "importance": 2,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "只训 60 步，三项评测都高于 SFT 起点",
+        "series": ["MixSFT 起点", "MOPD 60 步"],
+        "rows": [
+          {"label": "AIME24", "values": [17.5, 24.2]},
+          {"label": "AIME25", "values": [19.2, 22.5]},
+          {"label": "IFEval", "values": [67.5, 73.0]}
+        ],
+        "caption": "数据来自 Hugging Face 博客；AIME 每题 4 次采样，小差异噪声较大"
+      }
+    },
+    {
+      "id": "2026-11-09-skill-chain-small-steps",
+      "category": "skills",
+      "title": "复杂任务别一句话丢给 AI：拆成几步，上一步的结果喂给下一步",
+      "summary": "Google 的 Gemini 提示策略指南建议，复杂用例可以把提示拆成更小的部分：每条指令单独一个提示；多步骤任务把每一步做成一个提示串起来，前一步的输出作为后一步的输入；数据量大时，分块并行处理再汇总。",
+      "key_points": [
+        "拆分指令：与其把很多要求塞进一个提示，不如一条指令一个提示",
+        "串联提示：每一步的输出作为下一步的输入，最后一步的输出就是结果",
+        "汇总结果：对数据的不同部分并行处理，再合并成一份输出"
+      ],
+      "why_it_matters": "对应团队「需求说不清、AI 产出太长没人看」的问题：分步做每次产出更短，也方便在中间纠正；自部署模型上下文有限时，分步还能减少每次要放进去的内容。",
+      "sources": [
+        {"title": "Prompt design strategies", "url": "https://ai.google.dev/gemini-api/docs/prompting-strategies", "kind": "primary", "publisher": "Google"}
+      ],
+      "tags": ["ai-collaboration", "prompting"],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "decompose",
+        "scenario": "让 AI 根据一批客户反馈整理需求，并写出验收用例",
+        "bad": "这是客户反馈，帮我整理成需求文档，顺便写好测试用例和排期建议。",
+        "good": "我们分三步做，每步做完先停下，等我确认再继续。\n第 1 步：从下面的客户反馈里，只列出用户提到的问题和诉求，每条注明出自哪句原话，不要加你的推测。\n第 2 步（我确认后）：把第 1 步的诉求合并成不超过 [5] 条需求，每条一句话，写清「谁、在什么情况下、需要什么」。\n第 3 步：针对第 2 步的每条需求，各写 2–3 条验收用例，格式为「前置条件 / 操作 / 预期结果」。\n排期这次先不做。\n反馈原文：[粘贴反馈]",
+        "why": [
+          "一次只做一件事，每步产出短，读的人看得完、查得过来",
+          "每步结果作为下一步输入，第 1 步列错了能马上发现，不会一路错到底",
+          "写明「排期先不做」，把不属于这次的任务剥离出去，产出不会越写越长",
+          "每步停下等确认，相当于在关键节点插入人的判断"
+        ],
+        "practice": "找一个你最近一次性交给 AI 的大任务，按「先列事实→再归纳→再产出」拆成三条提示重跑一遍，对比结果长度和准确度。"
+      }
+    }
+  ]
+}
