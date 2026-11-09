@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-10-compact-a11y-snapshot",
+  "title": "玩具实验：给无视觉模型看页面，原始 HTML 与编号快照差多少",
+  "goal": "仿照 LangChain 文中 Stagehand snapshot 的思路，用 Python 标准库从一个内置的后台管理页面抽取可交互元素，生成「角色 + 可访问名称 + 编号」快照，比较与原始 HTML 的体积，并检查只靠名称能否唯一定位、附上所在区块和表格行首列后能否唯一定位。",
+  "related_item": "2026-11-10-langchain-browser-toolsets",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "快照体积远小于原始 HTML；平铺快照里每行的「编辑」「删除」按钮重名，附上区块标题和行首列后每个元素都能唯一定位",
+  "tags": ["agent", "evaluation", "context-engineering"]
+}

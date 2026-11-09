@@ -1,0 +1,583 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-10",
+  "generated_at": "2026-11-10T09:30:00+08:00",
+  "editor_note": "本期 13 条，主线是「给 Agent 看什么、让它怎么说」。LangChain 的浏览器工具对比显示编号快照比截图省钱又准，对无视觉模型做 UI 测试很有参考价值；SpecBridge 发现模型遇到歧义会默默选一种口径；ARCBench 显示上下文压缩后 Agent 更容易违反审批规则。要闻偏少，Anthropic 发布 Fable 5.2。实验演示编号快照与原始 HTML 的体积和定位差别。",
+  "tldr": [
+    {
+      "text": "LangChain 实测：Stagehand 通过率 90%，成本约为 Playwright MCP 的 1/13",
+      "item_id": "2026-11-10-langchain-browser-toolsets"
+    },
+    {
+      "text": "SpecBridge：问题有歧义时，模型只在 15%–58% 的用例里给出两种口径",
+      "item_id": "2026-11-10-specbridge-ambiguous-sql"
+    },
+    {
+      "text": "Claude Fable 5.2 发布：输入每百万 token 8 美元，FrontierSWE v2 达 69.9%",
+      "item_id": "2026-11-10-claude-fable-mythos-5-2"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-10-langchain-browser-toolsets",
+      "reason": "给无视觉模型做 UI 自动化时，用编号快照代替截图定位元素",
+      "steps": [
+        "按文中示例，在 Deep Agents 里加入 langchain-stagehand 的 StagehandMiddleware",
+        "用 local_browser.launch() 启动本地无头浏览器，让 Agent 主要用 snapshot 读页面",
+        "拿团队一个页面的几条测试用例，对比改用快照前后的步数和耗时"
+      ]
+    },
+    {
+      "item_id": "2026-11-10-janestreet-socratic-tutor",
+      "reason": "没时间系统学习的同事，可以让 AI 用提问方式带自己学一个主题",
+      "steps": [
+        "把仓库里的 socratic-tutor 目录复制到 Agent 的 skills 文件夹",
+        "对 Agent 说 \"teach me X\"，先完成 3–5 道诊断题",
+        "学到一半说 save state，保存进度块，下次粘贴回来继续"
+      ]
+    },
+    {
+      "item_id": "2026-11-10-agent-autoloop",
+      "reason": "让命令行 Agent 后台处理定时任务，高风险操作先发卡片等人确认",
+      "steps": [
+        "curl -fsSL https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.sh | sh",
+        "运行 agent-autoloop try 验证安装",
+        "在 rules.json 里配一条定时规则，指向测试仓库，观察卡片确认流程"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-10-compact-a11y-snapshot"
+  ],
+  "items": [
+    {
+      "id": "2026-11-10-claude-fable-mythos-5-2",
+      "category": "news",
+      "title": "Anthropic 发布 Claude Fable 5.2 与 Mythos 5.2，输入价降到 8 美元",
+      "summary": "Anthropic 11 月 9 日发布 Claude Fable 5.2，已在 API 和 AWS、Google Cloud、Azure 上线；Mythos 5.2 是同一模型去掉部分网络安全和生物防护后的版本，只向通过审核的机构开放。Fable 5.2 标准价为每百万 token 输入 8 美元、输出 40 美元，输出速度比 5.1 版最多快 30%，另有价格翻倍、生成最多快 2.5 倍的 fast 模式。",
+      "key_points": [
+        "官方自报 FrontierSWE v2 从 56.3% 升到 69.9%，FrontierCode 2.0 从 32.4% 升到 49.1%，AutomationBench 从 31.4% 升到 51.4%",
+        "新增 Advisor / Orchestrator 用法：Fable 5.2 可以指导 Haiku、Sonnet、Opus，或把简单任务分派给小模型",
+        "Anthropic 称两款模型比近期模型更常怀疑自己正在被评测，这让评测结果更难解读",
+        "企业客户可在零数据保留（ZDR）下使用；Enterprise Frontier Safeguards 把安全监控放在客户自己的基础设施上，目前为私测"
+      ],
+      "why_it_matters": "闭源模型，自部署环境用不上；值得关注的是「大模型指导、小模型执行」的分工方式，可以在开源模型组合里借鉴。",
+      "sources": [
+        {
+          "title": "Introducing Claude Fable 5.2 and Claude Mythos 5.2",
+          "url": "https://www.anthropic.com/claude-fable-and-mythos-5-2",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-09"
+        },
+        {
+          "title": "Anthropic releases new Mythos and Fable models amid RSI concerns",
+          "url": "https://techcrunch.com/2026/11/09/anthropic-releases-new-mythos-and-fable-models-amid-rsi-concerns/",
+          "kind": "secondary",
+          "publisher": "TechCrunch",
+          "published_at": "2026-11-09"
+        }
+      ],
+      "tags": [
+        "llm",
+        "coding",
+        "safety"
+      ],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "Fable 5.2 在三项编码与自动化基准上明显提升",
+        "series": [
+          "Fable 5.1",
+          "Fable 5.2"
+        ],
+        "rows": [
+          {
+            "label": "FrontierSWE v2",
+            "values": [
+              56.3,
+              69.9
+            ]
+          },
+          {
+            "label": "FrontierCode 2.0",
+            "values": [
+              32.4,
+              49.1
+            ]
+          },
+          {
+            "label": "AutomationBench",
+            "values": [
+              31.4,
+              51.4
+            ]
+          }
+        ],
+        "unit": "%",
+        "caption": "数据来自 Anthropic 发布页，为官方自报分数"
+      }
+    },
+    {
+      "id": "2026-11-10-google-tpu-8tx-8i-max",
+      "category": "news",
+      "title": "Google 推出 TPU 8tx 与 TPU 8i Max，第八代 TPU 增至四款",
+      "summary": "Google 11 月 9 日在第八代 TPU 8t、8i 之外新增两款系统。TPU 8tx 与 8t 用同样的芯片，搭配 AMD EPYC 主机，主打机密计算推理，延迟最多比 8t 低 2 倍；TPU 8i Max 把两颗 8i 封装在一起，算力、SRAM 和 HBM 带宽翻倍，面向百万 token 级长上下文的 Agent 负载。文章没有给出上市时间。",
+      "key_points": [
+        "TPU 8tx 在硬件层面保护运行中的数据和模型权重，面向受监管企业和政府的私有微调、蒸馏和 Agent 执行",
+        "TPU 8i Max 在现有机架空间里放进两倍芯片，场景举例为多个 Agent 同时处理整个代码库",
+        "GKE 动态切分和 Cloud Pathways 已正式可用，TPU Sync 开源"
+      ],
+      "why_it_matters": "属于云端算力动态，与自部署 GPU 环境关系不大；可以作为「长上下文 Agent 负载」硬件走向的参考。",
+      "sources": [
+        {
+          "title": "TPU 8i Max and TPU 8tx",
+          "url": "https://blog.google/innovation-and-ai/infrastructure-and-cloud/global-network/tpu-8i-max-and-8tx/",
+          "kind": "primary",
+          "publisher": "Google",
+          "published_at": "2026-11-09"
+        }
+      ],
+      "tags": [
+        "infra",
+        "inference"
+      ],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-10-agent-autoloop",
+      "category": "opensource",
+      "title": "agent-autoloop 开源：让命令行 Agent 后台接活，拿不准时发卡片",
+      "summary": "agent-autoloop 是一个自托管的命令行 Agent 后台调度器：从 GitHub webhook、HTTP 接口或定时规则接收任务，交给本机已登录的 Agent 执行；遇到删数据、重启服务、花钱、对外发消息这类操作时，Agent 以结构化问题结束本轮，由它发卡片请人拍板，回复后恢复原会话。等待回复期间不运行 Agent 进程、不消耗 token。",
+      "key_points": [
+        "实测支持 Claude Code、Codex 和 Codex ACP 适配器；任何「输入提示、输出最终回复」的 CLI 都能用 use: \"command\" 接入，pi、OpenClaw 等列为未测试",
+        "通知渠道：桌面通知默认开启，飞书已测试，钉钉、企业微信、Slack、Discord 只对本地 mock 测过",
+        "Agent、工作目录和权限只来自本地规则，事件里要求改这些字段的会被拒绝；issue 标题和正文作为数据文件传入，不拼进提示词",
+        "事件链超过 8 层会被截停并告警；支持 macOS 和 Linux，需要 Node 24"
+      ],
+      "why_it_matters": "适合想让 Agent 在后台处理 issue、定时任务、又不想全权放手的团队；接入自部署模型的开源 CLI Agent 需要走通用 command 方式，属于未测试路径，先在测试仓库里试。",
+      "sources": [
+        {
+          "title": "KKKKhazix/agent-autoloop",
+          "url": "https://github.com/KKKKhazix/agent-autoloop",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent",
+        "workflow",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/KKKKhazix/agent-autoloop",
+        "license": "MIT",
+        "language": "TypeScript"
+      }
+    },
+    {
+      "id": "2026-11-10-gputaskman",
+      "category": "opensource",
+      "title": "gputaskman：在终端里看 GPU 上跑的是哪个模型、KV 缓存占多少",
+      "summary": "Scott Hanselman 开源的 gputaskman 是 Windows 上的 NVIDIA GPU 终端监控工具，除了显存、占用率、功耗，还能识别每个进程加载的模型，给出架构、量化方式、层数、权重大小和 KV 缓存估算。llama.cpp 和 Ollama 已实测，可读取上下文长度、忙碌槽位和吞吐等服务状态。",
+      "key_points": [
+        "只支持 64 位 Windows 10/11 和 NVIDIA 显卡，Linux、macOS、WSL 不支持，多卡归属尚不可靠",
+        "KV 和权重估算来自 GGUF 元数据，有运行日志时用日志里的实际分配值；作者称结果是估算",
+        "可用 --once 或 --json 输出快照，方便脚本采集；不上传遥测，但输出可能含路径和端口"
+      ],
+      "why_it_matters": "在 Windows 开发机上用 Ollama 或 llama.cpp 试跑模型时，可以直接看清显存花在权重还是 KV 缓存上，帮助选上下文长度和量化档位；服务器端是 Linux 的话用不上。",
+      "sources": [
+        {
+          "title": "shanselman/gputaskman",
+          "url": "https://github.com/shanselman/gputaskman",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "inference",
+        "open-weights",
+        "devtools"
+      ],
+      "importance": 2,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/shanselman/gputaskman",
+        "license": "MIT",
+        "language": "Python"
+      }
+    },
+    {
+      "id": "2026-11-10-opencode-2-2-6",
+      "category": "tools",
+      "title": "OpenCode 2.2.6：MCP 连接可共享，脚本运行可开独立 worktree",
+      "summary": "开源编码 Agent OpenCode 11 月 6 日发布 2.2.6。主要变化：MCP 服务器设 pool: true 后可在相同配置的项目间共享一个连接；opencode run -w 会在新的 git worktree 里启动会话，--archived 让脚本和 CI 跑出的会话不进收件箱；opencode run 会等后台命令和子 Agent 结束再退出。",
+      "key_points": [
+        "opencode run 等待后台任务没有时间上限，开发服务器这类不会退出的任务会让运行一直挂着，CI 里要自己设超时",
+        "Webfetch 和 Code Mode 的 fetch 拒绝带凭据的 URL，Code Mode 会按 webfetch 规则检查每次重定向",
+        "session_move 离开当前项目前要申请 external_directory 权限；服务端返回的文件改为沙箱下载，避免项目文件在服务端源上执行脚本"
+      ],
+      "why_it_matters": "OpenCode 可接自部署模型，worktree 和归档参数让「CI 里批量跑 Agent」更干净；升级后检查 CI 脚本是否有不会退出的后台进程。",
+      "sources": [
+        {
+          "title": "Release v2.2.6",
+          "url": "https://github.com/anomalyco/opencode/releases/tag/v2.2.6",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-06"
+        }
+      ],
+      "tags": [
+        "coding",
+        "agent",
+        "mcp",
+        "devtools"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "follow_up_of": "2026-11-01-opencode-2-2-5"
+    },
+    {
+      "id": "2026-11-10-stroq-agent-firewall",
+      "category": "kits",
+      "title": "Stroq：给编码 Agent 装本地「动作防火墙」，读到可疑内容就收紧权限",
+      "summary": "Stroq 通过 Agent 的 hook 工作：工具读回的内容先做归一化再按规则打分，超过阈值就把会话标为可疑，之后的外部推送、带密钥的网络请求、编码执行等动作会被拦下或要求确认。它还把本机 .env、~/.aws/credentials 等处的密钥做成加盐哈希索引，外发参数里出现这些值就拒绝。11 月 8 日的 0.31.0 新增 stroq inspect，检查别人发来的代码目录。",
+      "key_points": [
+        "高风险的 PreToolUse 调用出错时默认拒绝；决策写进哈希链日志，可用 stroq verify 校验",
+        "README 列出各 Agent 的局限：Codex 无法询问，ask 会变成 deny；Copilot CLI 的 hook 超时会放行；Windsurf 的命令输出不会触发可疑标记",
+        "init 会改动 Agent 的 hook 配置；Codex、Copilot、OpenClaw、Windsurf 的接入格式是按文档推断的，多数适配器没在 Windows 上测过"
+      ],
+      "why_it_matters": "接着昨天的「权限文件泄露密钥」话题：hook 拦截比事后扫描更早一步。团队用的开源 CLI Agent 不在支持列表里，但「读到可疑内容就收紧后续权限」的思路可以照搬到自己的 hook 规则里。",
+      "sources": [
+        {
+          "title": "AGGIB/Stroq",
+          "url": "https://github.com/AGGIB/Stroq",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Release v0.31.0",
+          "url": "https://github.com/AGGIB/Stroq/releases/tag/v0.31.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-08"
+        }
+      ],
+      "tags": [
+        "safety",
+        "agent",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "watch",
+      "kit": {
+        "kind": "hook",
+        "name": "Stroq",
+        "version": "0.31.1",
+        "repo": "https://github.com/AGGIB/Stroq",
+        "license": "Apache-2.0",
+        "compatible": [
+          "Claude Code",
+          "Cursor",
+          "Codex",
+          "Copilot CLI",
+          "Windsurf",
+          "OpenClaw",
+          "MCP 客户端（stdio 代理）"
+        ],
+        "capabilities": [
+          "扫描 Agent 读到的文件、网页、命令输出和 MCP 结果，可疑时把会话标记为 suspect",
+          "按有序规则拦截或询问：外部 git push、curl | sh、带已知密钥的外发请求、修改 Stroq 自身配置等",
+          "stroq canary 生成诱饵密钥，任何外发使用都会被拒绝并标记会话",
+          "stroq inspect 检查陌生代码目录里会自动执行或下载执行的脚本和指令文件"
+        ],
+        "highlights": [
+          "完全本地运行，密钥只存加盐哈希，拦截原因只写密钥名不写值",
+          "先识别零宽字符、同形字和多层 base64/hex/URL 编码，再打分",
+          "README 逐个写明各 Agent 适配的已知缺口，不夸大防护范围"
+        ],
+        "install": "npx @stroq/cli init（Claude Code）；其他 Agent 用 npx @stroq/cli init --agent cursor / codex / copilot / openclaw / windsurf；装完运行 npx @stroq/cli doctor",
+        "changes": [
+          "0.31.0：新增 stroq inspect 和 stroq trust --folder，首次在陌生目录运行 git 或项目代码时先询问",
+          "0.31.1：修复 stroq sent 漏算 Python f-string URL 里读取环境变量的外发"
+        ]
+      }
+    },
+    {
+      "id": "2026-11-10-janestreet-socratic-tutor",
+      "category": "kits",
+      "title": "Jane Street 开源 socratic-tutor 技能：让 AI 用提问把你教会",
+      "summary": "Jane Street 新建的 agent_skills 仓库收录了第一个技能 socratic-tutor。它让模型先用 3–5 道诊断题摸底，把主题拆成 4–10 个子技能并按 0–5 级记录进度，之后一次只问一个问题，答错时不直接给答案而是追问矛盾之处，定期突击复习，全部达标后再做综合测验。",
+      "key_points": [
+        "只有一个 SKILL.md，没有脚本和工具调用，支持 SKILL.md 的编码 Agent 和普通聊天机器人都能用",
+        "评级从严：同一子技能要在 2 次以上独立检查中答对、且至少一次是凭记忆回答，才能升级",
+        "用户随时可以说 just tell me 直接要答案，或用 save state 导出进度、换个会话继续",
+        "技能开头会先确认用户是要系统学习还是只问一个问题，避免把普通提问变成测验"
+      ],
+      "why_it_matters": "团队里「没时间专门学 AI」的同事可以用它在碎片时间里系统学一个主题；不依赖特定模型，自部署模型也能用，但模型较弱时追问质量可能下降。",
+      "sources": [
+        {
+          "title": "janestreet/agent_skills",
+          "url": "https://github.com/janestreet/agent_skills",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "socratic-tutor/SKILL.md",
+          "url": "https://github.com/janestreet/agent_skills/blob/master/socratic-tutor/SKILL.md",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": [
+        "agent-skills",
+        "ai-collaboration",
+        "prompting"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "socratic-tutor",
+        "repo": "https://github.com/janestreet/agent_skills",
+        "license": "MIT",
+        "compatible": [
+          "支持 SKILL.md 的编码 Agent",
+          "普通聊天机器人"
+        ],
+        "capabilities": [
+          "诊断摸底，把主题拆成 4–10 个子技能并画出进度图",
+          "一次一个问题的苏格拉底式教学，答错时追问而不是给答案",
+          "不打招呼的间隔复习，答错会降级",
+          "全部达标后做覆盖所有子技能的综合测验"
+        ],
+        "highlights": [
+          "纯提示词技能，按需加载，不占常驻上下文",
+          "评级规则写得具体，明确要求不奉承、不替用户补全没说出的理解",
+          "进度可导出成文本块，换会话、换模型都能接着学"
+        ],
+        "install": "编码 Agent：把 skill 目录复制到 Agent 的 skills 文件夹，然后让 Agent 使用它（如 \"teach me X\"）；普通聊天机器人：把 SKILL.md 正文粘贴到对话或自定义/系统提示词里，再说你想学什么"
+      }
+    },
+    {
+      "id": "2026-11-10-asahi-gpl-ai-laundering",
+      "category": "ideas",
+      "title": "Asahi Linux 改用 GPL：称代码被人用 AI 改写后去掉了出处",
+      "summary": "Asahi Linux 在 11 月 7 日的进度报告中宣布，把所有仓库从 MIT 迁到 GPLv2 或更新版本，今后只用强 copyleft 许可证。项目称有人从开发者的个人分支里拿走未发布的功能代码，部分代码还用大模型改写以掩盖来源，试图取代项目并商业化，而 MIT 许可证明确允许这样做。",
+      "key_points": [
+        "支持方：Asahi 认为宽松许可证对恶意使用者没有约束，并以 2002 年 WINE 从 MIT 改为 LGPL 作类比",
+        "质疑方：OpenBSD 开发者 Bryan Steele 批评在似乎没有取得所有既往贡献者同意的情况下改许可证「虚伪且误导」，OpenBSD 的 Apple Silicon 支持依赖 Asahi 的 m1n1",
+        "报告没有点名任何个人或组织，也没说明既有贡献如何重新授权；Asahi 自身禁止 AI 生成的代码贡献"
+      ],
+      "why_it_matters": "用 AI 改写别人代码再换掉出处，是开源合规的新问题；团队用 AI 参考开源实现时，要留意原项目许可证和署名要求，许可证变更前已发布的版本仍按原许可证使用。",
+      "sources": [
+        {
+          "title": "Progress Report: Asahi Linux 7.3",
+          "url": "https://asahilinux.org/2026/11/progress-report-7-3/",
+          "kind": "primary",
+          "publisher": "Asahi Linux",
+          "published_at": "2026-11-07"
+        },
+        {
+          "title": "Asahi Linux Drops MIT for GPL",
+          "url": "https://itsfoss.com/news/asahi-linux-drops-mit-for-gpl/",
+          "kind": "secondary",
+          "publisher": "It's FOSS",
+          "published_at": "2026-11-08"
+        }
+      ],
+      "tags": [
+        "policy",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-10-langchain-browser-toolsets",
+      "category": "practices",
+      "title": "LangChain 比较 7 套浏览器工具：编号快照比截图省钱又准",
+      "summary": "LangChain 在 Deep Agents 上比较了 Playwright MCP、browser-use、Stagehand 等 7 套浏览器工具。WebVoyager 的 100 个真实网页任务中，Stagehand 通过率 90%、总成本 1.98 美元，Playwright MCP 通过率 78%、成本 26.71 美元，约为前者 13 倍。文章把差距归结为三点：一次 run 调用执行多步浏览器操作、snapshot 只返回裁剪过的无障碍树并给可交互元素编号、往返次数更少。",
+      "key_points": [
+        "7 套工具在 WebVoyager 上的通过率都在 78%–90%；Playwright MCP 平均每个任务 26 步，Stagehand 10 步",
+        "snapshot 给可交互元素编号，Agent 不用读原始 HTML 或写选择器；截图只作后备，事后截断快照并不能降低成本",
+        "run 接受 Playwright 风格的代码，模型写得更顺；换成 Stagehand 原生 API 后通过率低 5.3 个百分点",
+        "把固定的 waitForTimeout 改成页面安静 500 ms 就结束，HardBench 上每任务中位耗时从 182 秒降到 124 秒"
+      ],
+      "why_it_matters": "做法不依赖视觉能力，正好对应团队「无视觉模型做 UI 自动化定位不准、耗时长」的问题：给模型看编号的交互元素清单、让它批量写操作代码，而不是一步一截图。测试用的是 Claude 模型，换成自部署模型的效果需要自己评测。",
+      "sources": [
+        {
+          "title": "How we optimized browser use for Deep Agents",
+          "url": "https://www.langchain.com/blog/how-we-optimized-browser-use-for-deep-agents",
+          "kind": "primary",
+          "publisher": "LangChain",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "agent",
+        "evaluation",
+        "context-engineering",
+        "devtools"
+      ],
+      "importance": 5,
+      "actionability": "try",
+      "experiment_id": "2026-11-10-compact-a11y-snapshot",
+      "figure": {
+        "type": "bars",
+        "title": "WebVoyager 上 Stagehand 通过率更高、成本约为 1/13",
+        "series": [
+          "Stagehand",
+          "Playwright MCP"
+        ],
+        "rows": [
+          {
+            "label": "通过率（%）",
+            "values": [
+              90,
+              78
+            ]
+          },
+          {
+            "label": "100 个任务总成本（美元）",
+            "values": [
+              1.98,
+              26.71
+            ]
+          }
+        ],
+        "caption": "数据来自 LangChain 博客，模型为 Claude Sonnet 5.5"
+      }
+    },
+    {
+      "id": "2026-11-10-skill-goal-not-prohibitions",
+      "category": "skills",
+      "title": "让 AI 写代码时，描述想要的结果并给参考文件，别只堆禁令",
+      "summary": "Anthropic 在介绍 Claude 5 代模型的上下文工程时提到，他们删掉了 Claude Code 系统提示词里 80% 以上的内容：过去为防止最坏情况写的「禁止多段注释」之类硬规则，会在用户确实需要时给出错误结果，改成描述目标后效果更好。文章还建议用现成的代码、测试或页面当参考，并去掉互相冲突的约束。",
+      "key_points": [
+        "把禁令换成目标，如「写出读起来像周围代码的代码：注释密度、命名和习惯都与之一致」",
+        "给丰富的参考（现有代码、测试套件、HTML 样稿）往往比文字描述更清楚",
+        "「适当写文档」和「不要加注释」这类冲突指令会迫使模型自己调和，应当删掉其中一条"
+      ],
+      "why_it_matters": "团队里「AI 不按现有组件库写、另起一套」的问题，很多时候是只给了禁令、没给参考；这个习惯不依赖具体模型，开发、测试、产品写需求时都适用。",
+      "sources": [
+        {
+          "title": "The new rules of context engineering for Claude 5 generation models",
+          "url": "https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-07-24"
+        }
+      ],
+      "tags": [
+        "ai-collaboration",
+        "prompting",
+        "context-engineering"
+      ],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "goal",
+        "scenario": "让编码 Agent 给后台系统加一个「编辑用户」表单页",
+        "bad": "加一个编辑用户的页面。不要自己写组件，不要用内联样式，不要写太多注释，不要改别的文件。",
+        "good": "在 [src/pages/user] 下加一个「编辑用户」表单页。\n目标：看起来和用起来都像 [src/pages/role/RoleEdit.tsx] 这个已有页面——同样的布局、表单组件、校验写法，注释密度和命名跟周围代码一致。\n表单组件只用 [组件库名] 里已有的；如果某个字段现有组件做不到，先停下来告诉我缺什么，不要自己新写。\n完成标准：页面能打开、提交走 [api/user.ts] 里的 updateUser，lint 通过。",
+        "why": [
+          "用「像 RoleEdit.tsx 一样」描述结果，AI 遇到禁令没覆盖的情况也知道该怎么做",
+          "直接指出参考文件，比列出「不要自己写组件」更具体，AI 能照着已有写法抄",
+          "把「不要写组件」改成「做不到就停下来问」，留了出口，避免它为了守规矩硬凑",
+          "写明完成标准，AI 和你都知道什么时候算做完"
+        ],
+        "practice": "翻一条你最近给 AI 的指令，把其中每个「不要……」改写成「做成……的样子」，并补一个可参照的文件"
+      }
+    },
+    {
+      "id": "2026-11-10-specbridge-ambiguous-sql",
+      "category": "research",
+      "title": "论文 SpecBridge：问题有歧义时，模型会算两种口径但只报一种",
+      "summary": "论文用 SpecBridge 测试文本转 SQL：同一个业务问题分别以「开放问法」和「指定某种口径」提问，并执行 SQL 打分。在 204 个人工核验的用例上，4 个模型被明确要求时基本都能算出每种口径，但开放提问时只有 15%–58% 的用例会把两种口径都给出来，而且往往不提自己选了哪种。",
+      "key_points": [
+        "作者认为问题出在「报告」而不是「计算」：模型会算，只是默默做了选择",
+        "在 BIRD 基准中口径会影响答案的题目里，超过 40% 被判错的答案按另一种口径其实是对的",
+        "改进方法：先判断请求是否留有口径选择，有的话每种口径分开调用回答；所有口径都被给出的比例提高 29–63 个百分点，清楚的问题不受影响",
+        "这种做法比反问用户需要的对话轮数更少"
+      ],
+      "why_it_matters": "对应团队「需求说不清、AI 澄清时又问太多」的问题：与其连环追问，不如让 AI 先列出几种理解并各给一版结果，由人挑；方法不依赖特定模型。",
+      "sources": [
+        {
+          "title": "Text-to-SQL Models Make Choices Without Saying So",
+          "url": "https://arxiv.org/abs/2611.04318",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-03"
+        }
+      ],
+      "tags": [
+        "research",
+        "evaluation",
+        "prompting"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-10-arcbench-compaction-rules",
+      "category": "research",
+      "title": "ARCBench：上下文压缩后，规则还在摘要里，Agent 违规却翻倍",
+      "summary": "论文基于开源 pi Agent 框架构建 ARCBench，在工具调用循环里按实际动作检查 Agent 是否遵守规则。结果发现，压缩上下文很少把规则删掉，多数违规发生在规则仍留在压缩历史里时，Agent 常把后来的请求当成可以继续的许可；保留了规则的压缩运行，违规率仍是完整历史运行的两倍多。",
+      "key_points": [
+        "针对压缩器的最强攻击会在摘要里篡改规则，使违规次数增加一倍以上",
+        "最强的防御能让大多数摘要恢复规则原文，但 Agent 仍然会违反",
+        "论文未给出代码仓库链接"
+      ],
+      "why_it_matters": "上下文窗口有限、压缩频繁的自部署环境更容易遇到：审批类规则不能只靠写在提示词里，关键操作应由 hook 或权限配置在执行层拦截。",
+      "sources": [
+        {
+          "title": "Do Agents Still Follow the Rules? Benchmarking Rule Compliance under Agent Context Compaction",
+          "url": "https://arxiv.org/abs/2611.03223",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-02"
+        }
+      ],
+      "tags": [
+        "research",
+        "agent",
+        "safety",
+        "context-engineering"
+      ],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-10-terminal-bench-continuous",
+      "category": "research",
+      "title": "论文：审计发现 Terminal-Bench 2.0 约 30% 有问题，主张基准持续维护",
+      "summary": "论文作者审计了 Terminal-Bench 2.0，发现约 30% 的任务存在问题，修复后发布为 2.1，整体准确率提高 10 个百分点以上。排行榜名次最多变动 3 位，但整体排序高度相关（Spearman rho = 0.958）。作者主张把基准当作软件持续维护，而不是发布后冻结。",
+      "key_points": [
+        "放宽时间限制能消除 GPT 5.4 上 20 个百分点的 harness 差距；GPT 5.4 mini 上 30 个百分点的差距缩小到 5 个",
+        "说明同一模型在不同 harness 和时限下的分数差异，可能比模型之间的差异还大"
+      ],
+      "why_it_matters": "团队选型时看到的 Terminal-Bench 分数要注明版本和 harness；用公开基准挑自部署模型前，最好用自己的任务和时限复测。",
+      "sources": [
+        {
+          "title": "Benchmarks as Software: Terminal-Bench and the Case for Continuous Benchmarks",
+          "url": "https://arxiv.org/abs/2611.08417",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-05"
+        }
+      ],
+      "tags": [
+        "research",
+        "evaluation",
+        "coding"
+      ],
+      "importance": 3,
+      "actionability": "know"
+    }
+  ]
+}
