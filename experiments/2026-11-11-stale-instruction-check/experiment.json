@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-11-stale-instruction-check",
+  "title": "玩具实验：用纯文本检查找出 AGENTS.md 里过期的路径和命令",
+  "goal": "仿照论文 arXiv:2611.09802 研究的三类过期说明（测试命令、代码位置、新增组件流程），在构造的小仓库里写一个最小检查器：提取 AGENTS.md 中反引号里的路径和 npm 脚本，核对是否存在，并按文件名或脚本前缀给出候选新位置。",
+  "related_item": "2026-11-11-stale-instruction-files",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "三条过期引用全部找出且无误报；挪走的文件和改名的脚本能给出候选，换了实现方式的生成脚本只能提示人工确认",
+  "tags": ["agent", "context-engineering", "coding"]
+}

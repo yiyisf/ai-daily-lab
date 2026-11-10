@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-11-stale-instruction-check",
+  "ran_at": "2026-11-10T22:07:00+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.6,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "== AGENTS.md 中提取到的引用 ==\n   npm run test:unit\n   npm run lint\n   scripts/new-component.sh\n   src/components/Button.tsx\n   src/api/user.ts\n   src/router/index.ts\n   src/ui/index.ts\n   stories\n\n== 判定为过期的引用 ==\n   npm run test:unit  ->  package.json 里没有这个脚本；可能的新位置：['test']\n   scripts/new-component.sh  ->  路径不存在；可能的新位置：无\n   src/components/Button.tsx  ->  路径不存在；可能的新位置：['src/ui/Button.tsx']\n\nMETRIC: 提取到的引用 = 8 条\nMETRIC: 判定过期 = 3 条\nMETRIC: 正确找出的过期引用 = 3 条\nMETRIC: 误报 = 0 条\n\n[PASS] 三条过期说明（测试命令、代码位置、生成脚本）全部找出\n[PASS] 仍然有效的路径和命令没有被误报\n[PASS] 挪走的按钮组件能按文件名给出新位置 src/ui/Button.tsx\n[PASS] 改名的测试命令能按前缀提示现有脚本 test\n[PASS] 换了实现方式的生成脚本给不出建议，只能人工确认\n\nRESULT: 纯文本检查在构造仓库里找出全部 3 条过期引用、0 误报，其中 2 条能给出候选，其余需人工改\n",
+  "stderr": ""
+}
