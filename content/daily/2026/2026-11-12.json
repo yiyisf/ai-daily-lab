@@ -1,0 +1,501 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-12",
+  "generated_at": "2026-11-12T06:03:34+08:00",
+  "editor_note": "本期 13 条，主线是「给 Agent 一个能对照的东西」。Chrome、Edge、Firefox 和 MDN 团队合推的 modern-web-guidance 技能，作者测得有指导时断言通过率从 55% 到 92%；WikiTrace 论文让 Agent 记忆里的每条经验都能回查原始轨迹；Hugging Face 的 decision model 直接输出概率，适合分类和路由。要闻有 Gemini 4 Carbon 开放和 Meta 小模型 Muse Ember，都不开放权重。实验复算 decision model 的置信度公式，演示按阈值转人工。",
+  "tldr": [
+    {
+      "text": "Chrome 等团队开源 modern-web-guidance 技能，作者评测有指导时通过率 55% 升到 92%",
+      "item_id": "2026-11-12-modern-web-guidance"
+    },
+    {
+      "text": "Tether 开放 0.8B 的 BotPsy，六项工具调用基准平均 45.0，基座为 24.7",
+      "item_id": "2026-11-12-botpsy-small-agent-model"
+    },
+    {
+      "text": "WikiTrace 让记忆可回查原始轨迹，八组测试平均 90.2，无记忆为 79.5",
+      "item_id": "2026-11-12-wikitrace-evidence-memory"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-12-modern-web-guidance",
+      "reason": "前端 Agent 爱写老式 div 弹窗和 JS 悬停，用它按需查规范、扫出过时写法",
+      "steps": [
+        "在前端仓库运行 npx modern-web-guidance@latest install（作者建议加 DISABLE_TELEMETRY=1）",
+        "运行 npx modern-web-guidance@latest legacy-scan . 看看现有代码里有哪些过时写法",
+        "让 Agent 做一个弹窗或表单需求，对比装前装后生成的代码"
+      ]
+    },
+    {
+      "item_id": "2026-11-12-botpsy-small-agent-model",
+      "reason": "0.8B 模型就能做简单工具调用，适合在显存很少的机器上试 Agent 流程",
+      "steps": [
+        "按模型卡用 vllm serve qvac/BotPsy-0.8B 启动，带上 --enable-auto-tool-choice --tool-call-parser qwen3_xml 等参数",
+        "按模型卡建议打开思考模式，采样用 temperature 0.3、top_p 0.95、top_k 20",
+        "用团队自己的几个简单工具定义测一遍，看调用格式和参数是否正确"
+      ]
+    },
+    {
+      "item_id": "2026-11-12-hf-decision-models",
+      "reason": "工单分派、打标签这类任务直接拿概率，不用担心 JSON 格式错，还能设阈值转人工",
+      "steps": [
+        "pip install \"transformers[serving]\" 后，按文章示例用 pipeline(\"decision\", model=...) 跑一个分类问题",
+        "或用 transformers serve 起服务，请求 /v1/systemone 接口",
+        "参考本期实验，用置信度阈值决定自动处理还是转人工"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-12-decision-confidence-routing"
+  ],
+  "items": [
+    {
+      "id": "2026-11-12-gemini-4-carbon",
+      "category": "news",
+      "title": "Google 开放 Gemini 4 Carbon，预览多 Agent 工具 /swarm",
+      "summary": "Google 11 月 10 日宣布 Gemini 4 Carbon 开放使用，称其为自家最强模型，定位在 Gemini 4 Argon 之上；Google 同时表示大多数软件工程和知识工作仍以 Argon 为更合适的选择。开发者可通过 Gemini API 付费层使用，企业和 Google AI Ultra 订阅用户也可在 Antigravity 等产品中使用。",
+      "key_points": [
+        "限时价格为每百万输入 token 2 美元、输出 10 美元，与 Argon 相同；11 月 30 日起调整为 4 美元和 20 美元",
+        "Google 称其在 CursorBench 4.0、Zapier 的 AutomationBench 等榜单排名第一，单任务成本不到次优外部模型的一半",
+        "安全方面，自适应红队 Agent 的单次攻破率为 0.8%，Argon 为 3.1%",
+        "Antigravity 预览 /swarm：一个提示拆成多个 Agent 协作，Carbon 负责设计、协调和审计，轻量模型并行干活，对抗式验证者检查每处改动"
+      ],
+      "why_it_matters": "闭源模型，自部署环境用不上；/swarm 的「强模型做设计和审计、轻模型并行实现、验证者把关」分工，可以参考到开源模型的多 Agent 编排里。",
+      "sources": [
+        {
+          "title": "Gemini 4 Carbon is now available",
+          "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-carbon-now-available/",
+          "kind": "primary",
+          "publisher": "Google",
+          "published_at": "2026-11-10"
+        },
+        {
+          "title": "llm-gemini 0.36",
+          "url": "https://simonwillison.net/2026/Nov/10/llm-gemini/",
+          "kind": "secondary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-11-10"
+        }
+      ],
+      "tags": ["llm", "agent", "coding"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-12-meta-muse-ember",
+      "category": "news",
+      "title": "Meta 发布小模型 Muse Ember，主打工具调用、路由和抽取",
+      "summary": "Meta 11 月 9 日发布 Muse Ember，称其为自家最小、最高效的模型，面向工具调用、编码子任务、路由、信息抽取和长文档解析，支持文本、图像、音频和视频输入。上下文窗口 1M token，最多输出 512K token，通过 Meta Model API、Google Cloud、Oracle Cloud 等提供。",
+      "key_points": [
+        "200K token 以内的价格为每百万输入 0.10 美元、输出 0.50 美元",
+        "Meta 自报 Terminal-Bench 4.0 为 40.9%，Claude Haiku 5.5 为 39.2%；FrontierCode 2.0-AA 为 27.2%，低于 Haiku 5.5 的 34.9%",
+        "发布页没有提到可下载的权重或开源许可证"
+      ],
+      "why_it_matters": "目前只有 API，自部署用不上；它把「便宜的小模型专做路由、抽取、工具调用」作为卖点，和自部署团队用小模型分担简单子任务的思路一致。",
+      "sources": [
+        {
+          "title": "Muse Ember",
+          "url": "https://research.meta.ai/blog/muse-ember",
+          "kind": "primary",
+          "publisher": "Meta",
+          "published_at": "2026-11-09"
+        },
+        {
+          "title": "Muse Ember",
+          "url": "https://simonwillison.net/2026/Nov/10/muse-ember/",
+          "kind": "secondary",
+          "publisher": "Simon Willison",
+          "published_at": "2026-11-10"
+        }
+      ],
+      "tags": ["llm", "agent"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-12-claude-sheets-whiteboards",
+      "category": "news",
+      "title": "Anthropic 推出 Claude Sheets、Whiteboards 和 Claude Data",
+      "summary": "Anthropic 11 月 10 日推出 Claude Whiteboards（测试版）和 Claude Sheets（测试版）：前者是和 Claude 一起头脑风暴的共享白板，后者让 Claude 构建和编辑带公式、下拉框的表格并记录每次修改。10 月上线的 Claude Dashboards 更名为 Claude Data 并正式可用。Adobe、Atlassian、Box、Notion 等合作方的连接器可以直接在对话旁打开。",
+      "key_points": [
+        "白板可导出为文档或幻灯片，或转到 Lucid、Miro 等工具；表格可导出 .xlsx 或 CSV",
+        "Claude Data 新增认证指标定义、按看板设定刷新计划、修改追踪与版本回滚",
+        "付费计划均可用；Enterprise 计划中 Whiteboards 和 Sheets 默认关闭，管理员可在组织设置里调整"
+      ],
+      "why_it_matters": "闭源产品功能，自部署环境用不上；了解即可。",
+      "sources": [
+        {
+          "title": "More ways to work with Claude: Sheets, Whiteboards, and interactive connectors",
+          "url": "https://claude.com/resources/articles/sheets-whiteboards-data",
+          "kind": "primary",
+          "publisher": "Anthropic",
+          "published_at": "2026-11-10"
+        },
+        {
+          "title": "Claude Whiteboards, Claude Sheets, and Claude Data",
+          "url": "https://news.ycombinator.com/item?id=50443716",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["devtools", "workflow"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-12-botpsy-small-agent-model",
+      "category": "opensource",
+      "title": "Tether 开放 BotPsy-0.8B：面向工具调用的端侧小模型",
+      "summary": "Tether 旗下 QVAC 团队 11 月 11 日发布 BotPsy，一个基于 Qwen3.5-0.8B 训练的 0.8B 参数工具调用模型，面向搜索、日程、邮件、设备控制等个人助理任务，以 Apache 2.0 许可开放 safetensors 权重和 bf16、Q8、Q4 三种 GGUF。作者明确说它适合低到中等难度的任务，不适合高风险场景。",
+      "key_points": [
+        "六项工具调用基准平均 45.0，基座 Qwen3.5-0.8B 为 24.7；其中 BFCL v4 从 23.4 到 44.0，τ-bench 从 23.2 到 51.5，ToolSandbox 从 30.5 到 64.6",
+        "指令遵循也有提升：IFEval 从 59.7 到 90.8",
+        "模型卡给出 vLLM 启动命令，工具调用用 Qwen3.5 的 XML 格式；默认是非思考模式，作者建议打开思考模式",
+        "体积是其 2.5 倍的 Qwen3.5-2B-Think 在 Claw-Eval 上仍更高（48.9 对 46.5）"
+      ],
+      "why_it_matters": "Apache 2.0、0.8B，几乎任何机器都能跑；可以拿来做路由、简单工具调用这类子任务，把大模型留给难的部分。基准分为作者自报，用自己的工具定义测过再用。",
+      "sources": [
+        {
+          "title": "BotPsy: On-Device Personal Assistant with a Sub-Billion-Parameter Agentic Language Model",
+          "url": "https://huggingface.co/blog/qvac/botpsy",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-11"
+        },
+        {
+          "title": "qvac/BotPsy-0.8B",
+          "url": "https://huggingface.co/qvac/BotPsy-0.8B",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": ["open-weights", "agent", "llm"],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://huggingface.co/qvac/BotPsy-0.8B",
+        "license": "Apache-2.0"
+      },
+      "figure": {
+        "type": "bars",
+        "title": "0.8B 的 BotPsy 在工具调用和指令遵循上明显高于基座",
+        "series": ["Qwen3.5-0.8B", "BotPsy-0.8B"],
+        "rows": [
+          {"label": "BFCL v4", "values": [23.4, 44.0]},
+          {"label": "τ-bench", "values": [23.2, 51.5]},
+          {"label": "ToolSandbox", "values": [30.5, 64.6]},
+          {"label": "IFEval", "values": [59.7, 90.8]}
+        ],
+        "caption": "数据来自 QVAC 团队的 Hugging Face 博客，为作者自报分数"
+      }
+    },
+    {
+      "id": "2026-11-12-minimax-h3-image",
+      "category": "opensource",
+      "title": "MiniMax 开放 H3-Image 权重：33.1B 图像生成与编辑模型",
+      "summary": "MiniMax 11 月 11 日发布 H3-Image，支持文生图、参考图生成和图像编辑，最多可用 16 张参考图，并在 Hugging Face 开放权重。官方称生成一张 4096×4096 的 4K 图不到 10 秒。模型卡显示扩散 Transformer 为 33.1B 参数，蒸馏到 6 步采样。",
+      "key_points": [
+        "许可证为 MiniMax-H3-Image Community License，并非标准开源许可，部分用途需另行书面授权",
+        "支持 Diffusers、vLLM-Omni、SGLang 和 ComfyUI；模型卡未给显存要求，Transformer 和文本编码器下载各约 66 GB",
+        "文本编码器基于 Qwen3-VL，需要从 MiniMax-H3 仓库单独下载"
+      ],
+      "why_it_matters": "图像生成模型，对日常编码和测试帮助有限，且硬件门槛高；要用于产品前先读清许可证条款。",
+      "sources": [
+        {
+          "title": "MiniMax H3-Image",
+          "url": "https://www.minimax.io/blog/minimax-h3-image",
+          "kind": "primary",
+          "publisher": "MiniMax",
+          "published_at": "2026-11-11"
+        },
+        {
+          "title": "MiniMaxAI/MiniMax-H3-Image",
+          "url": "https://huggingface.co/MiniMaxAI/MiniMax-H3-Image",
+          "kind": "primary",
+          "publisher": "Hugging Face"
+        }
+      ],
+      "tags": ["open-weights", "multimodal"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-12-hf-decision-models",
+      "category": "tools",
+      "title": "Hugging Face 推 decision model 接口：不生成文本，直接给概率",
+      "summary": "Hugging Face 11 月 10 日介绍 decision model：输入一段状态和若干带固定答案的问题，模型不生成文本，直接返回每个答案的概率。问题分三类：choice（多选一）、score（有序刻度求期望值）和 noul（是非题概率）。Transformers 新增 decision pipeline 和 /v1/systemone 服务接口，llama.cpp 用同样的请求格式提供服务。",
+      "key_points": [
+        "choice 的置信度按 (p_max − 1/K)/(1 − 1/K) 计算，K 为选项数；文章的退款示例中 billing 概率为 0.9982666969299316，置信度 0.9974000453948975",
+        "文章认为让 LLM 输出 JSON 可能格式不合法，约束解码又有额外开销，decision model 直接跳过生成",
+        "服务端示例请求消耗 148 个输入 token、0 个输出 token",
+        "TRL 的正式训练支持还在开发中；Unsloth 提供了用 LoRA 加打分头微调的方法"
+      ],
+      "why_it_matters": "工单分派、需求分类、测试结果打标签这类任务，用自部署的 decision model 能直接拿概率设阈值，低置信度转人工，也不用处理格式错误；可在 Hub 上按 decision-model 标签找模型。",
+      "sources": [
+        {
+          "title": "Decision Models in Hugging Face",
+          "url": "https://huggingface.co/blog/decision",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-10"
+        }
+      ],
+      "tags": ["inference", "workflow", "devtools"],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-12-decision-confidence-routing"
+    },
+    {
+      "id": "2026-11-12-modern-web-guidance",
+      "category": "kits",
+      "title": "modern-web-guidance：浏览器厂商合推技能，让 Agent 用现代写法",
+      "summary": "GoogleChrome/modern-web-guidance 是由 Chrome、Edge、Firefox 和 MDN 团队维护的一组 Agent 技能，覆盖 250 个 Web 特性和 203 个真实开发场景，引导编码 Agent 用 <dialog>、field-sizing 等现代平台能力，而不是 div 堆砌和重型 polyfill。它以 Apache-2.0 发布，作者在 Show HN 帖子里称这是 v1.0。",
+      "key_points": [
+        "作者称在约 1,700 条测试断言上，Agent 无指导时通过 55%，有指导时通过 92%",
+        "通过 CLI 的 search、retrieve 命令把对应指南按需取进上下文；legacy-scan 是确定性扫描，标出过时写法",
+        "Hacker News 上有人担心部分特性只有 Chrome 支持；作者回应指南带浏览器兼容表，默认目标是 Baseline Widely Available",
+        "CLI 默认带遥测，作者在帖子里给的安装命令设置了 DISABLE_TELEMETRY=1"
+      ],
+      "why_it_matters": "直接对上「AI 写的前端代码不守规范」这个问题：按需检索、不常驻上下文，对窗口有限的开源模型友好；它管的是 Web 平台写法，团队自己的组件库约定仍要另写规则文件。",
+      "sources": [
+        {
+          "title": "GoogleChrome/modern-web-guidance",
+          "url": "https://github.com/GoogleChrome/modern-web-guidance",
+          "kind": "primary",
+          "publisher": "GitHub"
+        },
+        {
+          "title": "Show HN: Get your coding agent off ~2019 JavaScript, onto modern web primitives",
+          "url": "https://news.ycombinator.com/item?id=50443812",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["agent-skills", "coding", "devtools"],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "modern-web-guidance",
+        "version": "1.0",
+        "repo": "https://github.com/GoogleChrome/modern-web-guidance",
+        "license": "Apache-2.0",
+        "capabilities": [
+          "按场景搜索并取回现代 Web 写法指南，如弹窗动画、表单、布局、无障碍",
+          "legacy-scan 扫描项目，标出过时的 JavaScript 和 HTML 写法",
+          "指南附浏览器兼容数据，并给出轻量的回退方案"
+        ],
+        "highlights": [
+          "指南用评测裁剪过，删掉模型本来就会的内容，省 token",
+          "CLI 只把相关的那一篇指南送进上下文，不需要常驻",
+          "由多家浏览器厂商和 MDN 共同维护，优先平台原生能力"
+        ],
+        "install": "npx modern-web-guidance@latest install"
+      }
+    },
+    {
+      "id": "2026-11-12-ai-fragile-codebase",
+      "category": "ideas",
+      "title": "「AI 让代码库变脆弱」引发争论：是工具问题还是流程问题",
+      "summary": "Evan X. Merz 11 月 7 日发文认为，重度依赖 AI 编码会让代码库变脆：测试流于表面、代码被过度抽象、懂代码的人变少、评审跟不上提交速度。文章的依据主要是个人经历，如同事用 JavaScript 处理鼠标悬停而不用 CSS 的 :hover。Hacker News 上该帖获 500 多点，争论分成几派。",
+      "key_points": [
+        "作者列出变脆的信号：故障增多、恢复变慢、只有真实用户才看到的错误",
+        "支持方举例：Agent 写出 400 行只用一次的告警代码、在两处重复逻辑；有人说在杂乱仓库里放 Agent 只会更乱",
+        "另一派认为代码杂乱对机器影响不大，Agent 照样能处理；反对者指出 Agent 在乱仓库里表现变差、token 成本上升",
+        "也有人认为这是流程问题而非 AI 问题：规格、测试和优先级更重要，工程最佳实践没有变"
+      ],
+      "why_it_matters": "和团队「AI 不守组件库和规范」的问题是同一回事；与其争论 AI 好坏，不如把规范写成规则文件和检查脚本，让测试和评审跟上生成速度。",
+      "sources": [
+        {
+          "title": "AI usage generates a fragile codebase",
+          "url": "https://evanxmerz.com/post/ai-usage-generates-a-fragile-codebase/",
+          "kind": "primary",
+          "publisher": "Evan X. Merz",
+          "published_at": "2026-11-07"
+        },
+        {
+          "title": "AI usage generates a fragile codebase (discussion)",
+          "url": "https://news.ycombinator.com/item?id=50438318",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["coding", "ai-collaboration"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-12-vulncheck-anthropic-cves",
+      "category": "ideas",
+      "title": "VulnCheck 统计 Anthropic 报告的漏洞：发现多、修复少",
+      "summary": "VulnCheck 的 Patrick Garrity 11 月 9 日发布对 Anthropic 发现漏洞的跟踪：今年归于 Anthropic 的 CVE 有 442 个，约占全年 93,450 个 CVE 的 0.5%，其中 2 个被确认在野利用。Anthropic 的披露台账共 37,966 条发现，标为已修复的只有 217 条。",
+      "key_points": [
+        "Anthropic 台账自称真阳性率 94.2%，发布时为 90.8%",
+        "作者指出：9 月 8 日以来发现增加 11,813 条，修复只增加 15 条；重复和撤回的条目也在增加",
+        "curl 已公开的 34 份报告中，19 份被判定不是漏洞；Claude 把 91.5% 的发现评为严重或高危，维护者只评了 51.3%",
+        "作者也承认 AI 找漏洞有用，只是证据撑不起发布时的说法，且分诊负担被转给了维护者"
+      ],
+      "why_it_matters": "用 AI 做代码安全扫描时，发现数量不等于价值；要把误报率、严重度校准和谁来分诊算进成本，自己用开源模型扫也一样。",
+      "sources": [
+        {
+          "title": "Tracking Anthropic-discovered vulnerabilities: November update",
+          "url": "https://www.vulncheck.com/blog/anthropic-glasswing-november-update",
+          "kind": "primary",
+          "publisher": "VulnCheck",
+          "published_at": "2026-11-09"
+        },
+        {
+          "title": "Tracking Anthropic-discovered vulnerabilities (discussion)",
+          "url": "https://news.ycombinator.com/item?id=50447074",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["safety", "evaluation"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-12-tng-bring-your-own-expert",
+      "category": "practices",
+      "title": "TNG：冻结 MoE 原模型，只训新增专家补 Rust 和 Haskell",
+      "summary": "TNG Technology Consulting 11 月 10 日在 Hugging Face 介绍一种扩展 MoE 模型的做法：冻结 Qwen3.5-35B-A3B-Base 的原有权重，每层新增专家和对应的路由行，只训练新增部分（每个专家约 125M 参数），训练后拼回原专家张量，得到一个只是多了几个专家的标准 Hugging Face 检查点。",
+      "key_points": [
+        "加 Rust 专家后 Rust pass@1 从 0.62 到 0.73，通用能力从 0.80 到 0.78；加 Haskell 专家后 Haskell 从 0.32 到 0.51，通用仍为 0.80",
+        "两个专家合并后只需短暂重训路由行，Rust 0.70、Haskell 0.50",
+        "同样数据训练的 LoRA 单独效果接近，但两个 LoRA 取平均后只有 Rust 0.67、Haskell 0.36",
+        "新专家从该层最活跃的专家初始化，并先短暂冻结路由，避免新专家还没学会就被关掉；单个领域在 8 卡 B200 上约训练半天"
+      ],
+      "why_it_matters": "团队若有小众语言或内部框架，这是「不动原模型、按领域加插件」的一种思路，推理无需改代码；但文章没给代码仓库，训练需要多卡，目前适合关注。",
+      "sources": [
+        {
+          "title": "Bring Your Own Expert! Extending MoE Models with New Domain Expertise",
+          "url": "https://huggingface.co/blog/tngtech/bring-your-own-expert-extending-moe-models-with-ne",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-10"
+        }
+      ],
+      "tags": ["fine-tuning", "open-weights", "coding"],
+      "importance": 3,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "加一个专家后，目标语言 pass@1 明显提升",
+        "series": ["原模型", "加专家后"],
+        "rows": [
+          {"label": "Rust", "values": [0.62, 0.73]},
+          {"label": "Haskell", "values": [0.32, 0.51]}
+        ],
+        "caption": "数据来自 TNG 的 Hugging Face 博客，基座为 Qwen3.5-35B-A3B-Base"
+      }
+    },
+    {
+      "id": "2026-11-12-skill-iterate-test-target",
+      "category": "skills",
+      "title": "让 AI 改代码时先给它一个能对照的目标，别反复说「还是不对」",
+      "summary": "Anthropic 的 Claude Code 最佳实践指出，模型在有明确对照目标时表现最好，例如测试用例或预期输出：先根据输入输出写测试、确认测试失败，再让模型反复修改直到全部通过，并且不许改测试。指南也建议尽早纠偏：先让它出计划，确认后再动手；发现方向不对就打断重来。",
+      "key_points": [
+        "对照目标可以是测试用例、预期输出，或界面截图",
+        "明确要求「一直改到测试全部通过」，并说明不能修改测试",
+        "模型能推断意图，但读不了心；一开始说清楚，能减少后面的来回纠正"
+      ],
+      "why_it_matters": "反馈从「感觉不对」变成「这条测试没过」，模型和人都知道差在哪；不依赖具体模型，对没有视觉能力的模型尤其有用，测试同学也能用同样方式给 AI 提缺陷。",
+      "sources": [
+        {
+          "title": "Claude Code: Best practices for agentic coding",
+          "url": "https://www.anthropic.com/research/claude-code-best-practices",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": ["ai-collaboration", "prompting", "coding"],
+      "importance": 3,
+      "actionability": "try",
+      "skill": {
+        "area": "iterate",
+        "scenario": "让编码 Agent 修复金额格式化函数的 bug，第一次改完还是不对",
+        "bad": "金额显示有问题，帮我修一下。\n（改完后）还是不对，再看看。\n（又改完）好像还有问题，你再仔细检查一下。",
+        "good": "[src/utils/formatMoney.ts] 的 formatMoney 输出不对，请按下面的步骤做：\n1. 先在 [formatMoney.test.ts] 加这几条用例：输入 1234.5 应输出 \"1,234.50\"；输入 -0.005 应输出 \"-0.01\"；输入 0 应输出 \"0.00\"。\n2. 运行 [npm run test]，确认新用例失败，把失败信息贴给我。\n3. 再改 formatMoney，一直改到全部测试通过。不要修改或删除测试用例。\n4. 最后告诉我原因和改了哪几行。",
+        "why": [
+          "把「不对」写成具体的输入和预期输出，模型知道差在哪，人也能一眼核对",
+          "先确认测试失败，证明测试真的抓住了问题，而不是一开始就通过",
+          "「不要修改测试」堵住了为了通过而改测试的捷径",
+          "「一直改到全部通过」给了停止条件，不用你一轮轮催"
+        ],
+        "practice": "下次对 AI 说「还是不对」之前，先写出一条「输入什么、应该得到什么」，再发给它。"
+      }
+    },
+    {
+      "id": "2026-11-12-wikitrace-evidence-memory",
+      "category": "research",
+      "title": "论文 WikiTrace：Agent 记忆里每条经验都链接原始轨迹，用前可回查",
+      "summary": "论文 Don't Just Trust Your Memory 指出，Agent 从过去任务总结出的经验可能有错或被误用，导致原本能做对的任务失败，作者称之为「记忆导致的退化」。WikiTrace 把每条经验存成简短要点，并链接到成败原因摘要和原始轨迹；当要点缺细节、互相矛盾或来自失败任务时，Agent 用终端工具顺着链接回查后再行动。",
+      "key_points": [
+        "用 DeepSeek-V4-Flash 在 ALFWorld、ScienceWorld、PlanCraft、τ³-bench、AppWorld 共八组测试上，平均分：无记忆 79.5，只给经验要点 87.0，WikiTrace 90.2",
+        "已有记忆方法 AWM、ReasoningBank、ExpeL 分别为 81.6、80.8、80.3",
+        "记忆导致的退化（无记忆能做对、加记忆后失败的比例）：WikiTrace 4.5%，只给要点 6.5%，无记忆重跑一次的波动为 9.7%",
+        "代码已在 GitHub 公开"
+      ],
+      "why_it_matters": "实验用的是开源权重模型；给 Agent 写经验库或规则文件时，可以给每条经验附上来源（哪次任务、成功还是失败），让模型拿不准时能回查原始记录，而不是盲信摘要。",
+      "sources": [
+        {
+          "title": "Don't Just Trust Your Memory: Evidence-Linked Memory Reduces Memory-Induced Degradation in LLM Agents",
+          "url": "https://arxiv.org/abs/2611.14320",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-10"
+        },
+        {
+          "title": "yukyeongleee/wikitrace",
+          "url": "https://github.com/yukyeongleee/wikitrace",
+          "kind": "primary",
+          "publisher": "GitHub"
+        }
+      ],
+      "tags": ["agent", "context-engineering", "research"],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "能回查原始轨迹的 WikiTrace 平均分最高",
+        "series": ["八组测试平均分"],
+        "rows": [
+          {"label": "无记忆", "values": [79.5]},
+          {"label": "AWM", "values": [81.6]},
+          {"label": "ReasoningBank", "values": [80.8]},
+          {"label": "ExpeL", "values": [80.3]},
+          {"label": "只给经验要点", "values": [87.0]},
+          {"label": "WikiTrace", "values": [90.2]}
+        ],
+        "caption": "数据来自论文 arXiv:2611.14320，模型为 DeepSeek-V4-Flash"
+      }
+    },
+    {
+      "id": "2026-11-12-deletion-tuning",
+      "category": "research",
+      "title": "论文：只把不到 0.05% 的权重置零，后训练效果就能追平全量微调",
+      "summary": "论文 The Surprising Effectiveness of Deleting Weights in LLM Post-Training 提出 Deletion Tuning：不改任何权重数值，只学习一个二值掩码，把 Transformer 门控投影里不到 0.05% 的权重置零。作者称在可验证奖励的强化学习、监督微调和在线蒸馏三种后训练中，都能追平全量微调。",
+      "key_points": [
+        "训练出的掩码比全量微调检查点小几百到几千倍",
+        "强化学习后，旧任务准确率基本保持在基座水平；全量微调、LoRA 和随机稀疏微调最多掉 5.4 分",
+        "从权重变化的几何结构看，它比 LoRA 和随机稀疏微调更接近全量微调",
+        "论文页面未给出代码仓库"
+      ],
+      "why_it_matters": "如果结论成立，给自部署模型做领域适配时，可以只分发一个很小的掩码而不是整份权重；目前没有代码，了解即可。",
+      "sources": [
+        {
+          "title": "The Surprising Effectiveness of Deleting Weights in LLM Post-Training",
+          "url": "https://arxiv.org/abs/2611.10866",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-07"
+        }
+      ],
+      "tags": ["fine-tuning", "research"],
+      "importance": 2,
+      "actionability": "know"
+    }
+  ]
+}
