@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-12-decision-confidence-routing",
+  "ran_at": "2026-11-11T22:08:17+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "== 第一部分：复算文章示例 ==\nchoice 示例：p_max=0.998267，K=3，复算置信度=0.9974000454\n[PASS] choice 置信度复算与文章给出的 0.9974000453948975 一致\n[PASS] choice 三个选项概率之和为 1\nscore 示例：low/medium/high 期望值=1.7053890228\n[PASS] score 期望值复算与文章给出的 1.7053890228271484 一致\np_max=0.6 时：K=2 置信度=0.200，K=5 置信度=0.500\n[PASS] 同样的最大概率，选项越多置信度越高（公式扣掉了随机猜的 1/K）\n\n== 第二部分：构造工单的分流演示 ==\n重复扣款要退款        预测=billing   置信度=0.955 -> 自动分派\n登录页一直转圈        预测=technical 置信度=0.925 -> 自动分派\n企业版多少钱         预测=sales     置信度=0.820 -> 自动分派\n发票抬头写错         预测=billing   置信度=0.865 -> 自动分派\n升级套餐后功能不能用     预测=technical 置信度=0.175 -> 转人工\n试用到期扣了费        预测=billing   置信度=0.220 -> 转人工\n导出报表报错 500     预测=technical 置信度=0.970 -> 自动分派\n想换年付能便宜吗       预测=billing   置信度=0.280 -> 转人工（预测错）\nMETRIC: 全部自动分派准确率 = 87.5 %\nMETRIC: 阈值以上自动分派准确率 = 100.0 %\nMETRIC: 自动分派占比 = 62.5 %\n[PASS] 按置信度 0.6 分流后，自动分派部分的准确率不低于全部自动分派\n[PASS] 阈值既放行了一部分工单，也把一部分留给人工\n\nRESULT: 文章示例的置信度和期望分复算一致；构造数据上按置信度 0.6 分流，5/8 张工单自动分派、准确率 100.0%，其余转人工\n",
+  "stderr": ""
+}

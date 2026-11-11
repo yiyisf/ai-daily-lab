@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-12-decision-confidence-routing",
+  "title": "玩具实验：复算 decision model 置信度，按阈值把工单分流到人工",
+  "goal": "用 Hugging Face《Decision Models in Hugging Face》文章示例里的概率，复算 choice 置信度公式 (p_max − 1/K)/(1 − 1/K) 和 score 期望值；再在构造的 8 张工单上演示：置信度高的自动分派，低的转人工。",
+  "related_item": "2026-11-12-hf-decision-models",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "两项复算与文章数值一致；构造数据上，阈值以上自动分派部分的准确率不低于全部自动分派，且有工单被留给人工",
+  "tags": ["inference", "workflow", "evaluation"]
+}
