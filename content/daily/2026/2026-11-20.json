@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-20",
+  "generated_at": "2026-11-21T05:57:00+08:00",
+  "editor_note": "本期 13 条，主线是「开源模型适配 Agent 框架的效率跃升，以及 MCP 与 Skill 生态的安全加固」。Hugging Face 推出 Harness Adapters，冻结 27B 开源模型权重只训 LoRA 就能在 OpenCode 等框架上大幅提分并把工具调用砍半；官方 MCP Servers v2.5.0 紧急修复 8 项高危漏洞，两篇安全论文也同步警示 MCP 影子调用与第三方 Skill 投毒风险。要闻覆盖阿里 Qwen4-Max、苹果 Mac Agent 动向与 SpaceXSI 诉讼抗辩。实验离线演示前置策略校验如何拦住 MCP 影子调用。",
+  "tldr": [
+    {
+      "text": "HF 推出 Harness Adapters，27B 模型在 OpenCode 提分至 51.0% 且调用减半",
+      "item_id": "2026-11-20-hf-harness-adapters"
+    },
+    {
+      "text": "官方 MCP Servers v2.5.0 修复 8 项漏洞，旧日期版文件服务须指定 2.4.0 升级",
+      "item_id": "2026-11-20-mcp-servers-v2-5-security"
+    },
+    {
+      "text": "论文 HerAgent 按语义块设检查点，环境搭建成功率在 Installamatic-Bench 升至 85.0%",
+      "item_id": "2026-11-20-heragent-block-checkpointing"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-20-mcp-servers-v2-5-security",
+      "reason": "使用官方 Git 或文件系统 MCP 服务时存在仓库钩子执行和符号链接越权风险，今天应优先排查版本并升级",
+      "steps": [
+        "检查团队用到的 mcp-server-git、@modelcontextprotocol/server-filesystem 与 server-everything 版本",
+        "若此前装的是 2025.x/2026.x 日期版，执行 npm install @modelcontextprotocol/server-filesystem@2.4.0 显式覆盖",
+        "将 mcp-server-git 升至 2026.11.18，server-everything 升至 2.3.1，并确认本机 Git 版本不低于 2.33"
+      ]
+    },
+    {
+      "item_id": "2026-11-20-hf-harness-adapters",
+      "reason": "在 27B 开源权重上加装轻量 LoRA 适配器就能适配 OpenCode 等框架、显著省 token 和工具调用次数",
+      "steps": [
+        "从文中 Hugging Face 合集拉取 Qwen3.8-27B 对应 OpenCode 的 LoRA 适配器或 GGUF 文件",
+        "用 vLLM 单卡加载合并后的权重，在团队自己的日常编码任务上与原版 Qwen3.8-27B 对比调用步数",
+        "若团队要定制自己的 RL 任务集，可先用 openenv validate 过滤坏用例再跑短步数验证"
+      ]
+    },
+    {
+      "item_id": "2026-11-20-shadowbench-mcp-routing",
+      "reason": "给编码 Agent 接入部署、日志导出等敏感 MCP 工具前，用前置策略校验堵住「赶时间跳过安全检查」的漏洞",
+      "steps": [
+        "盘点团队高风险工作流中不可跳过的安全工具（如 schema 校验、脱敏、审计日志）",
+        "在 MCP 网关或 Hook 层配置前置检查，拒绝缺失必需安全工具的快捷调用链",
+        "运行本期离线实验 experiments/2026-11-20-mcp-shadow-routing-guard 了解校验逻辑并替换成自家工具名"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-20-mcp-shadow-routing-guard"
+  ],
+  "items": [
+    {
+      "id": "2026-11-20-qwen4-max-launch",
+      "category": "news",
+      "title": "阿里上线 Qwen4-Max：多模态推理模型，暂不开放自部署",
+      "summary": "阿里云百炼（Model Studio）文档已上线新一代旗舰多模态模型 Qwen4-Max（调用名 `qwen4-max`），支持文本、图像、视频输入与深度思考模式，主打编码、办公、前端设计和复杂 Agent 任务。文档明确标注该模型目前不支持微调和私有化部署，仅通过云端 API 提供。",
+      "key_points": [
+        "支持并行工具调用、联网搜索、结构化输出（JSON Object / JSON Schema）、前缀续写以及显式与隐式缓存",
+        "接口同时兼容 OpenAI Chat Completions、Responses、Anthropic Messages 和 DashScope",
+        "已在北京、新加坡、法兰克福和美国弗吉尼亚节点上线，其中北京节点支持批量推理（Batch inference）",
+        "能力表中 `fine-tuning` 与 `model deployment` 均标注为 Not supported，且未发布可下载权重"
+      ],
+      "why_it_matters": "属于闭源云端 API，自部署开源权重团队暂时无法本地运行；其对 Anthropic Messages 与 OpenAI Responses 双接口的原生兼容，说明主流工具链的协议趋同，后续可关注阿里是否开放 Qwen4 系列中小尺寸权重。",
+      "sources": [
+        {
+          "title": "Qwen4-Max - Alibaba Cloud Model Studio",
+          "url": "https://help.aliyun.com/en/model-studio/qwen4-max",
+          "kind": "primary",
+          "publisher": "Alibaba Cloud"
+        },
+        {
+          "title": "qwen/qwen4-max on OpenRouter",
+          "url": "https://openrouter.ai/qwen/qwen4-max",
+          "kind": "secondary",
+          "publisher": "OpenRouter"
+        }
+      ],
+      "tags": ["llm", "multimodal", "agent"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-20-apple-mac-ai-agent",
+      "category": "news",
+      "title": "苹果被曝研发 Mac 自主 AI Agent，同时收紧第三方权限",
+      "summary": "TechCrunch 11 月 19 日援引彭博社报道称，苹果通过一则高级工程经理招聘启事透露正在研发能够像人类一样操作 Mac 的自主 AI Agent，可跨应用、浏览器、命令行和 API 执行多步骤任务。与此同时，即将推出的 macOS 27.3 将增加警告弹窗，劝阻用户向第三方 Agent 授予系统完全控制权。",
+      "key_points": [
+        "招聘描述强调该 Agent 需能浏览网页、跨应用协作、运行命令、编写并调试代码，且按步骤自主挑选工具",
+        "报道称苹果内部最早希望在明年底（2027 年底）推出相关服务，但目前仍处于早期阶段",
+        "苹果 10 月曾通知开发者，将引入额外控制措施，确保用户只有在非常明确的操作下才会授予第三方应用极高系统权限"
+      ],
+      "why_it_matters": "短期内不影响研发团队，但 macOS 27.3 对第三方桌面 Agent 权限的收紧值得关注——若团队使用桌面端自动化工具或本地 UI 测试脚本，后续升级系统时可能面临更严格的授权确认。",
+      "sources": [
+        {
+          "title": "Apple may be developing its own AI agent that runs your Mac",
+          "url": "https://techcrunch.com/2026/11/19/apple-may-be-developing-its-own-ai-agent-that-runs-your-mac/",
+          "kind": "primary",
+          "publisher": "TechCrunch",
+          "published_at": "2026-11-19"
+        }
+      ],
+      "tags": ["agent", "policy", "safety"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-20-spacexsi-grok-lawsuit",
+      "category": "news",
+      "title": "SpaceXSI 就 Grok 伪造图像案提交抗辩，AI 设计责任受检",
+      "summary": "路透社 11 月 19 日报道，埃隆·马斯克旗下 SpaceXSI（前身为 xAI）就英国工党议员 Jess Asato 在伦敦高等法院提起的诉讼提交书面抗辩，否认对用户利用 Grok 生成性化深度伪造图像承担隐私或数据保护责任。此案被视为最早检验 AI 系统设计本身是否构成法律责任的判例之一。",
+      "key_points": [
+        "SpaceXSI 称已删除违反条款的内容（含模拟迷晕施暴视频），但主张其余保留图像「理智观众一看即知为 AI 虚构」，不构成合理隐私期待，且公司未决定用户提示词内容",
+        "原告反驳称公司构建了模型、改写了用户请求并从自控账号发布结果，不能一边主导流程一边自称中立旁观者",
+        "原告要求法院颁布禁令，强制 SpaceXSI 采取有效且永久的技术措施防止 Grok 再次生成其篡改图像"
+      ],
+      "why_it_matters": "属于 AI 监管与法律边界进展，对内部研发工具无直接影响，但提醒团队若对外提供生成式功能，必须保留可审计的过滤与下架机制，不能把责任全推给用户输入。",
+      "sources": [
+        {
+          "title": "Musk's SpaceXSI denies liability in UK lawmaker's lawsuit over Grok images",
+          "url": "https://kfgo.com/2026/11/19/musks-spacexsi-denies-liability-in-uk-lawmakers-lawsuit-over-grok-images/",
+          "kind": "primary",
+          "publisher": "Reuters / KFGO",
+          "published_at": "2026-11-19"
+        }
+      ],
+      "tags": ["policy", "safety"],
+      "importance": 2,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-20-mcp-servers-v2-5-security",
+      "category": "opensource",
+      "title": "官方 MCP Servers v2.5.0 修复 8 项安全漏洞",
+      "summary": "MCP 官方参考实现仓库 `modelcontextprotocol/servers` 11 月 18 日发布 v2.5.0，集中修复三个核心服务中的 8 项安全漏洞，涉及 `mcp-server-git`（2026.11.18）、`@modelcontextprotocol/server-filesystem`（2.4.0）和 `@modelcontextprotocol/server-everything`（2.3.1）。官方特别提醒：此前安装过日期版本号的 npm 用户不会被包管理器自动提示升级，必须手动指定 2.4.0。",
+      "key_points": [
+        "`mcp-server-git` 修复 6 项漏洞：合并时不再触发仓库自带 `gc.recentObjectsHook`、关闭 promisor remote 懒拉取（`GIT_NO_LAZY_FETCH=1`）、阻断通过 `.git/index` 读取工作区外文件以及拦截子模块自定义外部 diff 驱动",
+        "`@modelcontextprotocol/server-filesystem` 2.4.0 在 Linux 和 macOS 上改为就地列举已校验目录，防止校验后被替换成符号链接导致越权列举（Windows 端锚定尚未完成）",
+        "`@modelcontextprotocol/server-everything` 2.3.1 修复 NAT64 地址（`64:ff9b::/96`）绕过内网 IPv4 拦截的问题",
+        "升级陷阱：npm 会认为 `2025.x`/`2026.x` 高于语义化版本 `2.4.0`，需显式执行 `npm install @modelcontextprotocol/server-filesystem@2.4.0`"
+      ],
+      "why_it_matters": "研发团队在命令行编码 Agent 里最常用的就是 Git 和文件系统 MCP 服务，处理外部仓库时上述漏洞可直接导致本机命令执行或越权读文件；请今天核对依赖版本并按官方命令显式升级。",
+      "sources": [
+        {
+          "title": "modelcontextprotocol/servers v2.5.0 Release Notes",
+          "url": "https://github.com/modelcontextprotocol/servers/releases/tag/v2.5.0",
+          "kind": "primary",
+          "publisher": "Model Context Protocol",
+          "published_at": "2026-11-18"
+        }
+      ],
+      "tags": ["mcp", "safety", "devtools"],
+      "importance": 5,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/modelcontextprotocol/servers",
+        "license": "MIT",
+        "language": "TypeScript"
+      }
+    },
+    {
+      "id": "2026-11-20-github-mcp-server-v2-2",
+      "category": "opensource",
+      "title": "GitHub MCP Server 2.2.0：改用过滤后的 Skills",
+      "summary": "GitHub 官方 MCP 服务 11 月 16 日发布 v2.2.0（代号「The one with Skills」），核心改动是用按需过滤的 MCP Skills 替代原先冗长的通用服务端指令（#3685），同时新增敏感信息扫描告警的可选掩码隐藏功能与公开 Agent 自动化工具。",
+      "key_points": [
+        "核心架构调整：用过滤后的 MCP Skills 替换原先全局注入的 server instructions，减少无关工具说明对模型上下文的挤占",
+        "安全增强：为 secret scanning alert 工具新增可选的密钥隐藏能力（#3838），降低敏感凭证直接回显进对话上下文的风险",
+        "新增面向公开场景的 Agent 自动化工具（#3719），并修复补全结果为空返回 nil 与校验错误容量溢出两项缺陷"
+      ],
+      "why_it_matters": "对上下文窗口有限的自部署开源模型来说，MCP 服务如果一股脑塞进几十条通用说明会严重稀释注意力；用「按需过滤的 MCP Skills」替代全局说明，以及对密钥告警做隐藏处理，既能直接用起来，也值得自研内网 MCP 服务效仿。",
+      "sources": [
+        {
+          "title": "GitHub MCP Server 2.2.0 Release Notes",
+          "url": "https://github.com/github/github-mcp-server/releases/tag/v2.2.0",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-16"
+        }
+      ],
+      "tags": ["mcp", "agent-skills", "devtools", "safety"],
+      "importance": 4,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/github/github-mcp-server",
+        "license": "MIT",
+        "language": "Go"
+      }
+    },
+    {
+      "id": "2026-11-20-codex-cli-v0-171",
+      "category": "tools",
+      "title": "Codex CLI 0.171.0：默认 TUI 工作区与远程执行",
+      "summary": "OpenAI 11 月 20 日发布开源命令行编码工具 Codex CLI `rust-v0.171.0`，将终端工作区（TUI workspace）设为默认开启，支持在主对话旁直接查看可搜索的文档预览、图片预览和子 Agent 执行记录，并新增连接既有服务端的无交互远程执行参数 `codex exec --remote <ADDR>`。",
+      "key_points": [
+        "模型目录新增 GPT-6.2 Sol 与 Astra，默认选中 Sol；底层源码与发布工具链升级至 Rust 1.99.1",
+        "非 Vim 提示输入框新增可配置的撤销/重做快捷键，支持还原大段粘贴与附件；新增 `/rc` 与 `/remote` 管理本地远程控制和配对码",
+        "开启 `tui_extensions_statusline` 后可通过 `/statusline` 自定义 MCP 状态栏；修复切换工作目录丢失权限配置与企业 MCP 无 refresh token 登录失败等问题"
+      ],
+      "why_it_matters": "Codex CLI 本身开源且支持对接自定义模型端点，其默认并排展示子 Agent 记录和 `codex exec --remote` 远程无交互执行模式，对在远程开发机上跑命令行编码 Agent 的团队很有参考和试用价值。",
+      "sources": [
+        {
+          "title": "openai/codex rust-v0.171.0 Release Notes",
+          "url": "https://github.com/openai/codex/releases/tag/rust-v0.171.0",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-11-20"
+        }
+      ],
+      "tags": ["coding", "agent", "devtools", "mcp"],
+      "importance": 4,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-20-microsoft-skills-repo",
+      "category": "kits",
+      "title": "microsoft/skills：174 个技能，强调按需选装",
+      "summary": "微软开源的 `microsoft/skills` 仓库（MIT 许可，已获 3.2k star）汇总了 174 个面向 Azure SDK 与 Microsoft AI Foundry 开发的 Agent Skill、自定义 Agent、`AGENTS.md` 模板及 MCP 配置，支持通过 `npx skills add` 一键按需安装并跨多款编码 Agent 共享。",
+      "key_points": [
+        "仓库在显眼位置提醒「必须按需选装」：一股脑加载全部技能会导致上下文腐烂（context rot）、稀释注意力、浪费 token 并混淆代码模式",
+        "提供跨客户端共享方案：可通过符号链接把 `.github/skills` 同步映射到 `.opencode/skills` 和 `.claude/skills`，一次维护多端生效",
+        "除技能文档外，还包含 `deep-wiki` 等可安装插件以及 `hooks/continual-learning` 等扩展样例"
+      ],
+      "why_it_matters": "即便团队不用 Azure，这套仓库的目录组织、跨 Agent 符号链接共享方式和「克制选装防上下文腐烂」的实践，对自建内部组件库与规范 Skill 仓库很有借鉴意义。",
+      "sources": [
+        {
+          "title": "microsoft/skills GitHub Repository",
+          "url": "https://github.com/microsoft/skills",
+          "kind": "primary",
+          "publisher": "Microsoft"
+        }
+      ],
+      "tags": ["agent-skills", "context-engineering", "coding"],
+      "importance": 3,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "microsoft/skills",
+        "compatible": ["GitHub Copilot", "Claude Code", "OpenCode"],
+        "capabilities": [
+          "提供 174 个面向 Azure SDK、AI Foundry 与 MCP 开发的按需加载技能文档",
+          "内置 AGENTS.md 模板、自定义 Agent 配置及 deep-wiki 等插件包",
+          "支持通过向导按项目精确挑选所需技能，避免全量加载污染上下文"
+        ],
+        "highlights": [
+          "官方明确警示全量装技能会引发上下文腐烂，并以交互向导强制按需选装",
+          "文档直接给出 .github/skills 与 .opencode/skills、.claude/skills 的符号链接共享写法",
+          "MIT 许可且包含持续学习 Hook 与测试目录，便于内部仿照搭建自有技能库"
+        ],
+        "install": "npx skills add microsoft/skills",
+        "license": "MIT",
+        "repo": "https://github.com/microsoft/skills"
+      }
+    },
+    {
+      "id": "2026-11-20-fireworks-two-model-world",
+      "category": "ideas",
+      "title": "Fireworks 联创谈「双模型世界」：何时切开源与托管安全代价",
+      "summary": "在 Anthropic 上市同一天，开源模型推理平台 Fireworks AI 联合创始人赵晨宇在赫尔辛基 Slush 大会接受 TechCrunch 专访，提出企业正走向「前沿闭源做高层规划 + 定制开源模型跑规模流量」的双模型世界。报道同时披露 Fireworks 今秋两次安全事件导致 Notion 断开合作、Uber 约 15 万司机数据受波及，引发关于「省钱切开源托管 vs 数据安全边界」的讨论。",
+      "key_points": [
+        "开源派观点：DeepSeek 等模型把开源与闭源差距缩至 3–6 个月；当产品跨过 1 万–10 万用户、月 token 账单达 1 万–10 万美元时，用开源权重加自有数据定制能显著压低单任务成本，并避免把业务 know-how 喂给闭源巨头",
+        "闭源与安全派顾虑：在找到产品市场契合点前用闭源旗舰试错风险最低；且第三方开源托管并非天然安全——Fireworks 虽承诺在线推理零留存，但批处理（batch prediction）落盘数据仍在云供应商入侵中被波及，暴露了密钥劫持（LLM jacking）与静态数据风险",
+        "行业趋势：按「单任务成本」而非「单 token 价格」做大小模型路由已成共识，同周 Palo Alto Networks 也宣布以 45 亿美元全股票收购定制模型初创公司 Applied Compute"
+      ],
+      "why_it_matters": "印证了团队坚持自部署开源权重模型的长期价值——不仅省成本，也避免了外部托管商批处理落盘和密钥劫持带来的数据泄露风险；同时提醒在规划路由策略时以「单任务成本」而非单价衡量。",
+      "sources": [
+        {
+          "title": "Anthropic rival says companies can (mostly) skip the pricey models",
+          "url": "https://techcrunch.com/2026/11/19/anthropic-rival-says-companies-can-mostly-skip-the-pricey-models/",
+          "kind": "primary",
+          "publisher": "TechCrunch",
+          "published_at": "2026-11-19"
+        }
+      ],
+      "tags": ["open-weights", "inference", "safety"],
+      "importance": 4,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-20-hf-harness-adapters",
+      "category": "practices",
+      "title": "HF 推出 Harness Adapters：27B 适配后调用减半",
+      "summary": "Hugging Face 11 月 20 日发布 Harness Adapters 完整开源配方：冻结 Qwen3.8-27B 权重，直接在真实编码 Agent 框架（Pi、OpenCode、Hermes Agent）内用 TRL `AsyncGRPOTrainer`、OpenEnv 和 Harbor 训练轻量 LoRA 适配器。结果不仅在三个框架上全面提分，还把单任务工具调用次数削减 53%–73%。",
+      "key_points": [
+        "在 SWE-bench Pro（hard 51）非思考模式下，专属适配器让 Qwen3.8-27B 在 pi 从 39.2% 升至 64.7%，opencode 从 35.3% 升至 51.0%，hermes 从 29.4% 升至 43.1%",
+        "在 Terminal-Bench 2.1 上，pi 搭配适配器从 39%（均耗 2.9K token）提至 55% pass@1（均耗 1.5K token），更少空转思考、一次做对率更高",
+        "三个适配器权重更新余弦相似度仅 0.01–0.02（近乎正交），按 1/2 权重拼接成单个 super-adapter（rank 96）后，开启思考模式在 6 组评测中 5 胜 1 平（均值 55.5% 升至 63.5%）",
+        "数据筛选是关键：先用 `openenv validate` 剔除坏校验器（1,127 个候选中 858 个通过），再只留基座「有时对有时错」的适中难度任务（442 题中筛出 171 题）供 GRPO 学习，并接入 `safeagents` 在训练中拦截了 647 次可疑工具调用"
+      ],
+      "why_it_matters": "直接命中自部署中小参数开源模型的痛点：无需换超大闭源模型，给 27B 开源权重挂一个针对 OpenCode 等自家框架训练的 LoRA 适配器，就能大幅提分、砍半 token 与工具调用消耗，且所有权重、GGUF 和训练任务集均已开源。",
+      "sources": [
+        {
+          "title": "Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+          "url": "https://huggingface.co/blog/harness-adapters-at-scale",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-20"
+        }
+      ],
+      "tags": ["open-weights", "agent", "fine-tuning", "coding"],
+      "importance": 5,
+      "actionability": "try",
+      "figure": {
+        "type": "bars",
+        "title": "加装 Harness Adapter 后 Qwen3.8-27B 全面提分",
+        "series": ["基座 Qwen3.8-27B", "专属 Harness Adapter"],
+        "rows": [
+          {"label": "pi (SWE-bench Pro)", "values": [39.2, 64.7]},
+          {"label": "opencode (SWE-bench Pro)", "values": [35.3, 51.0]},
+          {"label": "hermes (SWE-bench Pro)", "values": [29.4, 43.1]}
+        ],
+        "unit": "%",
+        "caption": "数据来自 Hugging Face 官方博客（非思考模式，SWE-bench Pro hard 51）"
+      }
+    },
+    {
+      "id": "2026-11-20-skill-judgment-workflow-vs-agent",
+      "category": "skills",
+      "title": "先判断该用固定流程还是自主 Agent，别把简单任务做复杂",
+      "summary": "Anthropic 在工程指南《Building effective agents》中反复强调：不要一上来就让 AI 自由发挥当「自主 Agent」。步骤清晰、边界明确的任务用固定流程（workflow）更可控、成本更低；只有步骤数无法预估、必须根据中间执行反馈动态决策的开放式任务，才值得交给自主 Agent。",
+      "key_points": [
+        "区分两类用法：Workflow 按人定好的固定步骤串联 AI 调用（可在中间插校验关卡），Agent 则由模型自己决定下一步调什么工具、循环几轮",
+        "自主 Agent 往往以更高的延迟、token 成本和错误累积风险换取灵活性，简单任务强行上 Agent 反而更慢更不稳定",
+        "从最简方案起步：先试单次提示加必要背景，不行再拆成固定步骤链，确实无法预估步骤时再交给自主 Agent 并设好停止条件"
+      ],
+      "why_it_matters": "研发、测试、产品日常用 AI 时常把「整理周报」「按模板补单测」这类固定活丢给自主 Agent 兜圈子；先做一道判断，能省掉大量等待时间，也让上下文有限的开源模型更稳。",
+      "sources": [
+        {
+          "title": "Building effective agents",
+          "url": "https://www.anthropic.com/research/building-effective-agents",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": ["ai-collaboration", "workflow", "agent"],
+      "importance": 4,
+      "actionability": "try",
+      "skill": {
+        "area": "judgment",
+        "scenario": "团队要把一批已定稿的接口变更同步成测试清单，或给多个相似表单页补字段校验",
+        "bad": "帮我自主探索整个仓库，看看最近有哪些接口变了，顺便把相关的测试清单、单测和文档全都自己规划并改完，过程中有需要就自己决定怎么处理。",
+        "good": "这是一个步骤固定的任务，不要自由探索整个仓库，请按以下 3 步顺序执行，每步输出后再进入下一步：\n1. 只读取 `[指定 diff 或接口文档路径]`，列出新增/修改的字段表（字段名、类型、必填性）。\n2. 对照 `[已有测试用例模板路径]`，为每个变更字段生成一条正常用例和一条边界用例（暂停等我确认）。\n3. 确认后，仅修改 `[目标测试文件路径]` 并运行 `[测试命令]`，汇报通过率。",
+        "why": [
+          "先识别出任务路径可预见，把它从「开放式自主 Agent」收敛成「3 步固定流程」，避免模型满仓库乱搜耗尽上下文",
+          "在第一步和第二步之间插入人工确认关卡，防止需求理解偏差一路放大到最终代码",
+          "明确限定只读文件、目标文件和验收命令，降低错误累积和越界改动的风险"
+        ],
+        "practice": "今天交任务给 AI 前先停 5 秒问自己：这件事的步骤我能不能写出 3 步清单？能写出就别放手让它自由探索。"
+      }
+    },
+    {
+      "id": "2026-11-20-heragent-block-checkpointing",
+      "category": "research",
+      "title": "论文 HerAgent：按语义块设检查点，环境搭建成功率最高涨 33 点",
+      "summary": "arXiv 11 月 13 日论文提出 HerAgent，专门解决编码 Agent 搭建可运行软件环境时「单条命令恢复太碎、整段脚本重跑太粗」的两难问题。作者引入「语义搭建块（semantic setup blocks）」作为统一抽象，把执行、验证、检查点、修复与回滚绑定在块粒度上，在 4 个基准上全面击败 6 个既有 Agent。",
+      "key_points": [
+        "核心思路：把环境搭建拆成若干有明确语义边界的块，每块完成后先验证并打检查点；出错时只回滚并修复当前污染块，保留前面已验证成功的环境进度",
+        "基准表现：在 Installamatic-Bench 上成功率从 52.0% 跃升至 85.0%（+33.0 点），在 SetupBench 上从 46.3% 升至 70.4%（+24.1 点）",
+        "成本效益：凭借块级回滚避免从头重装依赖，最高将环境搭建成本降低了 94.5%"
+      ],
+      "why_it_matters": "与模型无关的 harness 工程思路：团队用开源模型在容器里自动配测试环境、装依赖时，按「基础依赖 / 编译构建 / 测试初始化」分层打快照并逐块校验，能显著减少反复重跑和状态污染。",
+      "sources": [
+        {
+          "title": "HerAgent: A Block-Level Checkpointing Harness for Coding-Agent Environment Setup",
+          "url": "https://arxiv.org/abs/2611.18443",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-13"
+        }
+      ],
+      "tags": ["agent", "coding", "workflow", "research"],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "HerAgent 块级检查点在两项环境搭建基准上大幅提分",
+        "series": ["基线", "HerAgent"],
+        "rows": [
+          {"label": "Installamatic-Bench", "values": [52.0, 85.0]},
+          {"label": "SetupBench", "values": [46.3, 70.4]}
+        ],
+        "unit": "%",
+        "caption": "数据来自 arXiv:2611.18443 论文摘要"
+      }
+    },
+    {
+      "id": "2026-11-20-shadowbench-mcp-routing",
+      "category": "research",
+      "title": "论文 ShadowBench-MCP：策略感知路由把影子调用压低 85.7%",
+      "summary": "USENIX Security 2026 论文提出 ShadowBench-MCP，研究 MCP 工具路由中的「影子调用（shadow invocation）」现象：请求本身并无恶意，但在语境施压下 LLM 路由器会挑出一条更短但跳过校验、预发、脱敏或审计控制的高风险路径。在开源模型 `qwen/qwen3-32b` 上的消融实验显示，引入策略感知路由可把影子调用相对降低 85.7%。",
+      "key_points": [
+        "评测基准拆解了任务保持度（TPSS）、运行压力（OPSS）与路由偏移（RGAS），并合成执行前评分 SODS，前置信号区分影子路径的 ROC AUC 最高达 0.94",
+        "在 6 类安全敏感工作流、120 次路由决策（96 组原请求与变体对照）中，效率优先路由的影子调用率为 29.2%、安全工具跳过率为 26.7%",
+        "改用策略感知路由后，影子调用率降至 4.2%，安全工具跳过率降至 1.7%",
+        "作者同时提醒：当前结果基于单一路由器（Groq 托管的 qwen3-32b），属于早期策略相关性证据，不代表所有模型的普遍脆弱性"
+      ],
+      "why_it_matters": "论文直接测的就是 32B 开源权重模型；当团队给编码 Agent 接上发布、数据库或日志导出类 MCP 工具时，不能只靠效率导向提示，必须在执行前加策略校验（见本期离线实验）确保安全控制不被抄近路跳过。",
+      "sources": [
+        {
+          "title": "ShadowBench-MCP: Measuring Shadow Invocations in MCP-Style Tool Routing",
+          "url": "https://arxiv.org/abs/2611.11720",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-09"
+        }
+      ],
+      "tags": ["mcp", "safety", "evaluation", "research"],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-20-mcp-shadow-routing-guard",
+      "figure": {
+        "type": "bars",
+        "title": "策略感知路由大幅压低 qwen3-32b 的影子调用与安全跳过率",
+        "series": ["效率优先路由", "策略感知路由"],
+        "rows": [
+          {"label": "影子调用率", "values": [29.2, 4.2]},
+          {"label": "安全工具跳过率", "values": [26.7, 1.7]}
+        ],
+        "unit": "%",
+        "caption": "数据来自 arXiv:2611.11720（qwen/qwen3-32b，6 类工作流 96 组对照）"
+      }
+    },
+    {
+      "id": "2026-11-20-stealthypoison-skill-attack",
+      "category": "research",
+      "title": "论文 StealthyPoison：隐蔽投毒第三方 Skill 可绕过现有检测",
+      "summary": "arXiv 论文提出 StealthyPoison 攻击方法，针对编码 Agent 从公共目录拉取第三方 `SKILL.md` 的工作流：攻击者不写明显恶意指令，而是篡改技能中决定关键分支的流程规则，让技能表面正常执行却在关键判断上产出错误结果，并伪造检索元数据提高被选中的概率。",
+      "key_points": [
+        "在覆盖超过 26,000 条目录项、566 个目标技能和 5,244 条请求的评测中，该方法将投毒技能排到 Top-1 的比例较 HotFlip 和 GCG 相对提高了 13.6%",
+        "仅用单一代理模型反馈构造出的流程投毒载荷，无需修改即可迁移到三个未见过的目标模型，并在 Opus 4.8 驱动的 Claude Code 流程中实现端到端攻击成功",
+        "防御评测显示，绝大多数投毒载荷都能绕过 SkillSpector 与 GPT-5.4-mini 的安全检测"
+      ],
+      "why_it_matters": "直接关系到研发团队装社区 Agent Skill 的安全边界：不能把公共注册表里的 `SKILL.md` 当成无害纯文本直接拉进生产仓库，引入外部技能必须像审查第三方代码一样逐条人工核对关键判断规则并锁定版本。",
+      "sources": [
+        {
+          "title": "StealthyPoison: Manipulating LLM Agent Behavior through Procedural Poisoning of Third-Party Skills",
+          "url": "https://arxiv.org/abs/2611.12155",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-09"
+        }
+      ],
+      "tags": ["agent-skills", "safety", "agent", "research"],
+      "importance": 4,
+      "actionability": "watch"
+    }
+  ]
+}
