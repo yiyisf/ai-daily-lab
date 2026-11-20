@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-19-ege-update-gate",
+  "title": "玩具实验：用 EGE 统计闸门拦住「局部提分但偷偷回归」的 Agent 规则更新",
+  "goal": "参考论文《Evidence-Governed Adoption of Self-Generated Updates in Autonomous AI Agents》的框架思路，用纯离线构造的配对评测样本演示：Hoeffding 下界检验 + 非劣性护栏 + 评测器校准如何筛掉看似提分、实则导致规范合规回归或靠评测器乐观偏差蒙混过关的候选更新。",
+  "related_item": "2026-11-19-ege-agent-update-gate",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "真改进候选通过全部三道闸门；局部提分但破坏规范合规的候选被非劣性护栏拦下；靠乐观自动评测器刷分的候选在校准后被拦下",
+  "tags": ["agent", "evaluation", "workflow"]
+}

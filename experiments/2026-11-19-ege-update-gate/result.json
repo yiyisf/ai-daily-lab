@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-19-ege-update-gate",
+  "ran_at": "2026-11-20T02:10:06+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.3,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "=== EGE 规则更新统计闸门仿真（n_audit=1600, n_cal=1600, alpha=0.05）===\n- cand_good: auto主目标均值=+0.219, 校准均值=+0.001, 校准后下界=+0.076, 护栏均值=+0.022, 护栏下界=-0.050 | 无护栏=放行 vs EGE=放行\n- cand_regress: auto主目标均值=+0.219, 校准均值=-0.000, 校准后下界=+0.075, 护栏均值=-0.151, 护栏下界=-0.222 | 无护栏=放行 vs EGE=拦截\n- cand_optimistic: auto主目标均值=+0.199, 校准均值=-0.200, 校准后下界=-0.144, 护栏均值=+0.009, 护栏下界=-0.063 | 无护栏=放行 vs EGE=拦截\n[PASS] 真改进候选 cand_good 通过 EGE 校准下界与非劣性护栏\n[PASS] 规范回归候选 cand_regress 骗过了均值判断，但被非劣性护栏拦下\n[PASS] 乐观评测候选 cand_optimistic 骗过了均值判断，但被评测器校准拦下\n[PASS] EGE 误放行有害/无效更新数为 0，低于无护栏均值判断的 2 个\nMETRIC: 无护栏均值判断有害更新拦截率 = 0.0 %\nMETRIC: EGE 统计闸门有害更新拦截率 = 100.0 %\nMETRIC: cand_good 校准后主目标下界 = 0.076 分\nMETRIC: cand_optimistic 校准后主目标下界 = -0.144 分\nMETRIC: cand_regress 护栏能力下界 = -0.222 分\nRESULT: EGE 三道统计闸门拦截了 100% 的回归与乐观偏差候选（2/2），同时放行了真改进候选。\n",
+  "stderr": ""
+}
