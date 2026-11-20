@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-20-mcp-shadow-routing-guard",
+  "title": "玩具实验：用前置策略闸门拦住 MCP 工具路由中的「影子调用」",
+  "goal": "参考论文 ShadowBench-MCP（arXiv:2611.11720）的思路，用纯离线构造的 6 类研发工作流路由用例对比「效率优先路由」与「策略感知前置校验」：当请求在语境施压下试图跳过校验、脱敏或审计工具时，前置检查能否拦下影子调用而不误伤正常路径。",
+  "related_item": "2026-11-20-shadowbench-mcp-routing",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "效率优先路由在催促变体上出现明显影子调用与安全工具跳过；启用前置策略校验后，影子调用率与安全工具跳过率均降至 0%，正常请求 100% 放行",
+  "tags": ["mcp", "safety", "agent", "evaluation"]
+}
