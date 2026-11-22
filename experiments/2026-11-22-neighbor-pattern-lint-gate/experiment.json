@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-22-neighbor-pattern-lint-gate",
+  "title": "玩具实验：用增量 Diff 静态门禁阻断编码 Agent 照抄邻近不安全代码",
+  "goal": "针对论文《Coding Agents Propagate Vulnerabilities in Code Bases》（arXiv:2611.11455）发现的「靠提示词无法阻止 Agent 把邻近漏洞代码当模板扩散」现象，用纯离线 Python 标准库实现一个只扫新增行的增量 Diff 静态门禁，验证它在不要求一次性改造历史遗留代码的前提下，拦住 100% 新扩散的不安全与违规写法。",
+  "related_item": "2026-11-22-coding-agents-propagate-vulns",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "历史上下文行中的旧漏洞不触发误报，Agent 在新增行里照抄的 5 类不安全/违规模式全部被拦截（100%），合规新增代码 100% 放行",
+  "tags": ["coding", "safety", "agent", "workflow"]
+}
