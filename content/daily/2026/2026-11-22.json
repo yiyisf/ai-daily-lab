@@ -1,0 +1,423 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-22",
+  "generated_at": "2026-11-23T05:57:00+08:00",
+  "editor_note": "本期 12 条，主线是「本地与开源推理的效率升级，以及编码 Agent 的长上下文记忆与防漏洞扩散」。Ollama v0.40.17 支持 Inkling 2 Mini、延迟加载 MCP 工具与 Apple Silicon 并发服务；vLLM 给出 Inkling 2 Mini 首发 Docker 镜像与可变循环层数权衡；ANEMLL 在 M6 上用 ANE+GPU 混跑 27B 模型将预填充提速 24%–40%。论文方面，CAMP-II 用普通 Bash 和文件当外部记忆拿到 2.97 倍增益，另有论文揭示编码 Agent 会把仓库旧漏洞当模板继续扩散（本期实验演示增量 Diff 静态门禁拦截）。",
+  "tldr": [
+    {
+      "text": "Ollama v0.40.17 支持 Inkling 2 Mini，新增延迟加载 MCP 工具与 Mac 并发服务",
+      "item_id": "2026-11-22-ollama-v0-40-17"
+    },
+    {
+      "text": "论文 CAMP-II 让编码 Agent 用 Bash 和文件当外部记忆，增益达最强基线的 2.97 倍",
+      "item_id": "2026-11-22-camp-ii-file-memory"
+    },
+    {
+      "text": "论文发现修复稀疏注意力少数盲头可把 8B 模型 64K 检索从 54.1% 拉回 97.5%",
+      "item_id": "2026-11-22-lost-in-a-few-heads"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-22-ollama-v0-40-17",
+      "reason": "本地开发机跑开源模型连编码 Agent 时，新版本支持按需加载 MCP 工具、Mac 并发与 OpenCode 思考配置",
+      "steps": [
+        "升级至 Ollama v0.40.17，在 Apple Silicon 上直接运行 ollama run inkling-2-mini 体验 20GB 循环 MoE 模型",
+        "用 ollama launch claude 或 ollama launch opencode 启动编码 Agent，观察 MCP 工具按需加载减少首轮上下文占用",
+        "检查自定义工具定义中的 JSON Schema 扩展字段，确认新版不再静默丢弃"
+      ]
+    },
+    {
+      "item_id": "2026-11-22-anthropic-skill-creator",
+      "reason": "团队自建组件库规范或测试 Skill 时，用官方元技能按三层渐进加载结构编写并做触发率评测",
+      "steps": [
+        "参考 anthropics/skills 的目录结构，将 SKILL.md 正文控制在 500 行以内，大文档放进 references/ 按需读取",
+        "在 YAML frontmatter 的 description 里明确写出触发语境，解决模型默认「触发偏保守」的问题",
+        "准备 3–5 条真实开发提示，用 eval-viewer/generate_review.py 对比装技能前后的产出差异"
+      ]
+    },
+    {
+      "item_id": "2026-11-22-coding-agents-propagate-vulns",
+      "reason": "单靠提示词拦不住编码 Agent 照抄仓库里的旧不安全代码，用增量 Diff 静态门禁卡住新增行",
+      "steps": [
+        "运行本期离线实验 experiments/2026-11-22-neighbor-pattern-lint-gate，查看只扫新增行如何零误报拦住 5 类反模式",
+        "将团队高频红线（如禁用旧接口、禁用原生伪按钮）配进 Semgrep/ESLint 并限定只检查 git diff 新增行",
+        "把门禁接入编码 Agent 提 PR 前的自检命令，让模型对照报错自行修正"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-22-neighbor-pattern-lint-gate"
+  ],
+  "items": [
+    {
+      "id": "2026-11-22-openai-perplexity-safety-limits",
+      "category": "news",
+      "title": "OpenAI 公开内部困惑度，倡议以监控里程碑设上限",
+      "summary": "OpenAI 首席科学家 Jakub Pachocki 11 月 22 日发表《Perplexity and Intelligence》，罕见公开其内部代码库留出集上的对数困惑度（cross-entropy loss）历史曲线，并呼吁前沿实验室在行为监控能力达到新里程碑前，共同设定研发上限。",
+      "key_points": [
+        "披露数据：GPT-3.5 对数困惑度约 0.99，GPT-4 约 0.91，低于 0.8 时涌现新网络安全与数学能力，约 0.76 时开始在开放数学题上产出显著进展，预计 0.68–0.70 区间将出现更多重要能力",
+        "Pachocki 提出应以具体监控里程碑（例如替代思维链监控器的新机制）为前提决定是否跨越下一阈值，同时承认困惑度本身因各家数据集不同且不反映推理增益，无法单独充当跨公司统一标准",
+        "报道同时援引 OpenAI 11 月 18 日研究报告：内部研发中 AI 零人工干预成功率差异极大——监控训练任务达 79%、启动训练为 35%、编写推理与服务代码仅 25%，人类仍处于核心环路"
+      ],
+      "why_it_matters": "属于前沿安全治理与行业研发进展，不直接影响自部署团队；但 OpenAI 自报「编写推理服务代码零干预成功率仅 25%」再次说明复杂系统开发仍离不开人工把关。",
+      "sources": [
+        {
+          "title": "Perplexity and Intelligence (OpenAI Community)",
+          "url": "https://community.openai.com/t/perplexity-and-intelligence/1419510",
+          "kind": "primary",
+          "publisher": "OpenAI",
+          "published_at": "2026-11-22"
+        },
+        {
+          "title": "OpenAI Proposes Shared AI Development Limits Tied to Safety Milestones",
+          "url": "https://www.unite.ai/openai-proposes-shared-ai-development-limits-tied-to-safety-milestones/",
+          "kind": "secondary",
+          "publisher": "Unite.AI",
+          "published_at": "2026-11-22"
+        }
+      ],
+      "tags": ["policy", "safety", "llm"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-22-sglang-consortium-v1",
+      "category": "news",
+      "title": "LMSYS 成立 SGLang 联盟，Meta 称迁移后省超一半 GPU",
+      "summary": "LMSYS Org 11 月 17 日发布首届 SGLang Summit 总结，宣布联合 NVIDIA、AMD、Intel、Google、Meta、Thinking Machines Lab、Cloudflare、Modal 与 RadixArk 九家创始成员成立 SGLang 联盟，并公布面向生产推理的 SGLang v1.0 与多硬件 RL 后训练框架 Miles v0.2。",
+      "key_points": [
+        "SGLang 使用组织已增至 332 家；Meta 在主旨演讲中披露，将十亿级用户产品迁移到 SGLang（覆盖 NVIDIA/AMD GPU、TPU 与 MTIA）后实现了超 2 倍 GPU 节省",
+        "SGLang v1.0 聚焦统一内存管理与分层缓存 HiCache，在多轮 Agent 基准中将首字延迟中位数降低 60%；项目目前已由编码 Agent 产出大部分合并 PR",
+        "Miles v0.2 支持跨 NVIDIA/AMD/TPU 及即将落地的 Trainium 做多模态与 Multi-LoRA RL 后训练，将万亿参数 Kimi-K2 的权重更新停顿从 53 秒压至约 7 秒"
+      ],
+      "why_it_matters": "对自部署开源模型的团队而言，SGLang 已形成与 vLLM 分庭抗礼的多厂商联合生态；其 HiCache 多轮缓存复用与超 2 倍算力节省的实践数据，是内部推理引擎选型的重要参考。",
+      "sources": [
+        {
+          "title": "SGLang Summit 2026 Recap: Building Open AI Infrastructure Together",
+          "url": "https://www.lmsys.org/blog/2026-11-17-sglang-summit-recap",
+          "kind": "primary",
+          "publisher": "LMSYS Org",
+          "published_at": "2026-11-17"
+        }
+      ],
+      "tags": ["inference", "infra", "open-weights"],
+      "importance": 4,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-22-inference-two-thirds-workloads",
+      "category": "news",
+      "title": "Positron 称推理已占 AI 算力三分之二，模块化机房兴起",
+      "summary": "SiliconANGLE 11 月 21 日在 SC26 专访推理芯片厂商 Positron AI 业务负责人 Cameron McCaskill。对方指出，当前 AI 基础设施中约三分之二负载为推理、三分之一为训练，与 2023 年「85% 训练、15% 推理」的结构彻底反转，推动风冷低功耗模块化机房快速普及。",
+      "key_points": [
+        "Positron 避开紧缺昂贵的 HBM，改用通用内存打造推理服务器：单台功耗约 4,500 瓦，整柜 Titan 服务器控制在 40 千瓦以内，可直接放进风冷机房",
+        "Oracle 本季度正在云端上线约 340 台 Positron Atlas 服务器，另有新云服务商签约采购",
+        "推理算力商正大量采用 0.5–2.5 兆瓦模块化数据中心，目标在 90–120 天内完成从拿地供电到对外输出可计费 token"
+      ],
+      "why_it_matters": "属于算力基础设施格局变化，对日常编码无直接影响；但「非 HBM 通用内存 + 风冷低功耗推理机」路线若成熟，未来有望拉低企业内网私有化部署开源模型的硬件门槛。",
+      "sources": [
+        {
+          "title": "Inference now drives two-thirds of AI workloads, changing where chips get deployed",
+          "url": "https://siliconangle.com/2026/11/21/inference-two-thirds-ai-workloads-chip-deployment-positron-sc26/",
+          "kind": "primary",
+          "publisher": "SiliconANGLE",
+          "published_at": "2026-11-21"
+        }
+      ],
+      "tags": ["inference", "infra"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-22-ollama-v0-40-17",
+      "category": "opensource",
+      "title": "Ollama v0.40.17：支持延迟加载 MCP 与并发",
+      "summary": "本地推理工具 Ollama 11 月 21 日构建发布 v0.40.17，新增对 20GB 循环 MoE 模型 `inkling-2-mini` 的运行支持（首发 Apple Silicon），并针对编码 Agent 落地多项关键改进：支持 Claude Code 延迟加载 MCP 工具、Apple Silicon 并发处理多请求，以及按模型元数据自动配置 OpenCode 思考选项。",
+      "key_points": [
+        "`ollama launch claude` 支持 Claude Code 的 deferred tool loading，MCP 工具按需加载而不再启动时一次性全塞进上下文",
+        "Apple Silicon 版本正式支持同时服务多个并发请求；修改 context shift 设置不再触发整模型重新加载",
+        "API 透传工具定义时不再静默丢弃 Ollama 未建模的 JSON Schema 关键字；关闭思考模式会准确映射到模型最低推理档位而非被忽略",
+        "修复 Vulkan 核显 pinned memory 分配失败及 Windows 核显部分卸载时 KV 缓存分配失败问题"
+      ],
+      "why_it_matters": "直接惠及在本地开发机跑开源权重模型连 OpenCode/Claude Code 的研发人员：MCP 工具延迟加载可显著节省本就紧张的上下文窗口，保留完整 JSON Schema 关键字也能减少工具调用参数错漏。",
+      "sources": [
+        {
+          "title": "ollama/ollama v0.40.17 Release Notes",
+          "url": "https://github.com/ollama/ollama/releases/tag/v0.40.17",
+          "kind": "primary",
+          "publisher": "Ollama",
+          "published_at": "2026-11-21"
+        }
+      ],
+      "tags": ["inference", "open-weights", "mcp", "devtools"],
+      "importance": 5,
+      "actionability": "try",
+      "repo": {
+        "url": "https://github.com/ollama/ollama",
+        "license": "MIT",
+        "language": "Go"
+      }
+    },
+    {
+      "id": "2026-11-22-vllm-inkling2-mini-day0",
+      "category": "tools",
+      "title": "vLLM 首发支持 Inkling 2 Mini：提供镜像与可变循环",
+      "summary": "Inferact、Thinking Machines 与 NVIDIA 11 月 20 日在 vLLM 博客详解 Inkling 2 Mini 的 Day-0 支持，提供开箱即用的 `vllm/vllm-openai:inkling-2-mini` Docker 镜像，并同步支持可启动时调节循环次数的实验权重 `TML-d24-varloop-research`。",
+      "key_points": [
+        "架构拆解：24 层分为前导 6 层、核心 12 层（共享权重循环 3 次，每轮保留独立 KV 与卷积状态缓存，共 48 组缓存）和尾声 6 层，vLLM 直接把每轮注册为常规缓存层以复用现有前缀缓存",
+        "镜像内置 `--reasoning-parser inkling`、`--tool-call-parser inkling` 与 DSpark 投机解码（7 个草稿 token），在 Blackwell、Hopper 与 DGX Spark 上均已完成优化",
+        "可变循环权重支持通过 `--hf-overrides` 设置 `loop_num_passes`（1/2/3 轮）与 `loop_share_cache`：单张 GB200 上 1 轮解码 1.51 ms（KV 容量 352K）、2 轮 2.67 ms（233K）、3 轮 3.85 ms（175K）"
+      ],
+      "why_it_matters": "接续上期 Inkling 2 Mini 发布，本文直接给出自部署 vLLM 所需的完整 Docker 命令与解析器参数，且可变循环实验权重展示了用「循环次数换延迟与 KV 容量」的新调优维度。",
+      "follow_up_of": "2026-11-21-inkling-2-mini",
+      "sources": [
+        {
+          "title": "Inkling 2 Mini on vLLM: Day-0 Support for a Looped Model",
+          "url": "https://vllm.ai/blog/2026-11-20-inkling2-mini",
+          "kind": "primary",
+          "publisher": "vLLM",
+          "published_at": "2026-11-20"
+        }
+      ],
+      "tags": ["inference", "open-weights", "infra"],
+      "importance": 4,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-22-anemll-hybrid-ane-gpu-m6",
+      "category": "practices",
+      "title": "ANEMLL 在 M6 混跑 ANE 与 GPU，27B 预填充提速四成",
+      "summary": "开源项目 ANEMLL 在 Hugging Face 博客发布研究笔记（11 月 19 日更新至 V8.2），展示在 32GB Apple M6 芯片上同时调度神经网络引擎（ANE）与 GPU 跑 3-bit 量化 Qwen3.8-27B 的工程实践：把 FFN 放 ANE（快 1.56 倍）、把 DeltaNet 与注意力混合层放 GPU 流水线并行，显著缩短编码 Agent 长上下文预填充等待。",
+      "key_points": [
+        "对比开源 GPU+ANE 引擎 Splash 1.7.0，V8.2 在 2K–96K 全长度预填充快 24%–40%：8K 上下文达 685 对 489 tokens/s，96K 上下文达 389 对 314 tokens/s",
+        "解码速度与 Splash 1.7.0 持平（96K 下 45.3 对 44.4 tokens/s），整机单生成 token 净能耗降低 41%–50%",
+        "作者如实标注限制：当前 V8.2 属研究构建，需要关闭 macOS SIP 并用 root 权限映射权重，尚未合入常规发行版"
+      ],
+      "why_it_matters": "本地用 32GB Mac 跑 27B 编码模型最大的痛点就是压缩或切文件后几分钟的冷预填充等待；本文证明异构拆分 ANE 与 GPU 能同时提速和省电，虽暂需关 SIP 不适合直接用于办公机，但值得持续关注其后续正式版。",
+      "sources": [
+        {
+          "title": "One model, two accelerators: faster prefill and decode on the M6 with the Neural Engine and the GPU together",
+          "url": "https://huggingface.co/blog/anemll/hybrid-ane-gpu-m6",
+          "kind": "primary",
+          "publisher": "Hugging Face",
+          "published_at": "2026-11-18"
+        }
+      ],
+      "tags": ["inference", "open-weights", "infra"],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "ANEMLL V8.2 混跑在 M6 上预填充显著快于 Splash 1.7.0",
+        "series": ["Splash 1.7.0", "ANEMLL V8.2 混跑"],
+        "rows": [
+          {"label": "8K 上下文预填充", "values": [489, 685]},
+          {"label": "96K 上下文预填充", "values": [314, 389]}
+        ],
+        "unit": "tokens/s",
+        "caption": "数据来自 ANEMLL Hugging Face 博客（M6 32GB，Qwen3.8-27B 3-bit）"
+      }
+    },
+    {
+      "id": "2026-11-22-anthropic-skill-creator",
+      "category": "kits",
+      "title": "Anthropic skill-creator：写与测 Skill 的元技能",
+      "summary": "Anthropic 官方 `anthropics/skills` 仓库（Apache 2.0）内置的 `skill-creator` 是一个专门用来从零编写、评测和调优 Agent Skill（`SKILL.md`）的元技能。它把技能设计规范成「三层渐进加载 + 测试集量化对比 + 触发描述优化」的闭环工作流。",
+      "key_points": [
+        "给出清晰的三层上下文预算：元数据约 100 词常驻、`SKILL.md` 正文建议控制在 500 行以内、大份参考文档与确定性脚本放进 `references/` 与 `scripts/` 按需调用",
+        "点出常见坑：模型默认对技能「触发偏保守（undertrigger）」，因此所有「何时该用」的语境必须写进 YAML `description` 而非正文，且表述要更明确主动",
+        "自带 `eval-viewer/generate_review.py` 定性/定量对比工具与独立的 `description` 触发率优化脚本，避免凭感觉改技能文件"
+      ],
+      "why_it_matters": "研发团队把内部组件库规范、接口约定或 UI 定位指南沉淀成 `SKILL.md` 时，最容易写得太长占满上下文或写了却不被触发；直接照搬 `skill-creator` 的目录结构和触发描述写法，对任何支持 `SKILL.md` 的开源编码 Agent 都通用。",
+      "sources": [
+        {
+          "title": "anthropics/skills — skill-creator SKILL.md",
+          "url": "https://raw.githubusercontent.com/anthropics/skills/main/skills/skill-creator/SKILL.md",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        },
+        {
+          "title": "anthropics/skills README",
+          "url": "https://raw.githubusercontent.com/anthropics/skills/main/README.md",
+          "kind": "primary",
+          "publisher": "Anthropic"
+        }
+      ],
+      "tags": ["agent-skills", "context-engineering", "workflow"],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "skill-creator",
+        "compatible": ["Claude Code", "Claude.ai", "Claude API"],
+        "capabilities": [
+          "通过访谈或从当前对话提取流程，自动生成规范的 SKILL.md 与目录结构",
+          "起草测试提示与定量断言，用 eval-viewer/generate_review.py 对比技能前后的输出",
+          "提供独立的 description 优化脚本，专门提升技能在真实对话中的触发准确率"
+        ],
+        "highlights": [
+          "明确规定三层渐进加载预算（元数据 ~100 词、正文 <500 行、脚本与参考按需加载），极省上下文",
+          "内置解决模型「触发偏保守」的 description 撰写范式与目录拆分指南",
+          "官方 Apache 2.0 开源，其 SKILL.md 规范与评测闭环可直接迁移给 OpenCode、Codex 等客户端"
+        ],
+        "install": "/plugin marketplace add anthropics/skills",
+        "license": "Apache-2.0",
+        "repo": "https://github.com/anthropics/skills"
+      }
+    },
+    {
+      "id": "2026-11-22-hn-software-in-5-years",
+      "category": "ideas",
+      "title": "Ask HN 热议「五年后的软件业」：价值上移还是岗位收缩",
+      "summary": "一位有 5–10 年经验的工程师在 Hacker News 发起「五年后的软件业会怎样」讨论（35 条深度回复），围绕 AI 提速后开发者岗位是大幅萎缩、还是随软件定制需求爆发而转向架构与领域专家，各方给出了针锋相对的判断。",
+      "key_points": [
+        "价值上移派认为：当写代码变便宜后，稀缺能力会转向「搞清利益相关方真正要什么」「需求拆解与架构把关」以及深耕金融、医疗等垂直业务领域，通用外包式 CRUD 编码才会消失",
+        "分化派预测软件业将裂成三层：大量强推 AI 的普通公司堆出脆弱系统、少数核心底层团队（内核/引擎/开源）仍坚持手工掌控、以及专替前者擦屁股和高危修复的外部专家顾问",
+        "激进派与悲观派交锋：有人认为五年内软件将完全由 AI 重写且不再需要人审代码；反方则指出 AI 堆出的技术债和黑盒错误会迅速反噬，且高质量训练数据与算力泡沫可能成为上限"
+      ],
+      "why_it_matters": "对团队成员的职业与协作定位有参考价值：无论岗位结构如何演变，「把需求说清楚、守住架构与可维护性、懂业务场景」都是各方公认最不易被自动化替代的核心能力。",
+      "sources": [
+        {
+          "title": "Ask HN: Where do you see Software in 5 years?",
+          "url": "https://news.ycombinator.com/item?id=50565484",
+          "kind": "discussion",
+          "publisher": "Hacker News"
+        }
+      ],
+      "tags": ["ai-collaboration", "coding"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-22-skill-decompose-prompt-components",
+      "category": "skills",
+      "title": "把复杂提示拆成「指令、主材料、示例、开头引导」四块来写",
+      "summary": "微软 Foundry 官方提示工程文档把一条高质量提示拆解为几个清晰组件：核心指令（Instructions）、待处理的主材料（Primary content）、1–3 个输入输出示例（Few-shot examples）以及输出开头引导（Cue）。按组件拆分比写一整段混杂长句更易被模型准确执行。",
+      "key_points": [
+        "把「要做什么（指令）」和「对谁做（主材料）」拆开写，并用项目符号逐条列出复杂指令的必备要素",
+        "用 1–2 个简短示例展示期望的分类口径或输出格式，比用大段文字解释抽象规则有效得多",
+        "在提示末尾放一个简短的开头引导（Cue，如 `Key Points:\n-` 或 `改动清单：\n1.`），能直接把模型锁在精简格式里，防止它先写一大段客套话"
+      ],
+      "why_it_matters": "无需任何插件，特别适合上下文有限、指令遵循稍弱的开源权重模型；产品和研发用「开头引导（Cue）+ 1 个示例」就能把 AI 的需求澄清或方案回复压成固定短格式，避免产出太长没人看。",
+      "sources": [
+        {
+          "title": "Prompt engineering techniques - Microsoft Foundry",
+          "url": "https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/prompt-engineering",
+          "kind": "primary",
+          "publisher": "Microsoft"
+        }
+      ],
+      "tags": ["prompting", "ai-collaboration"],
+      "importance": 4,
+      "actionability": "try",
+      "skill": {
+        "area": "decompose",
+        "scenario": "把一段口语化的需求讨论整理成开发可直接排期的结构化需求条目",
+        "bad": "下面是我和业务方刚聊完的会议记录，帮我整理成清晰的开发需求文档，要简洁明了，突出重点，顺便列出还不清楚的地方，别写太长。[粘贴会议记录]",
+        "good": "【指令】根据下方会议记录，只提炼本次迭代要做的开发需求：\n- 每条需求包含：目标、涉及模块、验收点\n- 最多列出 3 个阻塞开发的待确认问题\n\n【示例】\n- 需求：订单列表支持按状态筛选｜模块：订单页前端+查询接口｜验收：选「已取消」仅返回取消单\n\n【主材料】\n[粘贴精简后的会议记录]\n\n【输出开头引导】\n本次需求清单：\n1. 需求：",
+        "why": [
+          "把原本混成一段的话拆成指令、示例、主材料、开头引导四块，模型不需要自己猜测结构",
+          "给出一行现成示例，直接定死字段粒度和紧凑风格，避免 AI 自动展开成长篇大论",
+          "末尾用「本次需求清单：\n1. 需求：」做开头引导（Cue），强迫模型跳过开场白直接按格式续写"
+        ],
+        "practice": "今天让 AI 整理会议纪要或报错日志时，在提示最后多写一行「输出格式开头：1. ...」，看废话是否明显减少。"
+      }
+    },
+    {
+      "id": "2026-11-22-camp-ii-file-memory",
+      "category": "research",
+      "title": "论文 CAMP-II：让 Agent 用普通 Bash 和文件当外部记忆",
+      "summary": "arXiv 论文指出，以往给 Agent 训练长程记忆总依赖自定义记忆工具或压缩协议，但教师模型预训练时没见过这些接口，导致在线策略蒸馏（OPD）双向失效。作者提出 CAMG-II 环境与 CAMP-II 训练法：不造新工具，直接让 Agent 用熟悉的 Bash 和持久工作区文件在上下文重置之间读写外部记忆。",
+      "key_points": [
+        "在涵盖 Shop、Coding、AutoResearch、General 和 Visual 五类长程环境的 CAMG-II 上，CAMP-II 联合训练单一策略取得的增益达到最强 OPD 基线的 2.97 倍",
+        "由于复用模型预训练已掌握的文件读写与搜索先验，冻结教师模型能给出高质量指导，学生策略也能稳定采样出有效记忆操作",
+        "学到的基于文件的记忆行为成功泛化到 Terminal-Bench 2.1 和 SWE-Bench Pro V2 两个外部基准，均提升了任务成功率"
+      ],
+      "why_it_matters": "非常贴合上下文窗口有限的开源命令行编码 Agent：与其引入复杂的第三方记忆插件，不如直接把阶段结论、待办和踩坑记录写进工作区里的普通 Markdown/JSON 文件，跨上下文清空后用 Bash 搜回继续干。",
+      "sources": [
+        {
+          "title": "Coding Agent Memory Post-Training II: Unlocking the Memory Potential of Pre-trained File Operations for Long-Horizon Tasks via On-Policy Distillation",
+          "url": "https://arxiv.org/abs/2611.14009",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-12"
+        }
+      ],
+      "tags": ["agent", "context-engineering", "coding", "research"],
+      "importance": 5,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-22-lost-in-a-few-heads",
+      "category": "research",
+      "title": "论文：修复稀疏注意力少数盲头，64K 检索从 54.1% 升至 97.5%",
+      "summary": "arXiv 11 月 16 日论文诊断稀疏注意力模型在长上下文检索中掉点的根因：并非预算不够，而是极少数「盲头（blind heads）」的均值池化块摘要稀释了关键 token 导致漏选。作者提出免训练校准探针定位这些盲头，仅对这几个头恢复全注意力或换 4-bit 评分器即可追平全注意力精度。",
+      "key_points": [
+        "在 MiniCPM4.1-8B（64K 上下文）上，仅修复 3 个盲头就把多键检索准确率从 54.1% 提升至 97.5%，追平全头全注意力",
+        "在配备 SeerAttention-R 门控的 Qwen3-8B 上，仅对 288 个 KV 头中的 18 个恢复全注意力，就把多键检索准确率从 29.8% 拉升至 97.7%",
+        "生产推理引擎实测显示，仅对极少数盲头回退全注意力在 32K–128K 长度下仍能保留稀疏注意力 84%–89% 的首字延迟（TTFT）节省"
+      ],
+      "why_it_matters": "直接针对 8B 级开源权重模型（MiniCPM4.1-8B、Qwen3-8B）的免训练推理优化：未来推理引擎集成这类「按头选择性全注意力」策略后，自部署团队就能在不重训模型的前提下兼得长上下文速度与精准检索。",
+      "sources": [
+        {
+          "title": "Lost in a Few Heads: Diagnosing and Repairing Block Selection in Sparse Attention",
+          "url": "https://arxiv.org/abs/2611.21917",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-16"
+        }
+      ],
+      "tags": ["inference", "open-weights", "context-engineering", "research"],
+      "importance": 4,
+      "actionability": "watch",
+      "figure": {
+        "type": "bars",
+        "title": "免训练修复少数盲头大幅拉升 8B 开源模型长文检索精度",
+        "series": ["修复前（默认稀疏）", "修复少数盲头后"],
+        "rows": [
+          {"label": "MiniCPM4.1-8B (64K)", "values": [54.1, 97.5]},
+          {"label": "Qwen3-8B (SeerAttention-R)", "values": [29.8, 97.7]}
+        ],
+        "unit": "%",
+        "caption": "数据来自 arXiv:2611.21917 论文摘要（多键长上下文检索准确率）"
+      }
+    },
+    {
+      "id": "2026-11-22-coding-agents-propagate-vulns",
+      "category": "research",
+      "title": "论文：编码 Agent 会把仓库旧漏洞当模板扩散，C/C++ 差距达 35.4%",
+      "summary": "ETH Zurich 团队 arXiv 论文首次系统评测代码库已有漏洞在编码 Agent 持续贡献下的演化：在 96 项后端任务与 20 对真实 C/C++ 内存安全任务中，只要邻近存在不安全旧代码，Agent 就会将其当成模板照抄进新代码，且单靠提示词强调安全无法根除。",
+      "key_points": [
+        "量化影响：邻近不安全代码使后端正确且安全实现占比平均下降 3.4%，在 C/C++ 仓库级内存安全补全中安全与不安全上下文的差距高达 35.4%",
+        "归因反差：追问实现理由时，Agent 在 76.5% 的案例里明确表示「是在效仿仓库里的另一处写法」，尽管它在 69.9% 的案例中其实能认出该写法存在漏洞",
+        "在提示词里要求「遵守既有代码风格」会加剧漏洞扩散，而提醒「注意安全」虽能缓解但仍无法阻止扩散"
+      ],
+      "why_it_matters": "与研发团队最头疼的「老代码坏示范导致 AI 越写越偏」完全吻合：仅靠在 `AGENTS.md` 里口头提醒不够，必须用增量 Diff 静态扫描门禁（见本期离线实验）卡住新增行，阻断旧漏洞和不规范写法继续传染。",
+      "sources": [
+        {
+          "title": "Coding Agents Propagate Vulnerabilities in Code Bases",
+          "url": "https://arxiv.org/abs/2611.11455",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-11-08"
+        }
+      ],
+      "tags": ["coding", "safety", "agent", "research"],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-22-neighbor-pattern-lint-gate",
+      "figure": {
+        "type": "steps",
+        "title": "编码 Agent 将既有仓库漏洞当模板扩散的三步链路",
+        "steps": [
+          {"label": "读取邻近旧代码", "sub": "检索同仓库历史不安全实现"},
+          {"label": "照抄为新模板", "sub": "76.5% 案例归因于效仿他处写法"},
+          {"label": "明知漏洞仍引入", "sub": "69.9% 能识别漏洞却未自行拦截"}
+        ],
+        "loop": "新漏洞入库后继续成为下次模板",
+        "caption": "数据整理自 arXiv:2611.11455 论文摘要"
+      }
+    }
+  ]
+}

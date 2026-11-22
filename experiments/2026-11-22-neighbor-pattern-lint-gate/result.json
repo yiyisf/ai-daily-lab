@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-22-neighbor-pattern-lint-gate",
+  "ran_at": "2026-11-22T22:31:57+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "=== 增量 Diff 静态门禁离线对照（5 份违规扩散 PR + 3 份含旧坏邻近代码的合规 PR）===\n- PR-01-propagated-sql-interp: 拦截 (SQL_INTERP)\n- PR-02-propagated-eval: 拦截 (UNSAFE_EVAL)\n- PR-03-propagated-shell-true: 拦截 (SHELL_TRUE)\n- PR-04-propagated-secret: 拦截 (HARDCODED_SECRET)\n- PR-05-propagated-raw-div-button: 拦截 (RAW_DIV_BUTTON)\n- PR-06-clean-sql-despite-legacy-neighbor: 放行 (无命中)\n- PR-07-clean-subprocess-despite-legacy-neighbor: 放行 (无命中)\n- PR-08-clean-uibutton-despite-legacy-neighbor: 放行 (无命中)\n[PASS] 新增行中照抄的 5 类不安全/违规写法全部被拦截（5/5）\n[PASS] 含历史坏邻近代码的 3 份合规 PR 全部放行（3/3）\n[PASS] 历史上下文旧漏洞未触发任何误报（0 误报）\nMETRIC: 违规扩散新增代码拦截率 = 100.0 %\nMETRIC: 含旧坏邻近代码的合规 PR 放行率 = 100.0 %\nMETRIC: 历史上下文误报率 = 0.0 %\nRESULT: 增量 Diff 静态门禁拦截了 100% 新扩散的不安全与违规写法（5/5），且对历史遗留上下文零误报。\n",
+  "stderr": ""
+}
