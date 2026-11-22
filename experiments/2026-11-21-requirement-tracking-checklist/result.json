@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-21-requirement-tracking-checklist",
+  "ran_at": "2026-11-22T12:24:48+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "=== SWE-CoWork 需求台账门禁离线对照（6 组多需求任务）===\n- TASK-01-clean-delivery: 自报完成=True | 台账门禁=放行交付\n- TASK-02-unfollowed-question: 自报完成=True | 台账门禁=拦截（REQ-2: 未闭环的澄清问题）\n- TASK-03-missing-implementation: 自报完成=True | 台账门禁=拦截（REQ-2: 已确认需求漏实现; REQ-2: 缺少通过的可执行测试）\n- TASK-04-reported-done-but-test-failed: 自报完成=True | 台账门禁=拦截（REQ-2: 缺少通过的可执行测试）\n- TASK-05-partial-f2p-pass: 自报完成=True | 台账门禁=拦截（REQ-3: 缺少通过的可执行测试）\n- TASK-06-multiple-gaps: 自报完成=True | 台账门禁=拦截（REQ-1: 未闭环的澄清问题; REQ-1: 已确认需求漏实现; REQ-1: 缺少通过的可执行测试; REQ-2: 缺少通过的可执行测试）\n[PASS] 仅听信 Agent 自报完成会误放行全部 5 组半成品任务（5/5）\n[PASS] 需求台账门禁拦下全部 5 组存在缺漏的假交付（0 误放行）\n[PASS] 需求台账门禁正常放行完整交付任务 TASK-01（1/1）\n[PASS] 复现单项测试通过率过半但整单完整率偏低的交付断层\nMETRIC: 单条需求测试通过率 = 64.3 %\nMETRIC: 无台账假交付拦截率 = 0.0 %\nMETRIC: 需求台账假交付拦截率 = 100.0 %\nMETRIC: 完整任务正常放行率 = 100.0 %\nRESULT: 需求台账门禁拦截了 100% 的半成品交付（5/5），同时 100% 放行完整交付任务。\n",
+  "stderr": ""
+}
