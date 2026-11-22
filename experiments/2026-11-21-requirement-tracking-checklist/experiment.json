@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-21-requirement-tracking-checklist",
+  "title": "玩具实验：用需求台账闸门拦住编码 Agent 的「半成品交付」",
+  "goal": "针对论文 SWE-CoWork（arXiv:2611.20218）揭示的交付断层（延迟追问无人跟进、已确认需求漏实现、31% 自报完成仍挂测试），用纯离线 Python 标准库实现一个需求状态台账校验器，对比「听信 Agent 自报完成」与「台账门禁验收」在 6 组多需求任务上的假交付拦截效果。",
+  "related_item": "2026-11-21-swe-cowork-digital-employees",
+  "runtime": "python",
+  "entry": "python main.py",
+  "timeout_seconds": 60,
+  "expected": "无台账时 5 组存在缺漏的任务均被误当成已交付；启用需求台账门禁后，仅全部需求已澄清、已实现且测试通过的任务获准交付，假交付拦截率 100%",
+  "tags": ["agent", "coding", "workflow", "evaluation"]
+}
