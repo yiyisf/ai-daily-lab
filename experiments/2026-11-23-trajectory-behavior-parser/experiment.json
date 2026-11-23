@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-23-trajectory-behavior-parser",
+  "title": "离线编码 Agent 行为轨迹解析与异常模式识别",
+  "goal": "不依赖工具名与大模型二次标注，用确定性规则将异构编码 Agent 工具调用轨迹映射为 search/edit/test/other 四类高层行为，验证跨仓库栈画像检索并自动识别盲改与搜索空转两类异常。",
+  "related_item": "2026-11-23-coding-agent-trajectories",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "timeout_seconds": 30,
+  "expected": "规则解析器动作分类准确率 100%，盲改与搜索空转召回率 100% 且 0 误报，跨仓库栈画像检索准确率 >= 85%。",
+  "tags": ["agent", "coding", "eval", "engineering"]
+}
