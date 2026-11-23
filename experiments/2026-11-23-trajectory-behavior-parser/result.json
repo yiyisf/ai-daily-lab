@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-23-trajectory-behavior-parser",
+  "ran_at": "2026-11-23T21:04:12+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.5,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "=== Coding Agent Behavioral Trajectory Parser ===\n  A-repo1-normal   | scaffold=search_first   | S=0.50 E=0.17 T=0.33 | anomaly=none\n  A-repo2-normal   | scaffold=search_first   | S=0.50 E=0.17 T=0.33 | anomaly=none\n  A-repo3-normal   | scaffold=search_first   | S=0.50 E=0.17 T=0.33 | anomaly=none\n  B-repo1-normal   | scaffold=fast_patcher   | S=0.20 E=0.60 T=0.20 | anomaly=none\n  B-repo2-blind    | scaffold=fast_patcher   | S=0.00 E=0.75 T=0.00 | anomaly=blind_edit\n  B-repo3-blind    | scaffold=fast_patcher   | S=0.25 E=0.50 T=0.00 | anomaly=blind_edit\n  C-repo1-normal   | scaffold=heavy_explorer | S=0.71 E=0.14 T=0.14 | anomaly=none\n  C-repo2-thrash   | scaffold=heavy_explorer | S=0.86 E=0.00 T=0.00 | anomaly=search_thrash\n  C-repo3-thrash   | scaffold=heavy_explorer | S=1.00 E=0.00 T=0.00 | anomaly=search_thrash\nMETRIC: action_parse_accuracy=1.0000\nMETRIC: anomaly_recall=1.0000\nMETRIC: anomaly_false_positives=0\nMETRIC: cross_repo_scaffold_retrieval=0.8889\n[PASS] Deterministic trajectory parser and anomaly detector verified.\nRESULT: action_acc=100.0%, anomaly_recall=100.0% (FP=0), cross_repo_retrieval=88.9% (8/9)\n",
+  "stderr": ""
+}
