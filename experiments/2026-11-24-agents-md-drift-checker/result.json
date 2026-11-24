@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-24-agents-md-drift-checker",
+  "ran_at": "2026-11-24T21:01:22+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.4,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.1,
+  "stdout": "=== AGENTS.md Map-vs-Territory Static Conformance Checker ===\nParsed 4 path claims and 3 dependency rules.\n  [missing_path] src/legacy/billing/: Path claim 'src/legacy/billing/' does not exist in repository\n  [rule_break] src/client/dashboard.py: Imports 'src.server.routes' violating: - Never import from `src/server/` in `src/client/`.\n  [rule_break] src/server/routes/orders.py: Imports 'sqlalchemy' outside 'src/server/db/'\nMETRIC: path_claims_checked=4\nMETRIC: dependency_rules_checked=3\nMETRIC: precision=1.0000\nMETRIC: recall=1.0000\nMETRIC: false_positives=0\n[PASS] All stale path claims and day-0 broken dependency rules caught with 0 FP.\nRESULT: precision=100.0%, recall=100.0%, violations=3 (FP=0)\n",
+  "stderr": ""
+}

@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-24-agents-md-drift-checker",
+  "title": "AGENTS.md 路径声明与依赖规则静态一致性校验器",
+  "goal": "离线复现 arXiv:2611.29916 的核心审计逻辑：解析 AGENTS.md 中的目录路径声明与三类依赖规则（禁止跨模块导入、仅允许特定目录导入、全局禁用旧依赖），基于 Python AST 扫描代码树，自动检出失效路径与首日即违背的架构规则。",
+  "related_item": "2026-11-24-agents-md-map-territory",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "timeout_seconds": 30,
+  "expected": "在合成仓库上以 100% 准确率与 0 误报检出全部失效路径和违规导入（含首日即被历史代码打破的规则），退出码为 0。",
+  "tags": ["agent", "engineering", "coding", "eval"]
+}
