@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-25-epistemic-tool-guard",
+  "title": "Episteme 工具调用意图声明与离线篡改审计原型",
+  "goal": "离线复现 arXiv:2611.06563 的 Episteme 机制：强制编码 Agent 每次工具调用显式声明意图类型（只读/改态）与原因，执行前做在线策略拦截，执行后对比工作区文件哈希并自动检出声明与实际效果矛盾及测试文件篡改。",
+  "related_item": "2026-11-25-episteme-tool-call-intent",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "timeout_seconds": 30,
+  "expected": "在 6 条混合正常调用与作弊调用的轨迹上，以 100% 召回率与 0 误报检出全部声明缺失、只读谎报和受保护测试文件篡改，退出码为 0。",
+  "tags": ["agent", "safety", "coding", "eval"]
+}
