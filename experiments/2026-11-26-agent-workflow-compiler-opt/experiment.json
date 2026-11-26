@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-26-agent-workflow-compiler-opt",
+  "title": "AgentPRO 风格工作流编译优化与运行时守卫仿真",
+  "goal": "离线复现 arXiv:2611.00628 的核心思想：区分执行数据依赖与模型观测依赖，对多步 Agent 工作流执行冗余读消除与生成区融合，并在外部状态变化时触发运行时守卫回退，验证 token 降幅与语义等价性。",
+  "related_item": "2026-11-26-agentpro-workflow-compiler",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "timeout_seconds": 30,
+  "expected": "优化后工作流与基线产生完全一致的最终状态，token 消耗降低 >= 35%、LLM 请求数减半，且在注入外部状态变更时守卫 100% 触发回退并保持结果正确。",
+  "tags": ["agent", "engineering", "eval", "inference"]
+}
