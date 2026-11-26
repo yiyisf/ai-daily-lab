@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-26-agent-workflow-compiler-opt",
+  "ran_at": "2026-11-26T21:00:29+00:00",
+  "runner": "Linux x86_64",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "runtime_version": "Python 3.12.16",
+  "install_seconds": 0.6,
+  "packages": [],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 0.0,
+  "stdout": "=== AgentPRO Workflow Compiler Optimization Simulator ===\nBaseline : llm_calls=8, tool_calls=8, tokens=28840\nCompiled : llm_calls=4, tool_calls=6, tokens=10640, regions=4\nDriftRun : llm_calls=5, guard_fallbacks=1\nMETRIC: token_reduction_pct=63.11\nMETRIC: llm_call_reduction_pct=50.00\nMETRIC: baseline_tokens=28840\nMETRIC: compiled_tokens=10640\nMETRIC: drift_guard_fallbacks=1\n[PASS] Workflow compiler optimization and runtime drift guard verified.\nRESULT: token_reduction=63.1% (28840->10640), llm_calls=8->4, guard_fallbacks=1\n",
+  "stderr": ""
+}
