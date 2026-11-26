@@ -1,0 +1,454 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-26",
+  "generated_at": "2026-11-27T05:56:00+08:00",
+  "editor_note": "本期 13 条，主线是「自部署推理引擎持续迭代，同时给 Agent 的 MCP 通道与上下文做瘦身」。开源引擎侧，llama.cpp 发布 v1.1.0 补齐 Inkling 2、Hy4 flash 与按位宽预算自动量化，HN 榜首 AMD 补丁集让 R9700 预填充与解码双双大涨；生态治理侧，Google 宣布 2027 年 2 月起强制 AI Agent 经官方 Workspace MCP 接入但公共版 Gmail 禁发邮件；上下文与工程侧，Martin Fowler 撰文梳理编码 Agent 上下文工程，两篇论文分别实证「压缩核心源码 19K token 即可匹敌 94K 整文件」与「工作流编译优化可省 41.85% token」，配套实验离线复现了后者。",
+  "tldr": [
+    {
+      "text": "llama.cpp 发布 v1.1.0：支持 Inkling 2 与 Hy4 flash，新增自动按预算量化",
+      "item_id": "2026-11-26-llamacpp-v1-1-0"
+    },
+    {
+      "text": "Google 强制 AI Agent 2027 年 2 月起走官方 Workspace MCP，公共 Gmail 禁发信",
+      "item_id": "2026-11-26-google-workspace-mcp-mandate"
+    },
+    {
+      "text": "论文 AgentPRO 用编译优化融合生成区与去冗余读，AppWorld 任务省 41.85% token",
+      "item_id": "2026-11-26-agentpro-workflow-compiler"
+    }
+  ],
+  "hands_on": [
+    {
+      "item_id": "2026-11-26-llamacpp-v1-1-0",
+      "reason": "新增按目标位宽/体积预算自动逐张量量化、命名 tool_choice 与 Agent 轨迹 WebUI，适合内网自部署升级",
+      "steps": [
+        "拉取 llama.cpp v1.1.0，用 --target-bpw 或 --target-size 按团队显存预算自动生成最优混合量化权重",
+        "在 llama-server 中测试 OpenAI 兼容的 named tool_choice 与新版 token-aware 对话解析，验证工具调用稳定性",
+        "启用 --ui-agent 并在内网场景按需配置 --ui-mcp-proxy-allow-private-urls 观察调用链路"
+      ]
+    },
+    {
+      "item_id": "2026-11-26-agent-md-refactor-skill",
+      "reason": "把臃肿矛盾的 AGENTS.md 拆成极简根文件+按需子文档，省下有限上下文窗口并消除规则冲突",
+      "steps": [
+        "参考 softaworks/agent-toolkit 的 agent-md-refactor 五阶段流程，先扫描仓库 AGENTS.md 中的相互矛盾规则",
+        "根文件只保留 100% 任务通用的构建/测试命令与一句话项目说明，其余拆入 .claude/ 或 docs/ 子文件按需链接",
+        "删掉「写干净代码」等空泛条目和重复描述，压到 50–100 行以内"
+      ]
+    },
+    {
+      "item_id": "2026-11-26-agentpro-workflow-compiler",
+      "reason": "把固定多步 Agent 流水线中无需模型重读的冗余操作合并批处理，显著降低预填充 token 消耗",
+      "steps": [
+        "运行本期离线实验 experiments/2026-11-26-agent-workflow-compiler-opt/main.py 观察去冗余读与融合守卫效果",
+        "盘点团队常用编码/运维工作流，把连续只读查询合并为单轮批调用、避免重复读取同一配置",
+        "为批处理写操作加上文件/资源版本号守卫，检测到并发变更时自动回退单步确认"
+      ]
+    }
+  ],
+  "experiments": [
+    "2026-11-26-agent-workflow-compiler-opt"
+  ],
+  "items": [
+    {
+      "id": "2026-11-26-google-workspace-mcp-mandate",
+      "category": "news",
+      "title": "Google 强制 Agent 走官方 MCP，公共 Gmail 禁发信",
+      "summary": "Google 全面开放 8 个 Workspace 官方 MCP 服务器并更新 API 条款：自 2027 年 2 月 1 日起，凡由 AI Agent 或 AI Harness 驱动的工具访问 Gmail、Drive、Calendar 等服务必须走官方 MCP 通道，违规直调 REST 将被降额甚至封号。然而公共版 Gmail MCP 仅支持读邮件与建草稿，发信、回复、转发和改草稿均被划为合作伙伴专属权限。",
+      "key_points": [
+        "条款同时收紧记忆与向量存储：Workspace 数据仅可用于当前用户授权任务，由其生成的向量嵌入、记忆索引与组织图谱最长仅可留存 30 天，严禁用于训练、微调或评测",
+        "功能落差明显：Docs、Slides、Tasks 接近 REST 全量能力，但公共版 Drive MCP 缺失移动、重命名、共享与删文件，Gmail MCP 甚至不能修改自己刚建好的草稿",
+        "配额与计费向 REST 倾斜：每个项目免费额度仅 5,000 次 MCP 请求/日（一次 Gmail 搜索扣 10 次即仅 500 次/日），2027 年 4 月 1 日起付费层首条即计费，而 REST 保留每日 7,000 万次免费轻量额度",
+        "Google 理由是传统 OAuth 令牌无法拦截提示词注入导致的机器高速越权，但将发信等核心写操作限定为大厂合作伙伴专属，引发独立开发者在 HN 强烈反弹"
+      ],
+      "why_it_matters": "这是云厂商用「安全网关 + 官方 MCP」收编第三方 AI Agent 权限的标志性拐点；团队若有用开源 MCP 接 Gmail/Drive 的自动化脚本，需在 2027 年 2 月前评估替代方案，也提示自建内部 MCP 网关时必须做好读写分级审批。",
+      "sources": [
+        {
+          "title": "Google Will Make AI Agents Use Its Workspace MCP Servers. The Gmail One Can't Send Email",
+          "url": "https://techstackups.com/articles/google-workspace-ai-agents-mcp/",
+          "kind": "primary",
+          "publisher": "Tech Stackups",
+          "published_at": "2026-11-26"
+        },
+        {
+          "title": "HN Discussion: Google Will Make AI Agents Use Its Workspace MCP Servers",
+          "url": "https://news.ycombinator.com/item?id=50653477",
+          "kind": "discussion",
+          "publisher": "Hacker News",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["mcp", "agent", "policy", "security"],
+      "importance": 5,
+      "actionability": "watch"
+    },
+    {
+      "id": "2026-11-26-spacex-starmind-fcc",
+      "category": "news",
+      "title": "FCC 批 SpaceX 部署百万颗轨道 AI 算力卫星",
+      "summary": "CNN 11 月 26 日报道，美国联邦通信委员会（FCC）正式批准 SpaceX 部署最多 100 万颗轨道计算卫星组成「Starmind」星座，用于在太空直接利用太阳能构建 AI 数据中心并将计算结果回传地面。目前全球在轨运行卫星总数仅约 1.6 万颗，该批复随即遭到美国天文学会强烈反对。",
+      "key_points": [
+        "许可设定明确里程碑：SpaceX 需在 2033 年 11 月前部署至少 1 颗授权空间站、2035 年 11 月前完成 10%（10 万颗）、2038 年 11 月前完成 50%",
+        "SpaceX 在 6 月 IPO 前的监管文件中曾自行提示风险：太空数据中心依赖「未经验证」的技术，可能无法实现商业可行性",
+        "美国天文学会指出百万颗高亮度卫星的射频辐射、废热及发射再入大气污染将严重冲击地面天文观测设施"
+      ],
+      "why_it_matters": "属于远期超大规模算力基础设施与监管新闻，短期对研发团队无直接影响，了解即可。",
+      "sources": [
+        {
+          "title": "US authorizes SpaceX to deploy 1 million satellites for AI data centers in space",
+          "url": "https://edition.cnn.com/2026/11/26/business/spacex-satellites-space-data-centers-intl",
+          "kind": "primary",
+          "publisher": "CNN Business",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["hardware", "policy"],
+      "importance": 4,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-26-nyt-warns-photoshop-ai",
+      "category": "news",
+      "title": "《纽约时报》警告摄影师暂勿升级 Photoshop，担忧隐性 AI 改图",
+      "summary": "The Verge 报道，《纽约时报》向自由摄影师发出内部通知，警告暂时不要更新至最新版 Photoshop，称新版软件可能「以不易察觉的方式」在修图流程中引入生成式 AI 功能，从而触碰新闻摄影严禁伪造画面的职业红线。",
+      "key_points": [
+        "新闻机构的核心担忧并非明确标示的生成功能，而是常规工具默认静默接入 AI 补全或重绘，导致记者在不知情下违反编辑伦理规范",
+        "事件反映出传统生产力软件强推「默认开启 AI」策略在严肃内容与合规行业遭遇明显抵触"
+      ],
+      "why_it_matters": "属于行业合规与产品设计风向，了解即可；对研发团队做内部 AI 工具的启示是：凡涉及 AI 自动改写内容的能力，必须显式可见、默认可控且留痕。",
+      "sources": [
+        {
+          "title": "The New York Times warns photographers not to update Photoshop over AI features",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1041227/the-new-york-times-warns-photographers-not-to-update-photoshop-over-ai-features",
+          "kind": "primary",
+          "publisher": "The Verge",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["policy", "safety"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-26-llamacpp-v1-1-0",
+      "category": "opensource",
+      "title": "llama.cpp v1.1.0：新架构、按预算量化与 Agent UI",
+      "summary": "llama.cpp 11 月 26 日发布 v1.1.0（同步升级 ggml v1.1.1），新增 Inkling 2 全家桶（Base/Mini/DSpark）、Hy4 flash（220B/12B 激活）、MiniMax-M3.1 与十余款语音模型，引入 token 感知对话解析、OpenAI 命名 tool_choice、按目标位宽/体积预算自动逐张量量化以及带 Agent 轨迹的重构版 Web UI。",
+      "key_points": [
+        "新增 --target-bpw 与 --target-size 自动逐张量量化选型（支持断点续跑状态文件），方便自部署团队按显卡精确显存上限自动压出最优精度组合",
+        "服务端与 Agent 能力升级：支持 OpenAI 规范的 named tool_choice、token-aware 特殊 token 对话解析（不再靠脆性纯文本匹配）、--ui-agent 轨迹视图与 --ui-mcp-proxy-allow-private-urls 内网代理开关",
+        "将 DFlash 投机解码细分为 draft-dflash / draft-dflash2 / draft-dspark / draft-lilicorr 四类草稿头，同时优化 KV 槽位回收（避免每次删序列 O(n_cells) 扫描）与 MoE 缓存图节点隔离",
+        "API 变更：废弃旧 llama_batch 接口，迁移至 llama_batch_ext 与 llama_process"
+      ],
+      "why_it_matters": "自部署开源推理核心底座的重量级版本：按显存预算自动量化 + token 感知工具解析 + 内网 MCP 代理开关，几乎每一项都直接帮到跑开源编码模型的团队，今天即可评估升级。",
+      "sources": [
+        {
+          "title": "ggml-org/llama.cpp Release v1.1.0",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/tag/v1.1.0",
+          "kind": "primary",
+          "publisher": "llama.cpp (GitHub)",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["inference", "opensource", "llm", "tooling"],
+      "importance": 5,
+      "actionability": "try",
+      "follow_up_of": "2026-11-19-llamacpp-v1"
+    },
+    {
+      "id": "2026-11-26-amd-llamacpp-rdna-boosts",
+      "category": "opensource",
+      "title": "AMD 专属 llama.cpp 补丁集登顶 HN：预填充翻倍、解码涨 57%",
+      "summary": "一篇实测报告 11 月 26 日登顶 HN：基于固定提交之上的轻量补丁仓库 llama-cpp-rdna-boosts（提供预构建 ROCm 10.1 容器镜像）在不篡改模型路由的前提下，让 AMD R9700 外接显卡跑 Qwen3.8-27B（Q6_K_L + MTP）的预填充从 700 提至 1300 tok/s，解码从 35 提至 55 tok/s。",
+      "key_points": [
+        "作者批评部分新兴「AI 编写」超快推理引擎（如 Strata）为刷速度不惜改变模型原本行为——例如优先路由已在显存中的热专家而忽略本该选中的内存/磁盘冷专家",
+        "相比之下，llama-cpp-rdna-boosts 仅在稳定版 llama.cpp 上维护极简 AMD 硬件补丁并持续变基，动刀面小、可审计，且一行 podman pull ghcr.io/stew675/llama-cpp-rdna-boosts:server-rocm-10.1 即可拉起",
+        "实测数据（AMD R9700 eGPU 跑 Qwen3.8-27B Q6_K_L + MTP）：预填充由 700 提至 1300 tok/s，token 生成由 35 提至 55 tok/s"
+      ],
+      "why_it_matters": "不仅给用 AMD 消费卡/工作站自部署的开发者带来立竿见影的加速，更提醒所有团队在挑选「魔改高速推理引擎」时务必核对它有没有偷偷改掉 MoE 路由精度。",
+      "sources": [
+        {
+          "title": "AMD-specific fork of llama.cpp",
+          "url": "https://devnull.land/amd-specific-llama-cpp",
+          "kind": "primary",
+          "publisher": "devnull.land",
+          "published_at": "2026-11-26"
+        },
+        {
+          "title": "HN Discussion: AMD Specific Patches for Llama.cpp",
+          "url": "https://news.ycombinator.com/item?id=50657265",
+          "kind": "discussion",
+          "publisher": "Hacker News",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["inference", "hardware", "opensource", "engineering"],
+      "importance": 4,
+      "actionability": "try",
+      "figure": {
+        "type": "bars",
+        "title": "AMD R9700 跑 Qwen3.8-27B 补丁前后对比",
+        "caption": "来源：devnull.land（2026-11-26），单位 tok/s",
+        "unit": "tok/s",
+        "series": ["原版 llama.cpp", "rdna-boosts"],
+        "rows": [
+          {
+            "label": "预填充 Prefill",
+            "values": [700, 1300]
+          },
+          {
+            "label": "解码 Decode",
+            "values": [35, 55]
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-11-26-opencode-v2-4-2",
+      "category": "tools",
+      "title": "OpenCode v2.4.2：单请求省 700 token 与修计划循环",
+      "summary": "开源编码 Agent OpenCode 11 月 26 日发布 v2.4.2，把 generate_image 与 generate_video 移入 Code Mode 以免每轮白占约 700 token，修复 Plan 模式每次压缩后重复注入提醒导致的死循环，并将网页抓取的「始终允许」从全局缩窄为按站点生效。",
+      "key_points": [
+        "上下文减负：移出顶层图像/视频生成工具定义后，每次请求直接省约 700 token；修复 Plan 模式在压缩后重复追加提醒引发会话循环的问题",
+        "安全与自动化加固：web fetch 的「始终允许」改为仅对当前站点生效；定时自动化失败后不再拖垮后续调度，但超时 shell 命令直接中止报错而非转后台",
+        "体验与兼容修复：生成未开始前按 Esc 可把上一条消息（含图）退回输入框重改；修复带查询参数 URL 的 MCP 服务（如 AWS MCP Server）登录失败，桌面端升级改增量下载"
+      ],
+      "why_it_matters": "每轮省 700 token + 修掉压缩后 Plan 模式死循环，对上下文窗口吃紧的开源模型用户都是实打实的提效，建议已用 OpenCode 的同学直接更新。",
+      "sources": [
+        {
+          "title": "anomalyco/opencode Release v2.4.2",
+          "url": "https://github.com/anomalyco/opencode/releases/tag/v2.4.2",
+          "kind": "primary",
+          "publisher": "OpenCode (GitHub)",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["agent", "coding", "opensource", "tooling"],
+      "importance": 4,
+      "actionability": "try",
+      "follow_up_of": "2026-11-23-opencode-v2-4"
+    },
+    {
+      "id": "2026-11-26-agent-md-refactor-skill",
+      "category": "kits",
+      "title": "agent-md-refactor：五步瘦身臃肿 AGENTS.md",
+      "summary": "开源技能包 softaworks/agent-toolkit 中的 agent-md-refactor 专门解决团队 AGENTS.md / CLAUDE.md 越写越长、充满冲突规则与上下文浪费的问题。它通过五阶段流程先揪出矛盾条款，再按渐进披露原则把 50–100 行以上的根文档瘦身为极简入口加按主题拆分的子文档。",
+      "key_points": [
+        "五阶段重构流：1）先扫描并向人工确认互相冲突的规则（如分号规范打架）；2）根文件只保留 100% 任务通用的项目简介、非标包管理器与构建测试命令",
+        "3）把语言规范、测试、架构、Git 流程等非通用指令拆到 .claude/typescript.md、testing.md 等聚焦子文件；4）在极简根文件中建立清晰链接；5）标出「写干净代码」等空泛或冗余条目供删除",
+        "特别适合根配置文件已超 100 行、混杂前后端与测试多类主题、导致小模型每轮白吃上千 token 的仓库"
+      ],
+      "why_it_matters": "结合前两天「AGENTS.md 规则失真」与「有限上下文」痛点，这套技能能直接帮团队把几百行大杂烩规则瘦身成按需加载的模块化文档，今天即可复用。",
+      "sources": [
+        {
+          "title": "softaworks/agent-toolkit agent-md-refactor README",
+          "url": "https://github.com/softaworks/agent-toolkit/blob/main/skills/agent-md-refactor/README.md",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["skills", "workflow", "coding", "opensource"],
+      "importance": 4,
+      "actionability": "try",
+      "kit": {
+        "kind": "skill",
+        "name": "agent-md-refactor",
+        "compatible": ["Claude Code", "OpenCode", "Codex CLI", "Cursor"],
+        "capabilities": [
+          "自动扫描臃肿的 AGENTS.md / CLAUDE.md / COPILOT.md 并列出互相冲突的条款供人工裁决",
+          "按渐进披露原则把通用命令留在极简根文件，将其余规范拆分为按主题分类并互链的 Markdown 文档",
+          "识别并标记「在 TS 项目里写使用 TypeScript」等冗余或过于空泛的无效规则建议删除"
+        ],
+        "highlights": [
+          "用结构化 5 阶段把大而全的常驻上下文切成按需读取模块，直接降低有限窗口模型的每轮固定开销",
+          "重构前强制先暴露规则矛盾，避免把自相矛盾的指令机械搬运到新目录里继续误导 Agent"
+        ],
+        "install": "从 https://github.com/softaworks/agent-toolkit 获取 skills/agent-md-refactor 目录放入项目 .claude/skills/ 或对应 Agent 技能目录，在对话中触发「refactor my AGENTS.md」",
+        "repo": "https://github.com/softaworks/agent-toolkit"
+      }
+    },
+    {
+      "id": "2026-11-26-openai-cost-control-hn",
+      "category": "ideas",
+      "title": "实测数据引发 HN 热议：OpenAI GPT-6.2 是否正进入「控本模式」？",
+      "summary": "评测平台 AgentDuel 维护者 11 月 26 日发文称，基于真实 OpenCode 对战日志统计，OpenAI 新近发布的 GPT-6.2 Astra 与 Sol 相比前代显著削减了思考与输出 token（推理 token 下降 p 值分别为 0.0064 与 0.00013），沦为「欠思考异常值」；HN 评论区则就真实任务成本与榜单帕累托曲线展开激辩。",
+      "key_points": [
+        "对比同等 high 档设置，Sol 6.2 相对 Sol 6.1、Astra 6.2 相对 Astra 6 均出现统计显著的输出与推理 token 缩水（输出下降 p=0.0055 与 0.022），其中 Sol 6.2 实际对战 Elo 明显滑坡",
+        "HN 企业开发者吐槽主流榜单的「单任务成本」严重失真：榜单称 Sol 仅比 DeepSeek V4.1 Flash 贵 2 倍，但真实研发日耗高出 6–8 倍（AgentDuel 实测单任务 0.43 美元 vs 0.07 美元，约 6.1 倍）",
+        "另一高赞观点将 Agent 时代开发比作「园艺」：Agent 像强力化肥让代码和测试疯狂滋长，工程师的核心工作正变成周期性「修剪」冗余代码与无用用例"
+      ],
+      "why_it_matters": "提示团队选型时切勿盲信公开榜单的单任务定价与默认档位：同一厂商的「高思考」档位可能随版本暗调，必须用自己的真实代码仓库和 token 读写比来算账。",
+      "sources": [
+        {
+          "title": "OpenAI may be in cost control mode",
+          "url": "https://micjm.com/blog/openai-is-in-cost-control-mode/",
+          "kind": "primary",
+          "publisher": "micjm",
+          "published_at": "2026-11-26"
+        },
+        {
+          "title": "HN Discussion: OpenAI may be in cost control mode",
+          "url": "https://news.ycombinator.com/item?id=50652527",
+          "kind": "discussion",
+          "publisher": "Hacker News",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["eval", "llm", "agent", "engineering"],
+      "importance": 3,
+      "actionability": "know"
+    },
+    {
+      "id": "2026-11-26-hf-training-swarms",
+      "category": "practices",
+      "title": "HF 多代理 RL：0.6B 训四代理协作，省 37.4% token",
+      "summary": "Hugging Face 11 月 26 日启动多代理群体训练系列教程第一篇，首先泼冷水指出「把多个未训练代理拼一起往往只是多花算力重试，并非真正协作」，随后用 TRL 在两张 H200 上耗时约 5 小时（约 50 美元）对共享 Qwen3-0.6B 权重的四代理信息汇聚任务做群体强化学习：75 步后成功率从 6.56% 升至 82.34%，同时单队 token 消耗反降 37.4%。",
+      "key_points": [
+        "先厘清基线误区：引用 Noam Brown 与 Anthropic 漏洞挖掘实验指出，多代理若不控制总 token 预算，优势往往只是「多抽几次样」；在相同目录下按每百万 token 折算，协作与独立代理产出接近",
+        "实验设计极易复现：四个共享 Qwen3-0.6B 的代理各自持有 1 个私有数字，仅通过 message/read_messages/check_notifications 工具交换信息并输出排序列表，团队奖励按生成 token 比例扣减（不单独奖励发消息）",
+        "75 步训练结果：训练集成功率从 6.56% 涨到 82.34%（留出集 26/32=81.25%，远超未训练 best-of-8 的 37.5%），单队平均生成 token 从 12,827 降至 8,026（降 37.4%），但广播次数从 2.38 增至 5.73"
+      ],
+      "why_it_matters": "给想在自部署小模型上折腾多代理的团队提供了清醒的评估尺子：上线前务必做「等 token 预算对照」（4 个代理各拿 1/4 预算 vs 1 个代理拿满预算），别为伪协作白交 4 倍算力税。",
+      "sources": [
+        {
+          "title": "Swarms, Flocks, Gangs: How to build, train, and evaluate multi-agent systems",
+          "url": "https://huggingface.co/blog/training-swarms",
+          "kind": "primary",
+          "publisher": "Hugging Face Blog",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["agent", "eval", "opensource", "engineering"],
+      "importance": 4,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-26-debugging-methodology-skill",
+      "category": "practices",
+      "title": "假设驱动调试法：6 步制止编码 Agent 瞎改乱试",
+      "summary": "开源技能 debugging-methodology/SKILL.md 提炼了一套 6 步假设驱动排错流程，专治编码 Agent 遇到报错时「不看完整堆栈就随机改代码」或「直接套一层 try/catch 吞掉异常」的顽疾，要求必须先写出可复现失败单测与可证伪假设后才允许动业务代码。",
+      "key_points": [
+        "硬性前置门槛：Step 1 必须先写出可稳定复现的失败回归测试；Step 2 必须从下往上读完整堆栈并用不含「error」一词的一句话复述故障",
+        "禁止无假设改代码：Step 3–4 要求写出可证伪假设（「我认为根因是 X 因为 Y」）并用针对性日志或小测试验证，证实根因后再做最小修复",
+        "内置「常见借口反驳表」：专门拦截模型高频糊弄话术——如「我先试试改这里看看」「肯定是框架 bug」「先加个 try/catch 兜底」"
+      ],
+      "why_it_matters": "开源小模型排错最容易陷入「改一行→换个报错→再盲改」的死循环；把这 6 步和借口反驳表抄进仓库调试规则，能大幅减少无效 diff 和掩耳盗铃式修复。",
+      "sources": [
+        {
+          "title": "DevelopersGlobal/ai-agent-skills debugging-methodology SKILL.md",
+          "url": "https://github.com/DevelopersGlobal/ai-agent-skills/blob/main/skills/debugging-methodology/SKILL.md",
+          "kind": "primary",
+          "publisher": "GitHub",
+          "published_at": "2026-11-26"
+        }
+      ],
+      "tags": ["coding", "testing", "workflow", "skills"],
+      "importance": 3,
+      "actionability": "try"
+    },
+    {
+      "id": "2026-11-26-skill-context-engineering",
+      "category": "skills",
+      "title": "AI 实用技巧｜编码 Agent 上下文工程：按加载主体分层，警惕控制错觉",
+      "summary": "Thoughtworks 杰出工程师 Birgitta Böckeler 在 Martin Fowler 博客系统梳理了编码 Agent 的上下文工程框架：将上下文拆为可复用提示（指令 vs 规范）与上下文接口（工具/MCP/Skills），按「谁决定加载」（LLM、人工、确定性钩子）合理分层，并提醒团队渐进积累规则、警惕「写进规则就必然生效」的控制错觉。",
+      "key_points": [
+        "区分三类加载触发器：始终加载的根规则（AGENTS.md）只放全仓通用约定；路径作用域规则（如 **/*.sh）与 Skills 负责按需懒加载；必须 100% 执行的格式化与审计交给确定性 Hooks",
+        "少即是多且渐进积累：不要一上来从网上复制几百行陌生人的规则模板——容易引入互相冲突的指令，且现代模型已不再需要半年前那种手把手啰嗦提示",
+        "打破「控制错觉」：即便上下文工程做得再细，LLM 执行本质仍是概率性的，切勿误以为写一句「确保不出现幻觉」就能取代代码审查与自动测试"
+      ],
+      "why_it_matters": "非常契合团队「有限上下文 + 开源 CLI Agent」现状：把必做的事交给确定性 Hook，把偶尔用的规范拆成路径规则或 Skill，能把宝贵的常驻上下文留给真正的业务代码。",
+      "sources": [
+        {
+          "title": "Context Engineering for Coding Agents",
+          "url": "https://martinfowler.com/articles/exploring-gen-ai/context-engineering-coding-agents.html",
+          "kind": "primary",
+          "publisher": "Martin Fowler",
+          "published_at": "2026-02-05"
+        }
+      ],
+      "tags": ["coding", "workflow", "agent", "engineering"],
+      "importance": 4,
+      "actionability": "try",
+      "skill": {
+        "area": "context",
+        "scenario": "团队给有限上下文的开源 CLI 编码 Agent 配置仓库规则，既想让它守规矩又不想每轮浪费几千 token",
+        "bad": "把前后端代码规范、SQL 写法、E2E 测试模板、Git 提交规则全部拼进 400 行根 AGENTS.md，还从网上抄了一大段「绝不产生幻觉、始终写出完美代码」的空话，结果每次只改一个按钮也塞满上下文。",
+        "good": "按加载主体三层拆分：1）根 AGENTS.md 压到 30 行内只写构建/测试命令与全仓通用约定；2）前端组件与 SQL 规范放到路径作用域规则（src/components/**）或按需加载的 SKILL.md；3）格式化、类型检查与禁改受保护文件交给确定性 Hook 在保存/提交时强制执行。",
+        "why": [
+          "常驻上下文只放 100% 命中的通用信息，减少噪声干扰，显著提升小窗口模型的指令遵循率",
+          "把必须 100% 兑现的检查从概率性的文本规则挪到确定性 Hook，消除「写了规则就一定遵守」的控制错觉",
+          "按团队真实踩坑渐进补充规则，避免照抄外部长模板带来的隐性规则冲突"
+        ],
+        "practice": "打开你当前项目的 AGENTS.md 或规则文件，划出至少 3 条可以改成确定性 linter/Hook 或拆成按需 Skill 的条款并立刻迁移。"
+      }
+    },
+    {
+      "id": "2026-11-26-agentpro-workflow-compiler",
+      "category": "research",
+      "title": "AgentPRO：工作流编译优化省 41.85% token",
+      "summary": "论文《AgentPRO: Coordinating Compiler Optimizations for LLM Agent Workflows》提出一套面向多轮 Agent 的编译优化框架：区分「执行所需数据依赖」与「模型生成所需观测依赖」，通过消除冗余读操作并融合兼容生成区减少模型往返次数，配合运行时状态守卫与回退路径，在 AppWorld 115 项任务上将平均 token 消耗降低 41.85%、组件耗时降低 6.61%（成功完成 110/115）。",
+      "key_points": [
+        "核心洞察：执行下一步工具需要的中间值，并不一定需要回传给 LLM 重新阅读；消除一次冗余读往往能打通相邻两个生成区，使多次 LLM 请求合并为一次",
+        "采用分层中间表示（计划职责 → 生成区 → 具体操作），结合初始计划、实时观测与历史执行画像实施即时/自适应/画像引导优化",
+        "通过运行时守卫校验状态前提并在环境漂移时安全回退原路径，在 AppWorld 115 项任务上降低 41.85% 全尝试平均 token 消耗与 6.61% 平均组件耗时"
+      ],
+      "why_it_matters": "自部署模型跑多步 Agent 最痛的就是每轮重复 prefill 导致吞吐暴跌；AgentPRO 给出了一套不改模型权重就能砍掉四成 token 的工程路线，本期配套离线实验已复现核心去冗余+融合+守卫机制。",
+      "sources": [
+        {
+          "title": "AgentPRO: Coordinating Compiler Optimizations for LLM Agent Workflows",
+          "url": "https://arxiv.org/abs/2611.00628",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-10-31"
+        }
+      ],
+      "tags": ["agent", "engineering", "inference", "eval"],
+      "importance": 4,
+      "actionability": "try",
+      "experiment_id": "2026-11-26-agent-workflow-compiler-opt"
+    },
+    {
+      "id": "2026-11-26-minimal-context-to-act",
+      "category": "research",
+      "title": "编码 Agent 真正需要多少上下文？19K 压缩源码匹敌 94K 整文件",
+      "summary": "论文《What Context Does a Coding Agent Actually Need to Act?》固定定位阶段，在 SWE-bench Verified 上严格对照不同代码表示：结论极度极简——有效信号几乎全在待修改源码本身，自然语言摘要在行为问答上仅得 4/45（源码 27/45，且前沿模型写的摘要和 3B 模型一样差），而压缩核心上下文仅需 19K token 即可匹敌 94K 完整文件。",
+      "key_points": [
+        "自然语言代码摘要几乎无效：在留出仓库的独立裁判行为问答中，摘要仅答对 4/45 题、原始源码答对 27/45 题，且换用前沿模型生成摘要与 3B 小模型得分完全一样差",
+        "周边骨架同样冗余：在预注册对照实验中（N=70，McNemar p=0.75），把文件其余部分转成 UML 骨架和函数签名喂给模型，并不比直接删掉其余部分多解任何题",
+        "极简压缩显著省窗：保留待编辑局部源码的压缩上下文以约三分之一 token 追平整文件效果——解决一道 SWE-bench Verified 仅耗 19K 上下文 token，而非 94K",
+        "顺带揭示关键评测噪声：即使设 temperature=0，API 推理在逐字节相同输入下仍有约 9% 单题结果翻转，提示所有微小榜单涨幅都需警惕噪声底噪"
+      ],
+      "why_it_matters": "对上下文窗口有限的自部署研发团队堪称定心丸：别再花算力给整个仓库生成自然语言摘要或 UML 骨架了，精准定位后只喂干净的待改源码片段，19K 窗口就能发挥接近 94K 整文件的实力。",
+      "sources": [
+        {
+          "title": "What Context Does a Coding Agent Actually Need to Act?",
+          "url": "https://arxiv.org/abs/2607.09691",
+          "kind": "primary",
+          "publisher": "arXiv",
+          "published_at": "2026-06-19"
+        }
+      ],
+      "tags": ["coding", "agent", "eval", "engineering"],
+      "importance": 4,
+      "actionability": "try",
+      "figure": {
+        "type": "bars",
+        "title": "SWE-bench Verified 单题上下文消耗对比",
+        "caption": "来源：arXiv:2607.09691，压缩上下文匹配整文件解决率",
+        "unit": "K tokens",
+        "series": ["单题上下文"],
+        "rows": [
+          {
+            "label": "完整文件上下文",
+            "values": [94]
+          },
+          {
+            "label": "压缩核心上下文",
+            "values": [19]
+          }
+        ]
+      }
+    }
+  ]
+}
