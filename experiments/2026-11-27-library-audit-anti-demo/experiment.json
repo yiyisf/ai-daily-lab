@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-27-library-audit-anti-demo",
+  "title": "「面向测试编程」防作弊审计：可复用库空操作消融校验",
+  "goal": "离线复现 arXiv:2606.28430 的机械库审计与 no-op 消融法：面对两份端到端测试均 100% 通过的编码 Agent 提交（一份真正调用可复用组件库，一份在 demo 层硬编码绕过组件库），通过将可复用库替换为空实现后重跑测试，精准揪出「面向测试凑过关」的假交付。",
+  "related_item": "2026-11-27-building-to-the-test",
+  "runtime": "python",
+  "entry": "python3 main.py",
+  "timeout_seconds": 30,
+  "expected": "端到端测试无法区分两份提交（均 100% 通过），但机械库审计 + no-op 消融以 100% 精确率和 100% 召回率精准放行真库实现、拦截硬编码 demo 与半成品库提交。",
+  "tags": ["agent", "testing", "coding", "eval"]
+}
